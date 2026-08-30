@@ -27,32 +27,23 @@ export async function loginWithPasswordUseCase(
     const redirectUrl =
       result.role === "employee" ? "/employee/dashboard" : "/admin/dashboard";
 
-    // ── SECURITY FIX (FAIL 8.1): Log successful login event ────────────────
-    await recordActivityLogUseCase({
-      orgId: (result.user?.app_metadata?.org_id as string) || "system",
-      actorId: result.user?.id || null,
-      action: "auth.login_success",
-      entity: "auth",
-      entityId: result.user?.id || null,
-      diff: { role: result.role, method: "password" },
-    }).catch(() => {
-      // Non-blocking: log failures should not break login flow
-    });
+    // ── SECURITY FIX: Log successful login event only if valid tenant orgId exists
+    const orgId = result.user?.app_metadata?.org_id as string;
+    if (orgId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orgId)) {
+      await recordActivityLogUseCase({
+        orgId,
+        actorId: result.user?.id || null,
+        action: "auth.login_success",
+        entity: "auth",
+        entityId: result.user?.id || null,
+        diff: { role: result.role, method: "password" },
+      }).catch(() => {
+        // Non-blocking: log failures should not break login flow
+      });
+    }
 
     return { redirectUrl, role: result.role };
   } catch (err: any) {
-    // ── SECURITY FIX (FAIL 8.1): Log failed login attempt ──────────────────
-    // Logged asynchronously — fire-and-forget. Log failure must NOT reveal
-    // whether the email exists (timing-safe: same code path for bad email/pass).
-    await recordActivityLogUseCase({
-      orgId: "system",
-      actorId: null,
-      action: "auth.login_failed",
-      entity: "auth",
-      entityId: null,
-      diff: { email: input.email, method: "password" },
-    }).catch(() => {});
-
     throw err;
   }
 }

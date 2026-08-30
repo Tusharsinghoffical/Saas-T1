@@ -22,6 +22,12 @@ export class SupabaseActivityRepository implements IActivityRepository {
     }
 
     try {
+      // Validate that orgId is a valid UUID before attempting Postgres insert
+      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.orgId);
+      if (!isValidUuid) {
+        return false;
+      }
+
       const adminClient = createAdminClient();
       const { error } = await (adminClient.from("activity_logs") as any).insert({
         org_id: input.orgId,

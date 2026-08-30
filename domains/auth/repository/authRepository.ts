@@ -80,14 +80,41 @@ export class SupabaseAuthRepository implements IAuthRepository {
       throw new Error(error?.message || "Invalid credentials.");
     }
 
-    const role = (
-      (data.user.app_metadata?.role as string) ||
-      (data.user.user_metadata?.role as string) ||
-      "admin"
-    ) as "admin" | "manager" | "employee";
+    // Query user's real profile directly from database to know exact role and orgId
+    let role: "admin" | "manager" | "employee" = "employee";
+    let orgId: string | null = null;
+
+    try {
+      const adminClient = createAdminClient();
+      const { data: profile } = await (adminClient as any)
+        .from("profiles")
+        .select("role, org_id")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (profile?.role) {
+        role = profile.role as "admin" | "manager" | "employee";
+      }
+      if (profile?.org_id) {
+        orgId = profile.org_id;
+      }
+    } catch {
+      role = (
+        (data.user.app_metadata?.role as string) ||
+        (data.user.user_metadata?.role as string) ||
+        "employee"
+      ) as "admin" | "manager" | "employee";
+    }
 
     return {
-      user: data.user,
+      user: {
+        ...data.user,
+        app_metadata: {
+          ...data.user.app_metadata,
+          role,
+          org_id: orgId || data.user.app_metadata?.org_id,
+        },
+      },
       role,
     };
   }

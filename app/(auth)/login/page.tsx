@@ -367,32 +367,16 @@ export default function LoginPage() {
             )}
           </button>
 
-          {/* Quick 1-Click Role Testing */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-2 text-center">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Quick 1-Click Role Testing
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({ email: "admin@acme.com", password: "Password123!" });
-                  router.push("/admin/dashboard");
-                }}
-                className="py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>👔 Admin Demo</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData({ email: "employee@acme.com", password: "Password123!" });
-                  router.push("/employee/dashboard");
-                }}
-                className="py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200/60 transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>📱 Employee Demo</span>
-              </button>
+          {/* Unified Role Guidance Box */}
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>Smart Multi-Tenant Sign In</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Log in with your registered work email. Your role (<strong>Admin / Founder</strong> or <strong>Team Employee</strong>) is automatically verified against your company workspace.
+              </p>
             </div>
           </div>
         </form>
