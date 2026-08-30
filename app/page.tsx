@@ -2197,7 +2197,16 @@ export default function HomePage() {
             <div className="space-y-3">
               <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 space-y-1">
                 <div className="font-bold text-indigo-950 text-xs">Engineering Support Desk</div>
-                <div className="text-[11px] text-indigo-800">Email: support@tasqone.com (Response within 2 hours)</div>
+                <div className="text-[11px] text-indigo-800">
+                  Email:{" "}
+                  <a
+                    href="mailto:tasqoneworkos@gmail.com"
+                    className="font-bold underline hover:text-indigo-950 transition-colors"
+                  >
+                    tasqoneworkos@gmail.com
+                  </a>{" "}
+                  (Response within 2 hours)
+                </div>
               </div>
               <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
                 <div className="font-bold text-emerald-950 text-xs">WhatsApp Enterprise Broadcast &amp; Escalations</div>
