@@ -9,12 +9,14 @@
 [![Next.js 14](https://img.shields.io/badge/Next.js-14.2.35-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Render](https://img.shields.io/badge/Render-Docker_Web_Service-46E3B7?style=for-the-badge&logo=render)](https://render.com/)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-CDN_&_R2-F38020?style=for-the-badge&logo=cloudflare)](https://cloudflare.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
 [![Groq AI](https://img.shields.io/badge/Groq_AI-Llama_3.3_70B-F55036?style=for-the-badge)](https://groq.com/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
 [![Currency](https://img.shields.io/badge/Currency-₹_INR_Localized-blue?style=for-the-badge)](#)
 
-[Live Demo Experience](#live-workspace-simulator) • [Features](#-key-features) • [Quickstart](#-quickstart-guide) • [Docker](#-docker-deployment) • [Security & Compliance](#-security--compliance) • [Roadmap](#-documentation--roadmap)
+[Live Demo Experience](#live-workspace-simulator) • [Features](#-key-features) • [Quickstart](#-quickstart-guide) • [Render & Cloudflare](#-render--cloudflare-deployment) • [Security & Compliance](#-security--compliance) • [Roadmap](#-documentation--roadmap)
 
 </div>
 
@@ -124,11 +126,30 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🐳 Docker Deployment
+## 🌐 Render & Cloudflare Deployment
+
+TASQ-ONE is designed for zero-friction containerized deployment on **Render** behind **Cloudflare Edge CDN & WAF**.
+
+### 1. One-Click Blueprint on Render
+1. Open your [Render Dashboard](https://dashboard.render.com/) → Click **New +** → **Blueprint**.
+2. Connect your GitHub repository: `https://github.com/Tusharsinghoffical/Saas-T1`.
+3. Render will read [`render.yaml`](render.yaml), build the multi-stage Docker image, and expose the service on port `3000`.
+4. Provide production environment variables (Supabase, Groq, Upstash, Cloudflare R2).
+
+### 2. Cloudflare DNS & SSL Setup
+1. Point your domain CNAME record (`@` / `www`) to your Render service (`tasq-one.onrender.com`).
+2. Set Cloudflare Proxy to 🟠 **Proxied** (enables global CDN, DDoS mitigation, and HTTP/3).
+3. Set SSL/TLS mode to **Full (Strict)**.
+
+👉 **Full Step-by-Step Guide:** [Render & Cloudflare Docker Deployment Guide](docs/DEPLOYMENT-RENDER-AND-CLOUDFLARE.md)
+
+---
+
+## 🐳 Local Docker Run
 
 The application includes a production-ready, multi-stage `Dockerfile` and `docker-compose.yml` leveraging Next.js standalone output.
 
-### 1. Build and Start Container
+### 1. Build and Start Container Locally
 ```bash
 docker compose up --build -d
 ```
@@ -188,9 +209,10 @@ TASQ-ONE/
 
 ## 📚 Documentation & Roadmap
 
+- 🚀 [Render & Cloudflare Deployment Guide](docs/DEPLOYMENT-RENDER-AND-CLOUDFLARE.md)
 - 📋 [Pending Tasks & Production Roadmap](docs/PENDING-TASKS-AND-ROADMAP.md)
 - 🛡️ [Security Audit & Vulnerability Remediation Report](docs/SECURITY-AUDIT-REPORT.md)
-- 🐳 [Docker Run & Deployment Guide](docs/DOCKER_GUIDE.md)
+- 🐳 [Docker Run & Development Guide](docs/DOCKER_GUIDE.md)
 
 ---
 

@@ -8,16 +8,18 @@ services:
     name: tasq-one
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: free # or starter / standard
-    region: oregon # or frankfurt / singapore
+    plan: free # or starter / standard / pro
+    region: oregon # or frankfurt / singapore / ohio
     branch: main
     autoDeploy: true
     healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: "3000"
       - key: NEXT_PUBLIC_APP_URL
-        sync: false # Set to your custom domain or Render onrender.com URL
+        sync: false # e.g. https://tasq-one.onrender.com or https://tasqone.com
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -40,9 +42,12 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: CRON_SECRET
+        sync: false
       - key: NEXT_PUBLIC_POSTHOG_KEY
         sync: false
       - key: NEXT_PUBLIC_POSTHOG_HOST
         value: https://app.posthog.com
       - key: NEXT_PUBLIC_ENABLE_BILLING
         value: "false"
+
