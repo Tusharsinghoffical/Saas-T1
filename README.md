@@ -216,6 +216,13 @@ TASQ-ONE/
 
 ---
 
+## 📬 Support & Contact
+
+- **Engineering Support Desk:** [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com)
+- **GitHub Issues:** [https://github.com/Tusharsinghoffical/Saas-T1/issues](https://github.com/Tusharsinghoffical/Saas-T1/issues)
+
+---
+
 ## 📄 License
 
 This project is licensed under the **MIT License**.
@@ -223,5 +230,6 @@ This project is licensed under the **MIT License**.
 ---
 
 <div align="center">
-Made with ❤️ for Indian Startups & High-Velocity Growing Teams Worldwide.
+Made with ❤️ for Indian Startups & High-Velocity Growing Teams Worldwide.<br/>
+Official Contact: <a href="mailto:tasqoneworkos@gmail.com">tasqoneworkos@gmail.com</a>
 </div>

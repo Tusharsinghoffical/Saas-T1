@@ -146,3 +146,9 @@ Once deployed:
    ```
 2. **Landing Page:** Open `https://yourdomain.com` in your browser.
 3. **PWA Check:** Open Chrome DevTools → Application → Manifest / Service Worker (status: Activated).
+
+---
+
+## 📬 Need Help?
+- **Engineering Support Desk:** [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com)
+- **Repository Issues:** [https://github.com/Tusharsinghoffical/Saas-T1/issues](https://github.com/Tusharsinghoffical/Saas-T1/issues)
