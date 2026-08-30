@@ -1,16 +1,16 @@
-name: Production CI/CD Pipeline
+name: Production CI/CD & Docker Pipeline
 
 on:
   push:
     branches:
       - main
 
-# Zero-AWS Compliance: Strictly no AWS credentials, AWS CLI, or AWS dependencies.
-# Uses Vercel / Cloudflare for deployment and Cloudflare R2 for assets.
+# Zero-AWS Compliance: Strictly no AWS dependencies.
+# Uses Render for Docker runtime, Cloudflare for CDN/R2, and Supabase for PostgreSQL.
 
 jobs:
-  validate-and-deploy:
-    name: Lint, Typecheck, Test & Deploy
+  validate-and-build:
+    name: Lint, Typecheck, Test & Docker Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -18,10 +18,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: "npm"
 
       - name: Install Dependencies
@@ -43,11 +43,13 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'demo-anon-key' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'demo-service-key' }}
 
-      - name: Deploy to Vercel (Production)
-        uses: amondnet/vercel-action@v25
-        if: success()
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: "--prod"
+      - name: Verify Docker Container Build
+        run: docker build -t tasq-one:latest .
+
+      - name: Trigger Render Deploy Hook (Optional)
+        if: env.RENDER_DEPLOY_HOOK_URL != ''
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          echo "Triggering Render automatic deployment..."
+          curl -f -X POST "$RENDER_DEPLOY_HOOK_URL"
