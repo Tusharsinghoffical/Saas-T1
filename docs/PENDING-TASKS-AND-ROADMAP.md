@@ -1,110 +1,91 @@
-# 📋 TASQ-ONE — Project Status, Pending Tasks & Roadmap
+# 📋 TASQ-ONE — Project Status, Pending Tasks & Production Roadmap
 
-> **Current Status:** v1.0 Core Platform & Landing Page Complete (Docker Container Running)  
-> **Last Updated:** August 2026  
-> **Target Production Environment:** Supabase Cloud (PostgreSQL) + Docker / Vercel + Groq AI + Cloudflare R2
+> **Current Status:** v1.0 Core Platform & Landing Page Complete  
+> **Deployment Target:** Render (Docker Web Service) + Cloudflare (CDN/R2) + Supabase Cloud (PostgreSQL) + Groq AI  
+> **Repository:** [https://github.com/Tusharsinghoffical/Saas-T1](https://github.com/Tusharsinghoffical/Saas-T1)  
+> **Last Updated:** August 30, 2026
 
 ---
 
 ## 📊 Executive Summary Table
 
-| Category | Component | Status | Priority | Action Required |
+| Category | Component | Current Status | Priority | Action / Next Step |
 | :--- | :--- | :---: | :---: | :--- |
 | **Landing Page & Branding** | Hero, Simulator, ROI Calculator, Mega Footer | ✅ Complete | Done | Fully localized (₹ INR), responsive, healthy |
-| **Security Hardening** | PostgreSQL RLS, Rate Limiting, RBAC Guards | ✅ Complete | Done | All Critical & High audit issues patched |
-| **Containerization** | Dockerfile & Docker Compose (Node 22 Standalone) | ✅ Complete | Done | Port 3000 mapped, zero runtime crash |
-| **Database & Migrations** | Supabase Cloud Database Sync | ⏳ Pending | High | Apply SQL migrations `0001`–`0008` on live cloud instance |
-| **Third-Party Services** | Groq AI, Cloudflare R2, Resend/Gupshup | ⏳ Pending | Medium | Add production API keys to `.env.production` |
-| **Testing & QA** | Automated E2E & RLS Regression Suite | ⏳ Pending | Medium | Run automated tests against staging database |
-| **Domain & SSL** | Custom DNS & Production Cloud Deployment | ⏳ Pending | High | Map custom domain (`tasqone.com`), setup SSL |
-| **Payment Gateway** | Razorpay / Stripe for SMB Pro (₹999) & Enterprise (₹2,499) | ⏸️ Deferred | Low / Optional | Currently ₹0 Free Starter Tier is active; skip for now |
+| **Security Hardening** | PostgreSQL RLS, Rate Limiting, RBAC Guards | ✅ Complete | Done | All audit issues & privilege escalation patched |
+| **Docker & Containerization**| Standalone Multi-stage Dockerfile & Compose | ✅ Complete | Done | `node:22-alpine` build verified and passing |
+| **CI/CD Pipeline** | GitHub Actions (`deploy.yml`, `pr-check.yml`) | ✅ Complete | Done | Vercel removed; Node 22 + Docker validation active |
+| **Render Blueprint** | `render.yaml` & Deployment Configuration | ✅ Complete | Done | Docker runtime, port 3000, healthcheck mapped |
+| **Cloud Database Sync** | Supabase PostgreSQL Migrations | ⏳ Pending | **HIGH** | Run SQL migrations `0001`–`0008` in Supabase SQL editor |
+| **Production Secrets** | Render Dashboard Environment Variables | ⏳ Pending | **HIGH** | Add Supabase, Groq, Upstash, Resend keys in Render |
+| **Custom Domain & SSL** | Cloudflare CNAME Proxy Setup | ⏳ Pending | **MEDIUM** | If custom domain purchased, point CNAME to Render |
+| **WhatsApp Enterprise** | Gupshup / MSG91 API Integration | ⏳ Pending | **LOW** | Optional: Connect live WhatsApp messaging gateway |
+| **Payment Gateway** | Razorpay / Stripe for Pro (₹999) & Enterprise (₹2,499) | ⏸️ **DEFERRED** | **SKIP** | Currently skipped; ₹0 Free Starter Pilot is active |
 
 ---
 
-## 1. 🗄️ Database & Backend Infrastructure
+## 1. 🗄️ Database & Supabase Cloud Sync (High Priority)
 
-### 1.1 Cloud Database Migration Execution
-- [ ] **Run Migrations on Live Supabase:**
-  - `supabase/migrations/0001_initial_schema.sql` (Tables: `organizations`, `users`, `tasks`, `task_dependencies`, `audit_logs`, `attachments`, `comments`)
-  - `supabase/migrations/0002_rls_policies.sql` (Tenant multi-tenant isolation)
-  - `supabase/migrations/0003_storage_buckets.sql` (R2/S3 bucket policies)
-  - `supabase/migrations/0004_task_dag_constraints.sql` (Dependency cycles prevention)
-  - `supabase/migrations/0005_audit_triggers.sql` (Automatic audit trail creation)
-  - `supabase/migrations/0006_auth_rate_limiting.sql` (Token bucket tables)
-  - `supabase/migrations/0007_fix_password_reset_expiry.sql` (15-min token invalidation)
+- [ ] **Run SQL Migrations on Live Supabase Dashboard:**
+  - `supabase/migrations/0001_init.sql` (Organizations, users, tasks, audit_logs, attachments, comments)
+  - `supabase/migrations/0002_rls.sql` (Multi-tenant Row-Level Security isolation)
+  - `supabase/migrations/0003_auth_hook.sql` (Custom JWT claims & session syncing)
+  - `supabase/migrations/0004_signup_rpc.sql` (Atomic signup & organization creation RPC)
+  - `supabase/migrations/0005_notifications.sql` (Notification dispatch tables)
+  - `supabase/migrations/0006_slack_integration.sql` (Slack webhook settings)
+  - `supabase/migrations/0007_billing_scaffolding.sql` (Billing tiers schema)
   - `supabase/migrations/0008_fix_privilege_escalation.sql` (Strict admin-only role updates)
-- [ ] **Database Health Verification:**
-  - Verify indexes on `tasks(organization_id, status, due_date)`
-  - Test RLS bypass prevention with test non-admin user tokens.
+- [ ] **Verify Database Indexes & RLS:**
+  - Verify tenant isolation on `tasks` table (`organization_id = auth.jwt() ->> 'org_id'`).
 
 ---
 
-## 2. 🔑 Environment & Production Credentials (`.env.production`)
+## 2. 🔑 Production Environment Secrets Setup on Render (High Priority)
 
-- [ ] **Supabase Cloud Credentials:**
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `SUPABASE_SERVICE_ROLE_KEY`
-- [ ] **AI Engine (Groq Cloud):**
-  - `GROQ_API_KEY` (Llama 3.3 70B Versatile model for task decomposition)
-- [ ] **Distributed Cache & Rate Limiting (Upstash):**
-  - `UPSTASH_REDIS_REST_URL`
-  - `UPSTASH_REDIS_REST_TOKEN`
-- [ ] **Object Storage (Cloudflare R2 / AWS S3):**
-  - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`
-- [ ] **Transactional Email & Notifications:**
-  - `RESEND_API_KEY` (For password reset & executive weekly velocity digests)
-- [ ] **WhatsApp Enterprise Broadcast (Optional):**
-  - `GUPSHUP_API_KEY` / `MSG91_AUTH_KEY` (For real-time WhatsApp task notifications in India)
+Enter these in **Render Dashboard** → **tasq-one Web Service** → **Environment**:
+
+- [ ] `NEXT_PUBLIC_APP_URL` (e.g. `https://tasq-one.onrender.com` or custom domain)
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` (From Supabase Project Settings → API)
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` (From Supabase Project Settings → API)
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` (From Supabase Project Settings → API)
+- [ ] `GROQ_API_KEY` (From Groq Console → API Keys)
+- [ ] `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN` (From Upstash Console)
+- [ ] `CLOUDFLARE_R2_ACCESS_KEY_ID` & `CLOUDFLARE_R2_SECRET_ACCESS_KEY` (From Cloudflare R2)
+- [ ] `CLOUDFLARE_R2_BUCKET` (`tasq-one-attachments`) & `CLOUDFLARE_R2_ENDPOINT`
+- [ ] `RESEND_API_KEY` (From Resend Console)
+- [ ] `CRON_SECRET` (Random secret string for weekly AI digest cron)
 
 ---
 
-## 3. 🧪 Testing & Quality Assurance (QA)
+## 3. 🌐 Custom Domain & Cloudflare (Medium Priority / Optional)
 
-- [ ] **RLS Tenant Isolation Test Suite:**
-  - Run `npm run test:rls` to ensure Organization A cannot read or edit Organization B tasks.
-- [ ] **Authentication Flow Testing:**
-  - Signup with new email & organization creation.
-  - Login rate-limiter trigger after 5 invalid attempts (429 Too Many Requests check).
-  - Password reset link generation & 15-minute expiration check.
-  - Member invite link generation and employee onboarding test.
-- [ ] **Task Engine & DAG Validation:**
-  - Verify blocked tasks cannot transition to `in_progress` until prerequisite tasks are `completed`.
-  - Verify file upload enforces 10MB limit and validates MIME types (`image/*`, `application/pdf`, `text/*`).
+> 💡 *Note: Render's free URL (`https://tasq-one.onrender.com`) works out of the box with automatic SSL.*
+
+- [ ] **If using Custom Domain (e.g. `tasqone.com`):**
+  - Add domain to Cloudflare.
+  - Update domain registrar nameservers to Cloudflare.
+  - Add CNAME record in Cloudflare pointing `@` and `www` to `tasq-one.onrender.com` (🟠 Proxied).
+  - Set SSL/TLS encryption mode to **Full (Strict)**.
+  - Add custom domain in Render Settings.
 
 ---
 
-## 4. 📱 Application Dashboard & Live Workspace Polish
+## 4. 🧪 End-to-End Testing & Verification
 
-- [ ] **Admin Dashboard (`/admin/dashboard`):**
-  - Verify live Supabase real-time subscription for instant task updates across multiple open browser tabs.
-  - Test CSV export of workspace activity logs.
-- [ ] **Employee Morning Focus View (`/employee/dashboard`):**
-  - Test "Due Today" checklist toggle with real database update.
-  - Test offline PWA caching on mobile devices.
-- [ ] **Slack Integration Test:**
-  - Test custom Slack Incoming Webhook delivery under Organization Settings (`/admin/settings`).
+- [ ] **Live Healthcheck:** Verify `https://tasq-one.onrender.com/api/v1/health` returns `200 OK`.
+- [ ] **Sign-up & Onboarding Flow:** Create test organization and invite a team member.
+- [ ] **AI Task Decomposer:** Test live prompt decomposition with Groq Llama 3.3 70B.
+- [ ] **Realtime Sprint Board:** Test drag-and-drop task movement with live Supabase subscriptions.
+- [ ] **PWA Offline Mode:** Verify offline installability on iOS and Android devices.
 
 ---
 
-## 5. 💳 Payment Gateway (Deferred / Next Phase)
+## 5. 💳 Live Payment Gateway (Deferred / Skipped for Now)
 
-> 💡 *Note: Currently skipped as per project requirements. The ₹0 Free Starter Pilot is active by default.*
+> 💡 *Status: SKIPPED / DEFERRED. The platform currently operates on the ₹0 Free Starter Pilot.*
 
-- [ ] **Razorpay / Stripe Integration:**
-  - Connect Razorpay Subscriptions API for Indian recurring billing (UPI Auto-Pay / RuPay / NetBanking).
-  - Implement webhook listener for invoice payment confirmations (`/api/v1/billing/webhook`).
-  - Add organization billing management tab in Admin Settings.
-
----
-
-## 6. 🚀 Production Deployment & Domain Setup
-
-- [ ] **Production Host Setup:**
-  - Option A: **Docker Standalone on VPS (DigitalOcean / AWS EC2 / Hetzner)** with Nginx reverse proxy + Let's Encrypt SSL (`certbot`).
-  - Option B: **Vercel / AWS ECS** container deployment.
-- [ ] **DNS & Domain Configuration:**
-  - Point A/CNAME records to production server.
-  - Enable Cloudflare SSL & HTTP/3.
-- [ ] **Health Monitoring:**
-  - Set up uptime monitor on `https://yourdomain.com/api/v1/health`.
+- [ ] **Razorpay Subscriptions (India):**
+  - Integrate Razorpay Recurring Mandate / UPI Auto-Pay for SMB Pro (₹999/mo) and Enterprise (₹2,499/mo).
+  - Configure Razorpay webhook listener at `/api/v1/billing/webhook`.
+- [ ] **Stripe International (Optional):**
+  - Configure Stripe Checkout for international cards.
