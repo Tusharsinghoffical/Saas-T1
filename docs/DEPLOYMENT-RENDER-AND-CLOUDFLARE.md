@@ -145,7 +145,7 @@ Once deployed:
    }
    ```
 2. **Landing Page:** Open `https://yourdomain.com` in your browser.
-3. **PWA Check:** Open Chrome DevTools → Application → Manifest / Service Worker (status: Activated).
+3. **PWA Check:** Open Chrome DevTools → Application  → Manifest / Service Worker (status: Activated).
 
 ---
 
