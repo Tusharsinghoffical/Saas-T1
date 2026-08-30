@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" width="640" height="160">
+  <defs>
+    <linearGradient id="logoBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+
+    <linearGradient id="logoBrandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+
+    <linearGradient id="logoStreakGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#818CF8" />
+    </linearGradient>
+
+    <linearGradient id="logoPulseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+  </defs>
+
+  <!-- Logomark Icon (Left side) -->
+  <g transform="translate(16, 16)">
+    <!-- Container -->
+    <rect width="128" height="128" rx="28" fill="url(#logoBgGrad)" />
+    <rect width="126" height="126" x="1" y="1" rx="27" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" />
+
+    <!-- 'T' Top Bar -->
+    <path
+      d="M34 38 C34 35.8 35.8 34 38 34 H90 C92.2 34 94 35.8 94 38 V48 C94 50.2 92.2 52 90 52 H38 C35.8 52 34 50.2 34 48 Z"
+      fill="url(#logoBrandGrad)"
+    />
+
+    <!-- 'T' Stem -->
+    <path
+      d="M57 52 H71 C73.2 52 75 53.8 75 56 V90 C75 92.2 73.2 94 71 94 H57 C54.8 94 53 92.2 53 90 V56 C53 53.8 54.8 52 57 52 Z"
+      fill="#FFFFFF"
+    />
+
+    <!-- Chevron Velocity -->
+    <path
+      d="M80 62 L92 73 L80 84"
+      fill="none"
+      stroke="url(#logoStreakGrad)"
+      stroke-width="6"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+
+    <!-- Pulse Dot -->
+    <circle cx="98" cy="30" r="5.5" fill="url(#logoPulseGrad)" />
+  </g>
+
+  <!-- Typography Wordmark (Right side) -->
+  <g transform="translate(168, 0)">
+    <!-- Brand Title -->
+    <text
+      x="0"
+      y="92"
+      font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="64"
+      font-weight="900"
+      letter-spacing="-2"
+      fill="#0F172A"
+    >
+      TASQ<tspan fill="#4F46E5">-ONE</tspan>
+    </text>
+
+    <!-- Subtitle Pill / Tag -->
+    <rect x="2" y="112" width="94" height="22" rx="6" fill="#F1F5F9" />
+    <text
+      x="12"
+      y="127"
+      font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="11"
+      font-weight="800"
+      letter-spacing="2"
+      fill="#64748B"
+    >
+      WORK OS
+    </text>
+
+    <text
+      x="110"
+      y="127"
+      font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="12"
+      font-weight="600"
+      fill="#94A3B8"
+    >
+      · Enterprise Velocity
+    </text>
+  </g>
+</svg>

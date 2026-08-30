@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 249 250 251; /* #F9FAFB */
+    --foreground: 15 23 42;    /* #0F172A */
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --primary: 79 70 229;      /* #4F46E5 */
+    --primary-foreground: 255 255 255;
+    --urgent: 239 68 68;       /* #EF4444 */
+    --urgent-foreground: 255 255 255;
+    --success: 34 197 94;      /* #22C55E */
+    --success-foreground: 255 255 255;
+    --border: 226 232 240;
+    --radius: 10px;
+  }
+
+  .dark {
+    --background: 15 23 42;    /* #0F172A */
+    --foreground: 248 250 252; /* #F8FAFC */
+    --card: 30 41 59;          /* #1E293B */
+    --card-foreground: 248 250 252;
+    --primary: 99 102 241;     /* #6366F1 */
+    --primary-foreground: 255 255 255;
+    --urgent: 239 68 68;
+    --urgent-foreground: 255 255 255;
+    --success: 34 197 94;
+    --success-foreground: 255 255 255;
+    --border: 51 65 85;
+    --radius: 10px;
+  }
+}
+
+body {
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  min-height: 100vh;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 60fps Hardware-Accelerated Smooth Touch & Tap Response */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+.touchable {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Custom Clean Micro-Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.6);
+}

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient: Deep Slate to Midnight Indigo -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+
+    <!-- Primary Accent Gradient: Indigo to Violet -->
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#4F46E5" />
+    </linearGradient>
+
+    <!-- Velocity Light Streak -->
+    <linearGradient id="streakGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="100%" stop-color="#818CF8" />
+    </linearGradient>
+
+    <!-- Emerald Focus Pulse -->
+    <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#10B981" />
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#4F46E5" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Container with subtle border -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <rect width="510" height="510" x="1" y="1" rx="111" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
+
+  <!-- Abstract Interlocking 'T' & Task Layer Geometry -->
+  <g filter="url(#glow)">
+    <!-- Top Horizontal Crossbar with bevel/chamfer -->
+    <path
+      d="M136 152 C136 143.163 143.163 136 152 136 H360 C368.837 136 376 143.163 376 152 V196 C376 204.837 368.837 212 360 212 H152 C143.163 212 136 204.837 136 196 Z"
+      fill="url(#brandGrad)"
+    />
+
+    <!-- Vertical Stem -->
+    <path
+      d="M228 212 H284 C292.837 212 300 219.163 300 228 V364 C300 372.837 292.837 380 284 380 H228 C219.163 380 212 372.837 212 364 V228 C212 219.163 219.163 212 228 212 Z"
+      fill="#FFFFFF"
+    />
+
+    <!-- Forward Dynamic Task Velocity Wing (Right Chevron Accent) -->
+    <path
+      d="M320 252 L368 296 L320 340"
+      fill="none"
+      stroke="url(#streakGrad)"
+      stroke-width="24"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+
+  <!-- Live Pulse Dot (Top Right AI / Status Indicator) -->
+  <circle cx="388" cy="124" r="22" fill="url(#pulseGrad)" />
+  <circle cx="388" cy="124" r="14" fill="#FFFFFF" opacity="0.85" />
+</svg>

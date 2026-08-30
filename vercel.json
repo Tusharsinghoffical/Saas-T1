@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/v1/ai/weekly-summary",
+      "schedule": "0 8 * * 1"
+    }
+  ]
+}

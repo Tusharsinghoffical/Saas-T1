@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.github
+*.log
+.env*.local
+.vscode
+.idea
+Dockerfile
+docker-compose.yml
+render.yaml
