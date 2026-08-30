@@ -45,7 +45,7 @@ jobs:
 
       - name: Deploy to Vercel (Production)
         uses: amondnet/vercel-action@v25
-        if: success()
+        if: ${{ success() && secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
