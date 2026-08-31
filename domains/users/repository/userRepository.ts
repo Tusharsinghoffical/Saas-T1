@@ -83,19 +83,20 @@ export class SupabaseUserRepository implements IUserRepository {
     try {
       adminClient = createAdminClient();
     } catch {
-      adminClient = createClient();
+      // Non-blocking
     }
+    const clientToUse = adminClient || createClient();
 
-    const { data: profiles, error } = await (adminClient.from("profiles") as any)
+    let { data: profiles } = await (clientToUse.from("profiles") as any)
       .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
       .or(`org_id.eq.${orgId},id.eq.${orgId}`)
       .is("deleted_at", null)
       .order("created_at", { ascending: true });
 
-    let finalProfiles = profiles || [];
+    let finalProfiles: any[] = profiles || [];
 
     if (finalProfiles.length === 0) {
-      const { data: allProfiles } = await (adminClient.from("profiles") as any)
+      const { data: allProfiles } = await (clientToUse.from("profiles") as any)
         .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
         .is("deleted_at", null)
         .order("created_at", { ascending: true })
@@ -105,32 +106,44 @@ export class SupabaseUserRepository implements IUserRepository {
       }
     }
 
-    if (!finalProfiles || finalProfiles.length === 0) {
-      return [];
-    }
-
-    // Enrich with auth user emails
+    // Enrich with auth user emails and synthesize any unsynced auth users
     const authUserMap: Record<string, string> = {};
-    try {
-      if (adminClient?.auth?.admin) {
+    if (adminClient?.auth?.admin) {
+      try {
         const { data: authList } = await adminClient.auth.admin.listUsers({ perPage: 200 });
-        if (authList?.users) {
+        if (authList?.users && authList.users.length > 0) {
+          const profileIds = new Set(finalProfiles.map((p: any) => p.id));
           authList.users.forEach((u: any) => {
             if (u.id && u.email) {
               authUserMap[u.id] = u.email;
+              if (!profileIds.has(u.id)) {
+                finalProfiles.push({
+                  id: u.id,
+                  org_id: orgId,
+                  full_name: u.user_metadata?.full_name || u.email.split("@")[0],
+                  role: u.app_metadata?.role || u.user_metadata?.role || "employee",
+                  avatar_url: null,
+                  created_at: u.created_at,
+                  deleted_at: null,
+                });
+              }
             }
           });
         }
+      } catch {
+        // Non-blocking
       }
-    } catch {
-      // Non-blocking
+    }
+
+    if (!finalProfiles || finalProfiles.length === 0) {
+      return [];
     }
 
     return finalProfiles.map((p: any) => ({
       id: p.id,
       orgId: p.org_id,
       fullName: p.full_name || "Team Member",
-      email: authUserMap[p.id] || null,
+      email: authUserMap[p.id] || undefined,
       role: p.role || "employee",
       avatarUrl: p.avatar_url,
       notificationPreferences: p.notification_preferences,

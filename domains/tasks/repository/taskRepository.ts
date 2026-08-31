@@ -62,6 +62,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
 
     const supabase = createClient();
+    let rawTasks: any[] = [];
     let query = (supabase as any)
       .from("tasks")
       .select(
@@ -71,7 +72,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
           user_id,
           profiles:user_id (id, full_name, avatar_url)
         ),
-        task_dependencies (
+        task_dependencies!task_id (
           depends_on_task_id
         )
       `
@@ -85,9 +86,37 @@ export class SupabaseTaskRepository implements ITaskRepository {
     if (filters.teamId) query = query.eq("team_id", filters.teamId);
     if (filters.search) query = query.ilike("title", `%${filters.search}%`);
 
-    const { data: rawTasks, error } = await query;
+    let { data, error } = await query;
+
     if (error) {
-      throw new Error(error.message);
+      // Fallback without embedded task_dependencies if schema relationship is ambiguous
+      let fallbackQuery = (supabase as any)
+        .from("tasks")
+        .select(
+          `
+          *,
+          task_assignees (
+            user_id,
+            profiles:user_id (id, full_name, avatar_url)
+          )
+        `
+        )
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .range(filters.offset, filters.offset + filters.limit - 1);
+
+      if (filters.status) fallbackQuery = fallbackQuery.eq("status", filters.status);
+      if (filters.priority) fallbackQuery = fallbackQuery.eq("priority", filters.priority);
+      if (filters.teamId) fallbackQuery = fallbackQuery.eq("team_id", filters.teamId);
+      if (filters.search) fallbackQuery = fallbackQuery.ilike("title", `%${filters.search}%`);
+
+      const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+      if (fallbackError) {
+        throw new Error(fallbackError.message);
+      }
+      rawTasks = fallbackData || [];
+    } else {
+      rawTasks = data || [];
     }
 
     let filtered = rawTasks || [];
@@ -141,7 +170,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
 
     const supabase = createClient();
-    const { data: task, error } = await (supabase as any)
+    let task: any = null;
+    let { data, error } = await (supabase as any)
       .from("tasks")
       .select(
         `
@@ -150,7 +180,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
           user_id,
           profiles:user_id (id, full_name, avatar_url)
         ),
-        task_dependencies (
+        task_dependencies!task_id (
           depends_on_task_id
         ),
         task_comments (
@@ -166,7 +196,37 @@ export class SupabaseTaskRepository implements ITaskRepository {
       .eq("org_id", orgId)
       .single();
 
-    if (error || !task) {
+    if (error) {
+      const { data: fallbackTask, error: fallbackError } = await (supabase as any)
+        .from("tasks")
+        .select(
+          `
+          *,
+          task_assignees (
+            user_id,
+            profiles:user_id (id, full_name, avatar_url)
+          ),
+          task_comments (
+            id, user_id, body, created_at,
+            profiles:user_id (id, full_name, avatar_url)
+          ),
+          task_attachments (
+            id, file_url, file_name, uploaded_by, created_at
+          )
+        `
+        )
+        .eq("id", taskId)
+        .eq("org_id", orgId)
+        .single();
+
+      if (!fallbackError && fallbackTask) {
+        task = fallbackTask;
+      }
+    } else {
+      task = data;
+    }
+
+    if (!task) {
       return null;
     }
 

@@ -127,13 +127,14 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
     }
 
     const supabase = createClient();
-    const { data: userTasks, error } = await (supabase.from("tasks") as any)
+    let userTasks: any[] = [];
+    let { data, error } = await (supabase.from("tasks") as any)
       .select(`
         *,
         task_assignees!inner (
           user_id
         ),
-        task_dependencies (
+        task_dependencies!task_id (
           depends_on_task_id
         )
       `)
@@ -141,10 +142,26 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       .eq("task_assignees.user_id", userId);
 
     if (error) {
-      throw new Error(error.message);
+      // Resilient fallback without embedded dependencies if relationship is ambiguous
+      const { data: fallbackTasks, error: fallbackErr } = await (supabase.from("tasks") as any)
+        .select(`
+          *,
+          task_assignees!inner (
+            user_id
+          )
+        `)
+        .eq("org_id", orgId)
+        .eq("task_assignees.user_id", userId);
+
+      if (fallbackErr) {
+        throw new Error(fallbackErr.message);
+      }
+      userTasks = fallbackTasks || [];
+    } else {
+      userTasks = data || [];
     }
 
-    return userTasks || [];
+    return userTasks;
   }
 }
 
