@@ -177,6 +177,7 @@ TASQ-ONE is tailored specifically for Indian startups, MSMEs, and high-velocity 
 For enterprise inquiries, pilot onboarding, bug reports, or feature requests:
 
 - **📧 Engineering Support Desk:** [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com) *(Response within 2 business hours)*
+- **👨‍💻 Lead Developer & Architect:** [Tushar Singh](https://codewithmrsingh.me/) (`codewithmrsingh.me`)
 - **🐛 Issue Tracker:** [https://github.com/Tusharsinghoffical/Saas-T1/issues](https://github.com/Tusharsinghoffical/Saas-T1/issues)
 - **🏢 Headquarters:** Delhi / Pune, India
 
@@ -189,6 +190,6 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 ---
 
 <div align="center">
-Made with ❤️ for Indian Startups & High-Velocity Growing Teams Worldwide.<br/>
-<b>TASQ-ONE Platform Inc.</b> • <a href="mailto:tasqoneworkos@gmail.com">tasqoneworkos@gmail.com</a>
+Crafted with ❤️ by <a href="https://codewithmrsingh.me/"><b>Tushar Singh</b></a> for High-Velocity Startups & Growing Teams Worldwide.<br/>
+<b>TASQ-ONE Platform Inc.</b> • <a href="mailto:tasqoneworkos@gmail.com">tasqoneworkos@gmail.com</a> • <a href="https://codewithmrsingh.me/">codewithmrsingh.me</a>
 </div>

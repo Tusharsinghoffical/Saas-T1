@@ -14,6 +14,7 @@ import {
   Users,
   Building,
   Heart,
+  ExternalLink,
 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 
@@ -279,6 +280,17 @@ export function MarketingFooter() {
                   </Link>
                 </li>
                 <li>
+                  <a
+                    href="https://codewithmrsingh.me/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors flex items-center gap-1.5 text-indigo-400 font-semibold"
+                  >
+                    <span>Built by Tushar Singh</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </li>
+                <li>
                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[10px]">
                     📍 Delhi / Pune HQ • India
                   </span>
@@ -292,7 +304,19 @@ export function MarketingFooter() {
             <div className="flex flex-wrap items-center gap-3 text-slate-400">
               <span>© 2026 TASQ-ONE Platform Inc. All rights reserved.</span>
               <span className="hidden sm:inline text-slate-600">•</span>
-              <span>🇮🇳 Made with ❤️ for Indian Startups &amp; Growing Businesses</span>
+              <span>
+                Crafted with ❤️ by{" "}
+                <a
+                  href="https://codewithmrsingh.me/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-400 font-bold hover:underline"
+                >
+                  Tushar Singh
+                </a>
+              </span>
+              <span className="hidden sm:inline text-slate-600">•</span>
+              <span>🇮🇳 Made for High-Velocity Startups &amp; Growing Teams</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-4 text-slate-300">
@@ -676,6 +700,17 @@ export function MarketingFooter() {
               </p>
               <div className="pt-2 text-[11px] text-slate-500 font-mono">
                 📍 Engineering Headquarters: Delhi / Pune, India
+              </div>
+              <div className="pt-2 text-[11px] text-slate-600">
+                Founder &amp; Lead Architect:{" "}
+                <a
+                  href="https://codewithmrsingh.me/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 font-bold underline hover:text-indigo-800"
+                >
+                  Tushar Singh (codewithmrsingh.me)
+                </a>
               </div>
             </div>
           )}
