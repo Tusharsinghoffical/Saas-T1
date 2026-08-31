@@ -165,8 +165,8 @@ export function MarketingFooter() {
               </div>
               <ul className="space-y-2.5 text-[11px]">
                 <li>
-                  <Link href="/pricing" className="hover:text-white transition-colors">
-                    Pricing &amp; Free Pilot
+                  <Link href="/about" className="hover:text-white transition-colors">
+                    About TASQ-ONE
                   </Link>
                 </li>
                 <li>

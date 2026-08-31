@@ -19,14 +19,15 @@ import {
   Download,
   Menu,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { Modal } from "@/components/ui/modal";
 
 export function MarketingNav() {
   const pathname = usePathname();
-  const [openDropdown, setOpenDropdown] = useState<"products" | "solutions" | "resources" | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<"products" | "solutions" | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showPwaModal, setShowPwaModal] = useState(false);
+  const [isSideWidgetOpen, setIsSideWidgetOpen] = useState(false);
   const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export function MarketingNav() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-xs font-bold uppercase tracking-wider text-slate-700">
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-bold uppercase tracking-wider text-slate-700">
             {/* Home Route Link */}
             <Link
               href="/"
@@ -206,16 +207,6 @@ export function MarketingNav() {
               )}
             </div>
 
-            {/* Pricing Route Link */}
-            <Link
-              href="/pricing"
-              className={`py-2 transition-colors ${
-                pathname === "/pricing" ? "text-slate-950 font-extrabold" : "hover:text-slate-950"
-              }`}
-            >
-              Pricing
-            </Link>
-
             {/* About Route Link */}
             <Link
               href="/about"
@@ -239,17 +230,6 @@ export function MarketingNav() {
 
           {/* Action CTAs */}
           <div className="hidden sm:flex items-center gap-3 shrink-0">
-            {/* Download Software / PWA Button */}
-            <button
-              type="button"
-              onClick={() => setShowPwaModal(true)}
-              className="px-3 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Download Desktop & Mobile App"
-            >
-              <Download className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Download App</span>
-            </button>
-
             {/* Staff Login */}
             <Link
               href="/login"
@@ -305,13 +285,6 @@ export function MarketingNav() {
                 Tailored Solutions
               </Link>
               <Link
-                href="/pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block p-2 text-sm font-bold text-slate-800 rounded-lg hover:bg-slate-50"
-              >
-                Pricing &amp; Free Pilot
-              </Link>
-              <Link
                 href="/about"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block p-2 text-sm font-bold text-slate-800 rounded-lg hover:bg-slate-50"
@@ -325,17 +298,6 @@ export function MarketingNav() {
               >
                 Contact Desk &amp; Queries
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setShowPwaModal(true);
-                }}
-                className="w-full text-left p-2 text-sm font-bold text-indigo-700 rounded-lg hover:bg-indigo-50 flex items-center gap-2"
-              >
-                <Download className="w-4 h-4 text-indigo-600" />
-                <span>Download Desktop &amp; Mobile App</span>
-              </button>
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
@@ -358,46 +320,69 @@ export function MarketingNav() {
         )}
       </header>
 
-      {/* PWA INSTALL / DOWNLOAD MODAL */}
-      <Modal
-        isOpen={showPwaModal}
-        onClose={() => setShowPwaModal(false)}
-        title="Download & Install TASQ-ONE Software"
-        description="Install the desktop or mobile app for offline deliverable access and instantaneous launch."
-        maxWidth="md"
-      >
-        <div className="space-y-3.5 text-xs text-slate-700 pt-2">
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="font-bold text-slate-900 flex items-center gap-2">
-              <Monitor className="w-4 h-4 text-indigo-600" />
-              <span>Desktop Application (Chrome, Edge, Brave, Arc)</span>
+      {/* ======================================================================== */}
+      {/* SLIDE-OUT COLLAPSIBLE APP DOWNLOAD WIDGET (SIDEBAR WITH ARROW < / >)    */}
+      {/* ======================================================================== */}
+      {!isSideWidgetOpen ? (
+        <button
+          type="button"
+          onClick={() => setIsSideWidgetOpen(true)}
+          className="fixed top-1/2 -translate-y-1/2 right-0 z-50 py-2.5 px-2 bg-slate-900/90 hover:bg-slate-950 text-white rounded-l-2xl border-l border-y border-slate-700 shadow-2xl backdrop-blur-md flex items-center gap-1.5 text-xs font-bold transition-all hover:-translate-x-1 cursor-pointer group"
+          title="Download & Install App"
+        >
+          <ChevronLeft className="w-4 h-4 text-indigo-400 group-hover:-translate-x-0.5 transition-transform" />
+          <Download className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="hidden sm:inline text-[11px] font-mono pr-1 text-slate-200">Download App</span>
+        </button>
+      ) : (
+        <div className="fixed top-1/2 -translate-y-1/2 right-4 z-50 w-80 max-w-[calc(100vw-2rem)] p-4 rounded-3xl bg-slate-900/95 text-white border border-slate-700 shadow-2xl backdrop-blur-xl space-y-3 animate-in slide-in-from-right duration-200">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div className="flex items-center gap-2 font-bold text-xs">
+              <Download className="w-4 h-4 text-indigo-400" />
+              <span>Install TASQ-ONE App</span>
             </div>
-            <p className="text-slate-600">
-              Click the install icon in your browser address bar or select{" "}
-              <code className="bg-slate-200 px-1 py-0.5 rounded text-slate-800">Settings → Install TASQ-ONE</code> for a standalone windowed desktop experience.
-            </p>
+            <button
+              type="button"
+              onClick={() => setIsSideWidgetOpen(false)}
+              className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center gap-0.5 text-xs font-bold"
+              title="Hide / Close"
+            >
+              <span>Hide</span>
+              <ChevronRight className="w-4 h-4 text-indigo-400" />
+            </button>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="font-bold text-slate-900 flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-emerald-600" />
-              <span>Mobile Application (iOS Safari &amp; Android Chrome)</span>
+          <div className="space-y-2.5 text-xs text-slate-300">
+            <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1.5">
+              <div className="font-bold text-white flex items-center gap-2">
+                <Monitor className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Desktop (Chrome, Edge, Brave)</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Click the install icon in your address bar or select <code className="bg-slate-950 px-1 py-0.5 rounded text-slate-300">Settings → Install TASQ-ONE</code>.
+              </p>
             </div>
-            <p className="text-slate-600">
-              Tap the Share / Menu button{" "}
-              <code className="bg-slate-200 px-1 py-0.5 rounded text-slate-800">Share → Add to Home Screen</code> to install TASQ-ONE directly on your mobile device.
-            </p>
+
+            <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1.5">
+              <div className="font-bold text-white flex items-center gap-2">
+                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Mobile (iOS Safari &amp; Android)</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Tap the browser Share menu <code className="bg-slate-950 px-1 py-0.5 rounded text-slate-300">Share → Add to Home Screen</code> for instant launch.
+              </p>
+            </div>
           </div>
 
           <button
             type="button"
-            onClick={() => setShowPwaModal(false)}
-            className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-center text-xs transition-colors cursor-pointer shadow-sm"
+            onClick={() => setIsSideWidgetOpen(false)}
+            className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs text-center transition-colors cursor-pointer shadow-md"
           >
             Got It
           </button>
         </div>
-      </Modal>
+      )}
     </>
   );
 }
