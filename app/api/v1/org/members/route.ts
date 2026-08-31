@@ -16,3 +16,23 @@ export async function GET(request: NextRequest) {
     return handleAuthError(error);
   }
 }
+
+/**
+ * POST /api/v1/org/members
+ * Creates or invites a new team member to the current organization.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const result = await userController.createMember({
+      fullName: body.fullName || body.full_name,
+      email: body.email,
+      password: body.password,
+      role: body.role || "employee",
+    });
+
+    return NextResponse.json({ success: true, ...result }, { status: 201 });
+  } catch (error) {
+    return handleAuthError(error);
+  }
+}

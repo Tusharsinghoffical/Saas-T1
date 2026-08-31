@@ -5,10 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  CheckSquare,
+  Users,
   Activity,
   Settings,
-  CreditCard,
   LogOut,
   Sparkles,
 } from "lucide-react";
@@ -20,8 +19,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navItems = [
     { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    { name: "Team & Access", href: "/admin/team", icon: Users },
     { name: "Activity Log", href: "/admin/activity", icon: Activity },
-    { name: "Pricing & Plans", href: "/admin/pricing", icon: CreditCard },
     { name: "Settings", href: "/admin/settings", icon: Settings },
   ];
 
