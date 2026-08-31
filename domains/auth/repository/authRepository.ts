@@ -11,7 +11,13 @@ export interface IAuthRepository {
 export class SupabaseAuthRepository implements IAuthRepository {
   private hasSupabase(): boolean {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    return Boolean(url) && !url.includes("your-project-ref");
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    return (
+      Boolean(url) &&
+      !url.includes("your-project-ref") &&
+      Boolean(anonKey) &&
+      !anonKey.includes("dummy")
+    );
   }
 
   async signupAdmin(credentials: SignupCredentials): Promise<{ orgId: string; userId: string }> {
@@ -22,91 +28,106 @@ export class SupabaseAuthRepository implements IAuthRepository {
       };
     }
 
-    const supabase = createClient();
-    let adminClient: any = null;
     try {
-      adminClient = createAdminClient();
-    } catch {
-      // Fallback if service role key not available
-    }
-
-    let userId: string;
-
-    if (adminClient) {
-      const { data: adminAuthData, error: adminAuthError } = await adminClient.auth.admin.createUser({
-        email: credentials.email,
-        password: credentials.password || "",
-        email_confirm: true,
-        user_metadata: {
-          full_name: credentials.fullName,
-        },
-      });
-
-      if (adminAuthError) {
-        const errMsg = adminAuthError.message.toLowerCase();
-        if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
-          throw new Error("An account with this email address already exists. Please log in instead.");
-        }
-        throw new Error(adminAuthError.message || "Failed to create authentication user.");
+      const supabase = createClient();
+      let adminClient: any = null;
+      try {
+        adminClient = createAdminClient();
+      } catch {
+        // Fallback if service role key not available or invalid
       }
 
-      if (!adminAuthData?.user) {
-        throw new Error("Failed to create authentication user.");
-      }
+      let userId: string;
 
-      userId = adminAuthData.user.id;
-    } else {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: credentials.email,
-        password: credentials.password || "",
-        options: {
-          data: {
+      if (adminClient) {
+        const { data: adminAuthData, error: adminAuthError } = await adminClient.auth.admin.createUser({
+          email: credentials.email,
+          password: credentials.password || "",
+          email_confirm: true,
+          user_metadata: {
             full_name: credentials.fullName,
           },
-        },
-      });
+        });
 
-      if (authError || !authData.user) {
-        throw new Error(authError?.message || "Failed to create authentication user.");
+        if (adminAuthError) {
+          const errMsg = adminAuthError.message.toLowerCase();
+          if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
+            throw new Error("An account with this email address already exists. Please log in instead.");
+          }
+          throw new Error(adminAuthError.message || "Failed to create authentication user.");
+        }
+
+        if (!adminAuthData?.user) {
+          throw new Error("Failed to create authentication user.");
+        }
+
+        userId = adminAuthData.user.id;
+      } else {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: credentials.email,
+          password: credentials.password || "",
+          options: {
+            data: {
+              full_name: credentials.fullName,
+            },
+          },
+        });
+
+        if (authError || !authData.user) {
+          throw new Error(authError?.message || "Failed to create authentication user.");
+        }
+
+        if (authData.user.identities && authData.user.identities.length === 0) {
+          throw new Error("An account with this email address already exists. Please log in instead.");
+        }
+
+        userId = authData.user.id;
       }
 
-      if (authData.user.identities && authData.user.identities.length === 0) {
-        throw new Error("An account with this email address already exists. Please log in instead.");
+      // Initialize organization workspace via atomic RPC
+      const executorClient = adminClient || supabase;
+      const { data: rpcData, error: rpcError } = await (executorClient as any).rpc(
+        "signup_organization_admin",
+        {
+          p_org_name: credentials.orgName,
+          p_user_id: userId,
+          p_full_name: credentials.fullName,
+          p_timezone: credentials.timezone || "Asia/Kolkata",
+        }
+      );
+
+      if (rpcError) {
+        throw new Error(rpcError.message || "Failed to initialize organization workspace.");
       }
 
-      userId = authData.user.id;
-    }
-
-    // Initialize organization workspace via atomic RPC
-    const executorClient = adminClient || supabase;
-    const { data: rpcData, error: rpcError } = await (executorClient as any).rpc(
-      "signup_organization_admin",
-      {
-        p_org_name: credentials.orgName,
-        p_user_id: userId,
-        p_full_name: credentials.fullName,
-        p_timezone: credentials.timezone || "Asia/Kolkata",
+      // Sign in the user session so cookies are established on the client
+      try {
+        await supabase.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password || "",
+        });
+      } catch {
+        // Non-blocking if session is established on client
       }
-    );
 
-    if (rpcError) {
-      throw new Error(rpcError.message || "Failed to initialize organization workspace.");
+      return {
+        orgId: (rpcData as any)?.org_id || userId,
+        userId,
+      };
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (
+        msg.includes("fetch failed") ||
+        msg.includes("Failed to fetch") ||
+        msg.includes("ECONNREFUSED") ||
+        msg.includes("ENOTFOUND")
+      ) {
+        throw new Error(
+          "Database connection error: Could not reach Supabase. Please verify that NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY are set correctly on your Render Environment dashboard."
+        );
+      }
+      throw err;
     }
-
-    // Sign in the user session so cookies are established on the client
-    try {
-      await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password || "",
-      });
-    } catch {
-      // Non-blocking if session is established on client
-    }
-
-    return {
-      orgId: (rpcData as any)?.org_id || userId,
-      userId,
-    };
   }
 
   async loginPassword(credentials: LoginCredentials): Promise<{ user: any; role: "admin" | "manager" | "employee" }> {
@@ -118,53 +139,68 @@ export class SupabaseAuthRepository implements IAuthRepository {
       };
     }
 
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password || "",
-    });
-
-    if (error || !data.user) {
-      throw new Error(error?.message || "Invalid credentials.");
-    }
-
-    // Query user's real profile directly from database to know exact role and orgId
-    let role: "admin" | "manager" | "employee" = "employee";
-    let orgId: string | null = null;
-
     try {
-      const adminClient = createAdminClient();
-      const { data: profile } = await (adminClient as any)
-        .from("profiles")
-        .select("role, org_id")
-        .eq("id", data.user.id)
-        .maybeSingle();
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password || "",
+      });
 
-      if (profile?.role) {
-        role = profile.role as "admin" | "manager" | "employee";
+      if (error || !data.user) {
+        throw new Error(error?.message || "Invalid credentials.");
       }
-      if (profile?.org_id) {
-        orgId = profile.org_id;
-      }
-    } catch {
-      role = (
-        (data.user.app_metadata?.role as string) ||
-        (data.user.user_metadata?.role as string) ||
-        "employee"
-      ) as "admin" | "manager" | "employee";
-    }
 
-    return {
-      user: {
-        ...data.user,
-        app_metadata: {
-          ...data.user.app_metadata,
-          role,
-          org_id: orgId || data.user.app_metadata?.org_id,
+      // Query user's real profile directly from database to know exact role and orgId
+      let role: "admin" | "manager" | "employee" = "employee";
+      let orgId: string | null = null;
+
+      try {
+        const adminClient = createAdminClient();
+        const { data: profile } = await (adminClient as any)
+          .from("profiles")
+          .select("role, org_id")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (profile?.role) {
+          role = profile.role as "admin" | "manager" | "employee";
+        }
+        if (profile?.org_id) {
+          orgId = profile.org_id;
+        }
+      } catch {
+        role = (
+          (data.user.app_metadata?.role as string) ||
+          (data.user.user_metadata?.role as string) ||
+          "employee"
+        ) as "admin" | "manager" | "employee";
+      }
+
+      return {
+        user: {
+          ...data.user,
+          app_metadata: {
+            ...(data.user.app_metadata || {}),
+            role,
+            org_id: orgId || data.user.app_metadata?.org_id,
+          },
         },
-      },
-      role,
-    };
+        role,
+      };
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (
+        msg.includes("fetch failed") ||
+        msg.includes("Failed to fetch") ||
+        msg.includes("ECONNREFUSED") ||
+        msg.includes("ENOTFOUND")
+      ) {
+        throw new Error(
+          "Database connection error: Could not reach Supabase. Please verify your Supabase project status on Render."
+        );
+      }
+      throw err;
+    }
   }
 
   async loginMagicLink(email: string, redirectTo: string): Promise<void> {
