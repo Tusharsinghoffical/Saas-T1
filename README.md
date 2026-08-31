@@ -151,7 +151,7 @@ TASQ-ONE is tailored specifically for Indian startups, MSMEs, and high-velocity 
 - **Currency & Numerals:** 100% localized in Indian Rupees (`₹` INR) with Indian comma numbering formatting (`en-IN`).
 - **Data Privacy:** Designed in compliance with India's **Digital Personal Data Protection (DPDP) Act 2023** and GDPR principles.
 - **Zero AI Model Training:** Customer proprietary workspace deliverables and task notes are never utilized to train public LLM models.
-- **Enterprise Headquarters:** Designed with engineering operations centered in Bengaluru & Mumbai.
+- **Enterprise Headquarters:** Designed with engineering operations centered in Delhi / Pune & Mumbai.
 
 ---
 
@@ -178,7 +178,7 @@ For enterprise inquiries, pilot onboarding, bug reports, or feature requests:
 
 - **📧 Engineering Support Desk:** [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com) *(Response within 2 business hours)*
 - **🐛 Issue Tracker:** [https://github.com/Tusharsinghoffical/Saas-T1/issues](https://github.com/Tusharsinghoffical/Saas-T1/issues)
-- **🏢 Headquarters:** Bengaluru, Karnataka, India
+- **🏢 Headquarters:** Delhi / Pune, India
 
 ---
 

@@ -280,7 +280,7 @@ export function MarketingFooter() {
                 </li>
                 <li>
                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[10px]">
-                    📍 Bengaluru HQ • India
+                    📍 Delhi / Pune HQ • India
                   </span>
                 </li>
               </ul>
@@ -675,7 +675,7 @@ export function MarketingFooter() {
                 By combining Groq Llama 3.3 AI task decomposition with distraction-free morning checklists and automated async alerts, we help founders and managers reclaim 10+ hours every week.
               </p>
               <div className="pt-2 text-[11px] text-slate-500 font-mono">
-                📍 Engineering Headquarters: Bengaluru, Karnataka, India
+                📍 Engineering Headquarters: Delhi / Pune, India
               </div>
             </div>
           )}

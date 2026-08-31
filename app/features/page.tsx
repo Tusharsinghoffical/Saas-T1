@@ -37,7 +37,7 @@ export default function FeaturesPage() {
     key: "TSQ-128",
     title: "Launch UPI Auto-Pay Integration for Recurring B2B Subscriptions",
     priority: "urgent",
-    department: "Engineering (Bengaluru HQ)",
+    department: "Engineering (Delhi / Pune HQ)",
     assignee: "Rohan Verma (Tech Lead)",
     criteria: [
       "Integrate UPI Intent flow & QR code tokenization via Razorpay SDK",
