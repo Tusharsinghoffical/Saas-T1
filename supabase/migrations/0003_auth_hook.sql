@@ -31,13 +31,19 @@ begin
   -- Inject claims if user profile exists
   if user_org_id is not null then
     claims := jsonb_set(claims, '{org_id}', to_jsonb(user_org_id::text));
+    claims := jsonb_set(claims, '{app_metadata,org_id}', to_jsonb(user_org_id::text));
   end if;
 
   if user_role is not null then
-    claims := jsonb_set(claims, '{role}', to_jsonb(user_role));
+    claims := jsonb_set(claims, '{user_role}', to_jsonb(user_role));
+    claims := jsonb_set(claims, '{app_metadata,role}', to_jsonb(user_role));
   else
-    claims := jsonb_set(claims, '{role}', to_jsonb('employee'::text));
+    claims := jsonb_set(claims, '{user_role}', to_jsonb('employee'::text));
+    claims := jsonb_set(claims, '{app_metadata,role}', to_jsonb('employee'::text));
   end if;
+
+  -- CRITICAL: Top-level Postgres DB role MUST ALWAYS be 'authenticated' (NOT 'admin')
+  claims := jsonb_set(claims, '{role}', to_jsonb('authenticated'::text));
 
   -- Return updated event with custom claims
   event := jsonb_set(event, '{claims}', claims);
