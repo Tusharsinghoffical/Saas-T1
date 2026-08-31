@@ -523,12 +523,15 @@ begin
     raise exception 'User is already assigned to a profile.';
   end if;
 
-  insert into public.organizations (name, timezone, created_by)
-  values (p_org_name, 'Asia/Kolkata', p_admin_user_id)
+  insert into public.organizations (name, timezone)
+  values (p_org_name, 'Asia/Kolkata')
   returning id into v_org_id;
 
   insert into public.profiles (id, org_id, full_name, role)
-  values (p_admin_user_id, v_org_id, p_admin_full_name, 'admin');
+  values (p_admin_user_id, v_org_id, p_admin_full_name, 'admin')
+  on conflict (id) do update set org_id = v_org_id, role = 'admin', full_name = p_admin_full_name;
+
+  update public.organizations set created_by = p_admin_user_id where id = v_org_id;
 
   return query
   select v_org_id, p_org_name, p_admin_user_id;

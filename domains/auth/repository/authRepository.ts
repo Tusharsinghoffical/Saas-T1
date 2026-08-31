@@ -112,49 +112,60 @@ export class SupabaseAuthRepository implements IAuthRepository {
       const executorClient = adminClient || supabase;
       let orgId: string = userId;
 
-      // Attempt 1: Try atomic RPC if available
+      // Attempt 1: Direct Table Insert with correct FK order
       try {
-        const { data: rpcData, error: rpcError } = await (executorClient as any).rpc(
-          "signup_organization_admin",
-          {
-            p_org_name: credentials.orgName,
-            p_user_id: userId,
-            p_full_name: credentials.fullName,
-            p_timezone: credentials.timezone || "Asia/Kolkata",
-          }
-        );
+        const { data: orgData, error: orgErr } = await (executorClient as any)
+          .from("organizations")
+          .insert({
+            name: credentials.orgName,
+            timezone: credentials.timezone || "Asia/Kolkata",
+          })
+          .select("id")
+          .maybeSingle();
 
-        if (!rpcError && rpcData) {
-          orgId = (rpcData as any)?.org_id || (Array.isArray(rpcData) && rpcData[0]?.org_id) || userId;
-        } else {
-          // Attempt 2: Direct Table Insert Fallback
-          const { data: orgData } = await (executorClient as any)
-            .from("organizations")
-            .insert({
-              name: credentials.orgName,
-              timezone: credentials.timezone || "Asia/Kolkata",
-              created_by: userId,
-            })
-            .select("id")
-            .maybeSingle();
-
-          if (orgData?.id) {
-            orgId = orgData.id;
-          }
-
-          await (executorClient as any)
-            .from("profiles")
-            .upsert({
-              id: userId,
-              org_id: orgId,
-              full_name: credentials.fullName,
-              role: "admin",
-            })
-            .select("id")
-            .maybeSingle();
+        if (orgData?.id) {
+          orgId = orgData.id;
         }
-      } catch {
-        // Safe fallback to userId if tables are in migration
+
+        await (executorClient as any)
+          .from("profiles")
+          .upsert({
+            id: userId,
+            org_id: orgId,
+            full_name: credentials.fullName,
+            role: "admin",
+          })
+          .select("id")
+          .maybeSingle();
+
+        // Update created_by foreign key now that profile exists
+        try {
+          await (executorClient as any)
+            .from("organizations")
+            .update({ created_by: userId })
+            .eq("id", orgId);
+        } catch {
+          // Ignore
+        }
+      } catch (insertErr) {
+        console.error("Direct insert failed, attempting RPC fallback:", insertErr);
+        // Fallback: Try RPC if available
+        try {
+          const { data: rpcData } = await (executorClient as any).rpc(
+            "signup_organization_admin",
+            {
+              p_org_name: credentials.orgName,
+              p_user_id: userId,
+              p_full_name: credentials.fullName,
+              p_timezone: credentials.timezone || "Asia/Kolkata",
+            }
+          );
+          if (rpcData) {
+            orgId = (rpcData as any)?.org_id || (Array.isArray(rpcData) && rpcData[0]?.org_id) || userId;
+          }
+        } catch {
+          // Safe fallback
+        }
       }
 
       // Update auth user app_metadata if adminClient is available
