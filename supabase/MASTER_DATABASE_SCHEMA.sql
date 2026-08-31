@@ -664,8 +664,8 @@ begin
     select id into v_org_id from public.organizations where created_by = new.id limit 1;
     
     if v_org_id is null then
-      insert into public.organizations (name, timezone, created_by)
-      values (v_org_name, 'Asia/Kolkata', new.id)
+      insert into public.organizations (name, timezone)
+      values (v_org_name, 'Asia/Kolkata')
       returning id into v_org_id;
     end if;
   end if;
