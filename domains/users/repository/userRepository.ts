@@ -257,6 +257,11 @@ export class SupabaseUserRepository implements IUserRepository {
         if (errMsg.includes("already registered") || errMsg.includes("already exists")) {
           throw new ValidationError("An account with this email address already exists. Try another email or log in.");
         }
+        if (errMsg.includes("rate limit") || errMsg.includes("rate_limit")) {
+          throw new ValidationError(
+            "Supabase Rate Limit Reached: To create employees without email rate limits, please copy the 'service_role (secret)' key (starts with eyJ...) from Supabase Dashboard -> Settings -> API Keys -> Legacy API Keys and set it as SUPABASE_SERVICE_ROLE_KEY in Render Environment Variables."
+          );
+        }
         if (errMsg.includes("user not allowed") || errMsg.includes("disabled")) {
           throw new ValidationError(
             "Supabase Auth Error: Email signups are disabled in your Supabase project or the Service Role Key on Render is invalid. Please verify SUPABASE_SERVICE_ROLE_KEY in Render Environment Variables and ensure Email provider is enabled in Supabase."
