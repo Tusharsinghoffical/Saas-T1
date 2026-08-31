@@ -59,9 +59,9 @@ Overall Platform Readiness: [█████████████████
    NODE_ENV=production
    PORT=3000
    NEXT_PUBLIC_APP_URL=https://tasq-one.onrender.com
-   NEXT_PUBLIC_SUPABASE_URL=https://lycpumrwivhvtwmeywrr.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5Y3B1bXJ3aXZodnR3bWV5d3JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwOTA2ODQsImV4cCI6MjEwMzY2NjY4NH0.4tdEnU7fBRlGCUvWw_PRC8Yz-05p-Ws17cTScFsOvpw
-   SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5Y3B1bXJ3aXZodnR3bWV5d3JyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODA5MDY4NCwiZXhwIjoyMTAzNjY2Njg0fQ.rfHQm6YiMPNPYgbwyu8l4c05R1Disntq4wpsjYMalLM
+   NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<set-in-render-dashboard>
+   SUPABASE_SERVICE_ROLE_KEY=<set-in-render-dashboard>
    NEXT_PUBLIC_ENABLE_BILLING=false
    ```
 5. Click **"Deploy Web Service"**.
