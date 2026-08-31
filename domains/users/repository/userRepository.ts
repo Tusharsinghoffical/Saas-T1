@@ -201,7 +201,7 @@ export class SupabaseUserRepository implements IUserRepository {
         try {
           const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 500 });
           const existingUser = userList?.users.find(
-            (u) => u.email?.toLowerCase() === email.trim().toLowerCase()
+            (u: any) => u.email?.toLowerCase() === email.trim().toLowerCase()
           );
 
           if (existingUser) {
@@ -225,19 +225,25 @@ export class SupabaseUserRepository implements IUserRepository {
                 id: existingUser.id,
                 orgId,
                 fullName,
-                email,
+                email: existingUser.email || email,
                 role,
                 avatarUrl: null,
-                createdAt: new Date().toISOString(),
+                createdAt: existingUser.created_at || new Date().toISOString(),
                 deletedAt: null,
               },
             };
           }
-        } catch {
-          // Fall through
+        } catch (existingErr) {
+          console.error("Failed to update existing user:", existingErr);
         }
-        throw new ValidationError("A user with this email address already exists. Credentials have been updated.");
       }
+
+      if (errMsg.includes("user not allowed") || errMsg.includes("signup is disabled") || errMsg.includes("not allowed")) {
+        throw new ValidationError(
+          "Supabase Auth Error: Email signups are disabled in your Supabase project. Please go to Supabase Dashboard -> Authentication -> Providers -> Email, and turn ON 'Allow new users to sign up'."
+        );
+      }
+
       throw new ValidationError(authError.message || "Failed to create user credentials.");
     }
 
