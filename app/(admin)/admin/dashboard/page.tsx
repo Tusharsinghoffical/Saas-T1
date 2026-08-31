@@ -352,7 +352,7 @@ export default function AdminDashboardPage() {
                       </div>
                       {(task.due_date || task.dueDate) && (
                         <div className="text-slate-500 text-[11px] mt-0.5">
-                          Due {new Date(task.due_date || task.dueDate).toLocaleDateString()}
+                          Due {new Date((task.due_date || task.dueDate) as string).toLocaleDateString()}
                         </div>
                       )}
                     </div>
