@@ -151,7 +151,14 @@ export default function AdminTeamPage() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `Server error (${res.status})`);
+      }
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || data.message || (typeof data.details === "string" ? data.details : null) || "Failed to add member.");
       }
