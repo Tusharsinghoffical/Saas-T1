@@ -60,6 +60,8 @@ export function KanbanBoard({
     isConnected,
   } = useTaskStore();
 
+  const [membersList, setMembersList] = useState<OrgMember[]>(orgMembers || []);
+
   // Activate Realtime Sync
   useRealtimeTasks(orgId);
 
@@ -69,6 +71,25 @@ export function KanbanBoard({
       setTasks(initialTasks);
     }
   }, [initialTasks, setTasks]);
+
+  // Dynamically load live members from database
+  useEffect(() => {
+    fetch("/api/v1/org/members")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setMembersList(
+            json.data.map((m: any) => ({
+              id: m.id || m.user_id,
+              fullName: m.fullName || m.full_name || m.name || m.email || "Team Member",
+              role: m.role || "employee",
+              avatarUrl: m.avatarUrl || m.avatar_url || null,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<KanbanColumnId | null>(null);
@@ -367,7 +388,7 @@ export function KanbanBoard({
               className="h-8 text-xs py-1"
             >
               <option value="all">All Assignees</option>
-              {orgMembers.map((m) => (
+              {membersList.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.fullName}
                 </option>
@@ -514,7 +535,7 @@ export function KanbanBoard({
           setSelectedDetailTask(null);
         }}
         task={selectedDetailTask}
-        orgMembers={orgMembers}
+        orgMembers={membersList}
         allTasks={tasks}
         onTaskUpdated={handleTaskSaved}
       />
@@ -532,7 +553,7 @@ export function KanbanBoard({
                 status: defaultColumnForNewTask,
               }
         }
-        orgMembers={orgMembers}
+        orgMembers={membersList}
         availableTasks={tasks}
         onSuccess={handleTaskSaved}
       />
