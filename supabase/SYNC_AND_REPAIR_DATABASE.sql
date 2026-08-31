@@ -1,5 +1,5 @@
 -- ==============================================================================
--- TASQ-ONE: MASTER DATABASE SYNC & TRIGGER SCRIPT (REPAIRED FK ORDER)
+-- TASQ-ONE: MASTER DATABASE SYNC & TRIGGER SCRIPT (NON-RECURSIVE RLS)
 -- RUN THIS IN SUPABASE DASHBOARD -> SQL EDITOR -> CLICK "RUN"
 -- ==============================================================================
 
@@ -126,21 +126,77 @@ end;
 $$;
 
 
--- 3. PERMISSIVE POLICIES (Guarantees user profile & organization read access)
+-- 3. PERMISSIVE & NON-RECURSIVE RLS POLICIES FOR PROFILES & ORGANIZATIONS
+drop policy if exists "Users can view active profiles in their org" on public.profiles;
+drop policy if exists "Users can update their own profile" on public.profiles;
+drop policy if exists "Admins can insert profiles in their org" on public.profiles;
+drop policy if exists "Admins can update profiles in their org" on public.profiles;
+drop policy if exists "Admins can delete profiles in their org" on public.profiles;
 drop policy if exists "Users can always read own profile" on public.profiles;
-create policy "Users can always read own profile"
+drop policy if exists "Users can always insert own profile" on public.profiles;
+drop policy if exists "Users can read profiles in their workspace" on public.profiles;
+drop policy if exists "Users can update own profile or admins can update org profiles" on public.profiles;
+drop policy if exists "Admins can insert profiles in their workspace" on public.profiles;
+
+-- Create clean non-recursive policies on profiles
+create policy "Users can read profiles in their workspace"
 on public.profiles for select
 to authenticated
-using (id = auth.uid() or org_id = public.get_user_org_id());
+using (
+  id = auth.uid()
+  or
+  org_id in (
+    select p.org_id from public.profiles p where p.id = auth.uid() and p.deleted_at is null
+  )
+);
 
-drop policy if exists "Users can always insert own profile" on public.profiles;
-create policy "Users can always insert own profile"
+create policy "Users can update own profile or admins can update org profiles"
+on public.profiles for update
+to authenticated
+using (
+  id = auth.uid()
+  or
+  org_id in (
+    select p.org_id from public.profiles p where p.id = auth.uid() and p.role = 'admin' and p.deleted_at is null
+  )
+);
+
+create policy "Admins can insert profiles in their workspace"
 on public.profiles for insert
 to authenticated
-with check (id = auth.uid() or public.is_org_admin());
+with check (
+  id = auth.uid()
+  or
+  org_id in (
+    select p.org_id from public.profiles p where p.id = auth.uid() and p.role = 'admin' and p.deleted_at is null
+  )
+);
 
+-- Policies on organizations
+drop policy if exists "Users can view their own organization" on public.organizations;
+drop policy if exists "Admins can update their own organization" on public.organizations;
 drop policy if exists "Users can always read own organization" on public.organizations;
-create policy "Users can always read own organization"
+drop policy if exists "Users can view their organization" on public.organizations;
+drop policy if exists "Admins can update their organization" on public.organizations;
+
+create policy "Users can view their organization"
 on public.organizations for select
 to authenticated
-using (id = public.get_user_org_id() or created_by = auth.uid());
+using (
+  created_by = auth.uid()
+  or
+  id in (
+    select p.org_id from public.profiles p where p.id = auth.uid() and p.deleted_at is null
+  )
+);
+
+create policy "Admins can update their organization"
+on public.organizations for update
+to authenticated
+using (
+  created_by = auth.uid()
+  or
+  id in (
+    select p.org_id from public.profiles p where p.id = auth.uid() and p.role = 'admin' and p.deleted_at is null
+  )
+);
