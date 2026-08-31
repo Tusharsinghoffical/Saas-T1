@@ -21,11 +21,13 @@ import {
   Lock,
   ChevronDown,
   Sparkles,
+  Radio,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { createClient } from "@/lib/supabase/client";
 
 interface TeamMember {
   id: string;
@@ -39,6 +41,7 @@ interface TeamMember {
 export default function AdminTeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
 
@@ -100,6 +103,43 @@ export default function AdminTeamPage() {
 
   useEffect(() => {
     fetchMembers();
+  }, [fetchMembers]);
+
+  // Realtime Supabase Channel Subscription for Team Profiles
+  useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
+
+    if (!hasSupabase) {
+      setIsConnected(true);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const channel = supabase
+        .channel("realtime:team_profiles")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "profiles",
+          },
+          () => {
+            fetchMembers();
+          }
+        )
+        .subscribe((status) => {
+          setIsConnected(status === "SUBSCRIBED");
+        });
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (e) {
+      console.warn("Realtime profiles connection error:", e);
+    }
   }, [fetchMembers]);
 
   // Filtered members list
@@ -269,11 +309,23 @@ export default function AdminTeamPage() {
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               Team & Role Access
             </h1>
+            {/* Live Realtime Status Pill */}
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition-colors ${
+                isConnected
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+              }`}
+            >
+              <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`} />
+              <span>{isConnected ? "Realtime Database Sync" : "Syncing..."}</span>
+            </span>
+
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
               {members.length} Total Members
             </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Add team members, assign workspace roles (Admin, Manager, Employee), and control access.
           </p>
         </div>
