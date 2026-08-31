@@ -1,62 +1,68 @@
-# 📋 TASQ-ONE — Comprehensive Project Status, Pending Tasks & Production Roadmap
+# 📋 TASQ-ONE — Pending Tasks, Production Checklist & Roadmap
 
-> **Current Version:** v1.0 Core Platform & Landing Page Complete  
-> **Deployment Architecture:** Render (Docker Web Service) + Cloudflare (CDN/R2) + Supabase Cloud (PostgreSQL with RLS) + Groq AI  
+> **Platform:** TASQ-ONE Work OS (Enterprise Multi-Tenant Task Management)  
 > **Repository:** [https://github.com/Tusharsinghoffical/Saas-T1](https://github.com/Tusharsinghoffical/Saas-T1)  
-> **Database Status:** ✅ Supabase Cloud Project `lycpumrwivhvtwmeywrr` Verified & Synced (All 8 Migrations Active)  
-> **Last Updated:** August 30, 2026
+> **Live Production URL:** `https://tasq-one.onrender.com`  
+> **Database:** Supabase Cloud (`lycpumrwivhvtwmeywrr.supabase.co`) — PostgreSQL 15 with Row-Level Security (RLS)  
+> **Support Email:** `tasqoneworkos@gmail.com`  
+> **Last Updated:** August 31, 2026
 
 ---
 
-## 📊 1. Master Progress & Status Dashboard
+## 📊 1. Master Progress Dashboard
 
 ```
-Overall Project Readiness: [██████████████████░░] 90% Production Ready
-├── [100%] Phase 1: Landing Page, Indian Localization & UI Simulator (Complete)
-├── [100%] Phase 2: Security Hardening & PostgreSQL RLS Policies (Complete)
-├── [100%] Phase 3: Dockerization & Multi-Stage Standalone Runner (Complete)
-├── [100%] Phase 4: CI/CD Pipeline with Node 22 & Docker Test (Complete)
-├── [100%] Phase 5: Supabase Cloud Database & Tables Sync (Complete)
-├── [ 50%] Phase 6: Production Secrets on Render (In Progress)
-└── [  0%] Phase 7: Payment Gateway Integration (Deferred / Skipped)
+Overall Production Readiness: [██████████████████░░] 92% COMPLETE
+├── ✅ Phase 1: Core Platform, Landing Page & Simulator (100% Done)
+├── ✅ Phase 2: Security Hardening, Postgres RLS & Privilege Guards (100% Done)
+├── ✅ Phase 3: Auth System, Database Role Routing & UUID Fixes (100% Done)
+├── ✅ Phase 4: Standalone Docker Build & Node 22 CI/CD Pipelines (100% Done)
+├── ✅ Phase 5: Supabase Cloud Database & Tables Sync (100% Done)
+├── ⏳ Phase 6: Cloud Deployment Secrets & Custom JWT Hook (Remaining Steps)
+└── ⏸️ Phase 7: Live Payment Gateway (Deferred / Skipped for Current Launch)
 ```
 
 ---
 
-## 📑 2. Detailed Task Matrix
+## 📑 2. Master Task Matrix (Completed vs. Pending)
 
-| ID | Feature / Component | Category | Current Status | Priority | Remarks / Next Action |
+| ID | Module / Task | Category | Status | Priority | Notes / Description |
 | :--- | :--- | :--- | :---: | :---: | :--- |
-| **T-01** | Landing Page & Header | Frontend | ✅ Complete | Done | Squarespace-inspired clean header, Indian currency (₹ INR), responsive |
-| **T-02** | Live Workspace Simulator | Frontend | ✅ Complete | Done | Kanban Drag & Drop, AI Decomposer, Due Today checklist, Slack digest |
-| **T-03** | ROI Capacity Calculator | Frontend | ✅ Complete | Done | ₹1,200/hr Indian tech baseline savings computation |
-| **T-04** | Enterprise Mega Footer | Frontend | ✅ Complete | Done | Modals: Cookies Manager, Privacy (DPDP 2023), Terms, Security, Contact |
-| **T-05** | Security & RLS Tenant Isolation | Backend/DB | ✅ Complete | Done | Postgres RLS on all 11 tables; zero cross-tenant access possible |
-| **T-06** | Privilege Escalation Patch | Security | ✅ Complete | Done | Self-role modification blocked at DB policy level (`0008_fix`) |
-| **T-07** | Docker Multi-Stage Build | DevOps | ✅ Complete | Done | `node:22-alpine` Next.js 14 Standalone container with health checks |
-| **T-08** | GitHub Actions CI/CD | DevOps | ✅ Complete | Done | Node 22 runner, automated lint, RLS tests, Docker build verification |
-| **T-09** | Supabase Cloud Database Sync | Database | ✅ Complete | Done | All 8 migrations applied on project `lycpumrwivhvtwmeywrr` (Status 200 OK) |
-| **T-10** | Custom JWT Auth Hook | Database | ⏳ Pending Setup | **HIGH** | Enable `custom_access_token_hook` in Supabase Auth Hooks UI |
-| **T-11** | Render Production Secrets | DevOps | ⏳ Pending | **HIGH** | Enter Supabase keys, Groq API key, Upstash Redis keys in Render dashboard |
-| **T-12** | Live End-to-End User Verification | QA | ⏳ Pending | **MEDIUM** | Test live signup, org creation, task drag-and-drop on `onrender.com` |
-| **T-13** | Custom Domain (e.g. `tasqone.com`)| DevOps/DNS | ⏳ Optional | **MEDIUM** | If domain purchased, point CNAME to Render via Cloudflare (Proxied) |
-| **T-14** | WhatsApp Enterprise Gateway | Integrations | ⏳ Optional | **LOW** | Connect Gupshup / MSG91 credentials in `.env` for WhatsApp alerts |
-| **T-15** | Payment Gateway (Razorpay/Stripe) | Billing | ⏸️ **DEFERRED** | **SKIP** | Currently skipped; Free Starter Pilot (₹0) active by default |
+| **P-01** | **Supabase Auth Hook Setup** | Database | ⏳ **PENDING** | 🔥 **HIGH** | Activate `custom_access_token_hook` in Supabase Dashboard for JWT `org_id` & `role` injection. |
+| **P-02** | **Render Production Secrets** | DevOps | ⏳ **PENDING** | 🔥 **HIGH** | Add Supabase, Groq AI, and Redis environment variables in Render Web Service dashboard. |
+| **P-03** | **Live Production Smoke Testing** | QA / Testing | ⏳ **PENDING** | ⚡ **MEDIUM** | Test live signup, login, task drag-and-drop, and AI decomposition on `https://tasq-one.onrender.com`. |
+| **P-04** | **Custom Domain & Cloudflare DNS** | DevOps / DNS | ⏳ **OPTIONAL** | 💡 **LOW** | Optional: Point custom domain (e.g. `tasqone.com`) via Cloudflare CNAME proxy to Render. |
+| **P-05** | **Live Transactional Email (Resend)** | Integrations | ⏳ **OPTIONAL** | 💡 **LOW** | Optional: Connect verified domain API key in Resend for live welcome and digest emails. |
+| **P-06** | **WhatsApp Business Gateway** | Integrations | ⏳ **OPTIONAL** | 💡 **LOW** | Optional: Integrate Gupshup / MSG91 credentials for WhatsApp instant deliverable alerts. |
+| **P-07** | **Live Payment Gateway (Paid Plans)** | Billing | ⏸️ **SKIPPED** | ⏸️ **DEFERRED** | **Currently Skipped** (Operating on ₹0 Free Starter Pilot model). Documented in Section 4. |
+| **D-01** | Landing Page & Interactive Simulator | Frontend | ✅ Complete | Done | Fully localized in Indian Rupees (₹ INR), responsive, dark/light mode. |
+| **D-02** | Smart Role-Based Login & Signup | Auth | ✅ Complete | Done | Real database role resolution (`admin` vs `employee`), UUID validation fixed. |
+| **D-03** | PostgreSQL Row-Level Security (RLS) | Database | ✅ Complete | Done | Tenant isolation verified across all 11 tables (`0001` through `0008`). |
+| **D-04** | Groq Llama 3.3 70B AI Decomposer | AI Engine | ✅ Complete | Done | Sub-second deliverable breakdown, acceptance criteria, effort estimation. |
+| **D-05** | Standalone Docker Multi-Stage Build | DevOps | ✅ Complete | Done | `node:22-alpine` optimized container image with automated health checks. |
+| **D-06** | GitHub Actions CI/CD Pipeline | DevOps | ✅ Complete | Done | Node 22 runners, automated linting, test suite, and container build validation. |
 
 ---
 
-## 3. 🛠️ Step-by-Step Pending Work Breakdown
+## 🛠️ 3. Immediate Actionable Steps (What Needs To Be Done Now)
 
-### Step 3.1: Supabase Custom Access Token Hook (High Priority)
-- [ ] **Action:** Open [https://supabase.com/dashboard/project/lycpumrwivhvtwmeywrr/auth/hooks](https://supabase.com/dashboard/project/lycpumrwivhvtwmeywrr/auth/hooks)
-- [ ] **Details:** Select **Custom Access Token (JWT)** → Choose **Postgres function** → Select `public.custom_access_token_hook(event jsonb)` → Click **Save**.
-- [ ] **Why:** Injects `org_id` and `role` into every user's JWT token so Row-Level Security automatically isolates organization data.
+### Step 3.1: Enable Supabase Custom Access Token Hook (High Priority)
+> 💡 *This injects the tenant `org_id` and user `role` directly into the Supabase JWT session, enabling automatic database Row-Level Security isolation.*
+
+1. Open your Supabase Dashboard: **[https://supabase.com/dashboard/project/lycpumrwivhvtwmeywrr/auth/hooks](https://supabase.com/dashboard/project/lycpumrwivhvtwmeywrr/auth/hooks)**
+2. Under **Custom Access Token (JWT)**:
+   - Click **Add Hook** (or **Edit**).
+   - Hook Type: **Postgres function**.
+   - Function: Select **`public.custom_access_token_hook(event jsonb)`**.
+3. Click **Save**.
 
 ---
 
-### Step 3.2: Production Environment Secrets on Render (High Priority)
-- [ ] **Action:** Go to [dashboard.render.com](https://dashboard.render.com/) → Select your `tasq-one` Web Service → Click **Environment**.
-- [ ] **Add/Verify following variables:**
+### Step 3.2: Verify Render Environment Secrets (High Priority)
+> 💡 *Ensure these exact environment variables are configured in Render dashboard for your live web service.*
+
+1. Go to **[https://dashboard.render.com](https://dashboard.render.com)** → Select your `tasq-one` Web Service → Click **Environment**.
+2. Add / Verify the following production keys:
 
 ```env
 NODE_ENV=production
@@ -65,51 +71,71 @@ NEXT_PUBLIC_APP_URL=https://tasq-one.onrender.com
 NEXT_PUBLIC_SUPABASE_URL=https://lycpumrwivhvtwmeywrr.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5Y3B1bXJ3aXZodnR3bWV5d3JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwOTA2ODQsImV4cCI6MjEwMzY2NjY4NH0.4tdEnU7fBRlGCUvWw_PRC8Yz-05p-Ws17cTScFsOvpw
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5Y3B1bXJ3aXZodnR3bWV5d3JyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4ODA5MDY4NCwiZXhwIjoyMTAzNjY2Njg0fQ.rfHQm6YiMPNPYgbwyu8l4c05R1Disntq4wpsjYMalLM
-GROQ_API_KEY=gsk_your_groq_api_key
-UPSTASH_REDIS_REST_URL=https://your-upstash-redis.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your_upstash_token
-RESEND_API_KEY=re_your_resend_api_key
-CRON_SECRET=tasq_one_production_cron_secret_key_2026
+GROQ_API_KEY=your_groq_api_key_here
+UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+RESEND_API_KEY=your_resend_api_key
+CRON_SECRET=tasq_one_production_cron_secret_2026
 NEXT_PUBLIC_ENABLE_BILLING=false
 ```
 
 ---
 
-### Step 3.3: End-to-End Live QA Testing (Medium Priority)
-- [ ] **Health Endpoint:** Verify `https://tasq-one.onrender.com/api/v1/health` returns `200 OK` (`{"status": "healthy"}`).
-- [ ] **Signup Flow:** Test registering a new admin user on `/signup` and verify organization created in database.
-- [ ] **Task Creation:** Create a new task on `/admin/dashboard` and verify real-time update in Kanban board.
-- [ ] **AI Decomposer:** Test Groq AI prompt breakdown on `/admin/dashboard` or landing page simulator.
-- [ ] **Employee Focus View:** Open `/employee/dashboard` and verify task completion checkboxes.
+### Step 3.3: Production Smoke Test Checklist (Live Verification)
+Once Render completes its automated deployment:
+
+- [ ] **Health Endpoint:** Open `https://tasq-one.onrender.com/api/v1/health`  
+  *Expected response:* `{"status": "healthy", "version": "1.0.0"}`
+- [ ] **Landing Page:** Open `https://tasq-one.onrender.com` — verify all sections, modals, and simulator cards render smoothly.
+- [ ] **Admin Registration:** Visit `/signup` → Create a test organization (e.g. *"Beta Launch Corp"*) → Verify successful redirection to `/onboarding`.
+- [ ] **Task Creation & Drag-and-Drop:** Visit `/admin/dashboard` → Add a new deliverable → Move across `Pending` → `In Progress` → `In Review` → `Completed`.
+- [ ] **Employee Focus View:** Log in as an employee or open `/employee/dashboard` → Check off a task and verify visual completion progress.
 
 ---
 
 ### Step 3.4: Custom Domain & Cloudflare DNS (Optional)
-> 💡 *Note: Render's free URL `https://tasq-one.onrender.com` is 100% active with automatic SSL. This step is only needed when using your own custom domain.*
+> 💡 *Only required if you purchase a custom domain like `tasqone.com`.*
 
-- [ ] Add custom domain (e.g. `tasqone.com`) in Cloudflare.
-- [ ] Point CNAME `@` and `www` to `tasq-one.onrender.com` (🟠 Proxied).
-- [ ] Set SSL/TLS to **Full (Strict)**.
-
----
-
-## 4. 💳 Payment Gateway (Deferred / Skipped for Current Phase)
-
-> 💡 **Phase 2 Status: SKIPPED / DEFERRED**  
-> *Reason: TASQ-ONE operates on the **₹0 Free Starter Pilot** model for launch. Automated billing for SMB Pro (₹999/mo) and Enterprise (₹2,499/mo) will be activated in a subsequent release.*
-
-- [ ] **Razorpay Subscriptions (India):**
-  - Integrate Razorpay Recurring UPI Auto-Pay and NetBanking Mandates.
-  - Implement webhook listener at `/api/v1/billing/webhook` with HMAC-SHA256 signature verification.
-  - Add billing history and invoice download in `/admin/settings`.
-- [ ] **Stripe International (Global):**
-  - Connect Stripe Customer Portal and Stripe Checkout for non-INR international cards.
+1. In **Cloudflare Dashboard** → Select your domain → **DNS Records**:
+   - `CNAME` | `@` | `tasq-one.onrender.com` | 🟠 Proxied
+   - `CNAME` | `www` | `tasq-one.onrender.com` | 🟠 Proxied
+2. In **SSL/TLS** Settings: Select **Full (Strict)**.
 
 ---
 
-## 5. 📚 Quick Reference Documents
+## ⏸️ 4. Payment Gateway Integration (Deferred / Skipped)
 
-- 🚀 [Render & Cloudflare Deployment Guide](DEPLOYMENT-RENDER-AND-CLOUDFLARE.md)
+> ⚠️ **Current Phase Status: SKIPPED / DEFERRED**  
+> *Reason: TASQ-ONE is launching with the **₹0 Free Starter Pilot** model (up to 5 team members with unlimited tasks). Paid billing tiers will be integrated in Phase 2.*
+
+### Future Paid Plans Architecture (When Ready To Implement):
+- **Pricing Tiers:**
+  - **Free Starter Pilot:** ₹0/mo (5 members, unlimited tasks, basic AI).
+  - **SMB Pro Tier:** ₹999/mo (Unlimited members, priority AI, Slack alerts, 10GB storage).
+  - **Enterprise Scale:** ₹2,499/mo (Custom domain, SSO, audit export, dedicated support).
+
+### Technical Tasks for Future Payment Activation:
+1. **Razorpay Subscriptions (India - UPI AutoPay & NetBanking):**
+   - Create subscription plans in Razorpay Dashboard.
+   - Implement checkout handler using Razorpay Standard Checkout SDK.
+   - Verify webhooks at `/api/v1/billing/webhook` using HMAC-SHA256 signature verification.
+2. **Stripe Billing (International Cards):**
+   - Connect Stripe Customer Portal and Stripe Webhook listener.
+3. **Database Sync:**
+   - Update `subscriptions` table (`tier`, `status`, `current_period_end`) upon receiving verified webhook events.
+
+---
+
+## 📚 5. Documentation Directory
+
+- 📖 [Main Project Overview & Visual Tour](../README.md)
+- 🚀 [Render & Cloudflare Production Deployment Guide](DEPLOYMENT-RENDER-AND-CLOUDFLARE.md)
 - 🛡️ [Security Audit & Vulnerability Remediation Report](SECURITY-AUDIT-REPORT.md)
 - 🐳 [Docker Run & Development Guide](DOCKER_GUIDE.md)
-- 🗄️ [Consolidated SQL Setup Script](../supabase/migrations/FULL_DATABASE_SETUP.sql)
+- 🗄️ [Master Consolidated Database Schema (SQL)](../supabase/migrations/FULL_DATABASE_SETUP.sql)
+
+---
+
+<div align="center">
+<b>TASQ-ONE Engineering Operations</b> • <a href="mailto:tasqoneworkos@gmail.com">tasqoneworkos@gmail.com</a>
+</div>
