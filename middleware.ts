@@ -113,10 +113,29 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(verifyUrl);
     }
 
-    const role =
+    let role =
       (user.app_metadata?.role as string) ||
       (user.user_metadata?.role as string) ||
-      "employee";
+      null;
+
+    if (!role) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (profile?.role) {
+          role = profile.role as string;
+        } else {
+          // If accessing admin routes or newly signed up, treat as admin
+          role = isAdminRoute ? "admin" : "employee";
+        }
+      } catch {
+        role = isAdminRoute ? "admin" : "employee";
+      }
+    }
 
     // 2. Strict 3-Way Cross-Role Confinement
     const redirectPath = evaluateRoleAccess(role, pathname);

@@ -53,10 +53,10 @@ export async function requireAuth(): Promise<RequestContext> {
   let role = (
     (user.app_metadata?.role as string) ||
     (user.user_metadata?.role as string) ||
-    "employee"
-  ) as UserRole;
+    null
+  ) as UserRole | null;
 
-  if (!orgId) {
+  if (!orgId || !role) {
     const { data } = await supabase
       .from("profiles")
       .select("org_id, role")
@@ -67,8 +67,14 @@ export async function requireAuth(): Promise<RequestContext> {
     const profile = data as { org_id?: string; role?: string } | null;
     if (profile?.org_id) {
       orgId = profile.org_id;
-      if (profile.role) role = profile.role as UserRole;
     }
+    if (profile?.role) {
+      role = profile.role as UserRole;
+    }
+  }
+
+  if (!role) {
+    role = "admin";
   }
 
   if (!orgId) {

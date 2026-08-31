@@ -46,8 +46,12 @@ export class SupabaseAuthRepository implements IAuthRepository {
             email: credentials.email,
             password: credentials.password || "",
             email_confirm: true,
+            app_metadata: {
+              role: "admin",
+            },
             user_metadata: {
               full_name: credentials.fullName,
+              role: "admin",
             },
           });
 
@@ -75,6 +79,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
           options: {
             data: {
               full_name: credentials.fullName,
+              role: "admin",
             },
           },
         });
@@ -150,6 +155,18 @@ export class SupabaseAuthRepository implements IAuthRepository {
         }
       } catch {
         // Safe fallback to userId if tables are in migration
+      }
+
+      // Update auth user app_metadata if adminClient is available
+      if (adminClient) {
+        try {
+          await adminClient.auth.admin.updateUserById(userId, {
+            app_metadata: { role: "admin", org_id: orgId },
+            user_metadata: { role: "admin", full_name: credentials.fullName },
+          });
+        } catch {
+          // Non-blocking
+        }
       }
 
       // Sign in the user session so cookies are established on the client
