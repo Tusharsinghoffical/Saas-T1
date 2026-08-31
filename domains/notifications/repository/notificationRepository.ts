@@ -1,4 +1,4 @@
-import { createClient } from "@/infrastructure/supabase/supabaseServer";
+import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
 import { Notification, NotificationPreferences } from "../entities/Notification";
 
 export interface INotificationRepository {
