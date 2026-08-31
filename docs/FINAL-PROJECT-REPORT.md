@@ -109,6 +109,9 @@ The pre-production security audit ([`docs/FINAL-SECURITY-SIGNOFF.md`](file:///c:
 | :--- | :--- |
 | **Live Health Check** | [https://tasq-one.onrender.com/api/v1/health](https://tasq-one.onrender.com/api/v1/health) |
 | **Production Landing Page** | [https://tasq-one.onrender.com](https://tasq-one.onrender.com) |
+| **Tailored Solutions** | [https://tasq-one.onrender.com/solutions](https://tasq-one.onrender.com/solutions) |
+| **Pricing & Plans** | [https://tasq-one.onrender.com/pricing](https://tasq-one.onrender.com/pricing) |
+| **Features & Simulator** | [https://tasq-one.onrender.com/features](https://tasq-one.onrender.com/features) |
 | **Company Registration** | [https://tasq-one.onrender.com/signup](https://tasq-one.onrender.com/signup) |
 | **Unified Workspace Login** | [https://tasq-one.onrender.com/login](https://tasq-one.onrender.com/login) |
 | **GitHub Repository** | [https://github.com/Tusharsinghoffical/Saas-T1](https://github.com/Tusharsinghoffical/Saas-T1) |

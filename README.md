@@ -23,6 +23,11 @@
 
 [Overview](#-overview) • [The Problem & Solution](#-the-problem--the-solution) • [Visual Product Tour](#-visual-product-tour) • [Core Capabilities](#-core-capabilities) • [Enterprise Security](#-enterprise-security--multi-tenant-architecture) • [Indian Localization](#-indian-localization--compliance) • [Tech Stack](#-technology-stack-deep-dive) • [Contact](#-support--contact)
 
+<br/>
+
+> 🌐 **Live Production Instance:** [https://tasq-one.onrender.com](https://tasq-one.onrender.com)  
+> 💼 **Tailored Solutions:** [/solutions](https://tasq-one.onrender.com/solutions) • 💳 **Pricing:** [/pricing](https://tasq-one.onrender.com/pricing) • ⚡ **Features:** [/features](https://tasq-one.onrender.com/features)
+
 </div>
 
 ---
