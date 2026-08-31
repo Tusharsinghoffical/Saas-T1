@@ -13,6 +13,8 @@ import {
   Copy,
   Mail,
   Key,
+  Eye,
+  EyeOff,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
@@ -45,6 +47,7 @@ export default function AdminTeamPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<"admin" | "manager" | "employee">("employee");
   const [creationMode, setCreationMode] = useState<"direct" | "invite">("direct");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,7 +153,7 @@ export default function AdminTeamPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || data.error?.message || "Failed to add member.");
+        throw new Error(data.error || data.message || (typeof data.details === "string" ? data.details : null) || "Failed to add member.");
       }
 
       if (creationMode === "direct") {
@@ -610,13 +613,26 @@ export default function AdminTeamPage() {
                 </label>
                 <div className="relative">
                   <Input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Min 6 characters (e.g. Pass@123)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="text-xs"
+                    className="text-xs pr-10"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                    title={showPassword ? "Hide password" : "Show password"}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4 text-slate-500" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-primary" />
+                    )}
+                  </button>
                 </div>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
                   Employee will use this email & password to sign in at /login.

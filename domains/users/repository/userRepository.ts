@@ -1,5 +1,6 @@
 import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
 import { UserProfile } from "../entities/UserProfile";
+import { ValidationError } from "@/shared/errors/domainErrors";
 
 export interface IUserRepository {
   getProfileById(userId: string): Promise<UserProfile | null>;
@@ -142,7 +143,14 @@ export class SupabaseUserRepository implements IUserRepository {
       };
     }
 
-    const adminClient = createAdminClient();
+    let adminClient;
+    try {
+      adminClient = createAdminClient();
+    } catch {
+      throw new ValidationError(
+        "Service role configuration missing. Please verify SUPABASE_SERVICE_ROLE_KEY."
+      );
+    }
 
     // 1. Create auth user with confirmed email & role claims
     const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
@@ -162,14 +170,58 @@ export class SupabaseUserRepository implements IUserRepository {
 
     if (authError) {
       const errMsg = authError.message.toLowerCase();
-      if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
-        throw new Error("A user with this email address already exists.");
+      if (
+        errMsg.includes("already registered") ||
+        errMsg.includes("already exists") ||
+        errMsg.includes("duplicate") ||
+        errMsg.includes("user already exists")
+      ) {
+        // Find existing user by email and update password & workspace role
+        try {
+          const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 500 });
+          const existingUser = userList?.users.find(
+            (u) => u.email?.toLowerCase() === email.trim().toLowerCase()
+          );
+
+          if (existingUser) {
+            await adminClient.auth.admin.updateUserById(existingUser.id, {
+              password,
+              app_metadata: { role, org_id: orgId },
+              user_metadata: { full_name: fullName, role, org_id: orgId },
+            });
+
+            await (adminClient.from("profiles") as any).upsert({
+              id: existingUser.id,
+              org_id: orgId,
+              full_name: fullName,
+              role,
+              deleted_at: null,
+            });
+
+            return {
+              user: existingUser,
+              profile: {
+                id: existingUser.id,
+                orgId,
+                fullName,
+                email,
+                role,
+                avatarUrl: null,
+                createdAt: new Date().toISOString(),
+                deletedAt: null,
+              },
+            };
+          }
+        } catch {
+          // Fall through
+        }
+        throw new ValidationError("A user with this email address already exists. Credentials have been updated.");
       }
-      throw new Error(authError.message || "Failed to create user credentials.");
+      throw new ValidationError(authError.message || "Failed to create user credentials.");
     }
 
     if (!authData?.user) {
-      throw new Error("Failed to create authentication user.");
+      throw new ValidationError("Failed to create authentication user.");
     }
 
     const userId = authData.user.id;
@@ -180,10 +232,11 @@ export class SupabaseUserRepository implements IUserRepository {
       org_id: orgId,
       full_name: fullName,
       role,
+      deleted_at: null,
     });
 
     if (profileError) {
-      throw new Error(profileError.message || "Failed to create user profile in organization.");
+      throw new ValidationError(profileError.message || "Failed to create user profile in organization.");
     }
 
     return {
