@@ -63,12 +63,12 @@ export function KanbanBoard({
   // Activate Realtime Sync
   useRealtimeTasks(orgId);
 
-  // Initialize store if tasks are empty or provided
+  // Initialize store when database tasks are fetched
   useEffect(() => {
-    if (initialTasks && tasks.length === 0) {
+    if (initialTasks && initialTasks.length > 0) {
       setTasks(initialTasks);
     }
-  }, [initialTasks, tasks.length, setTasks]);
+  }, [initialTasks, setTasks]);
 
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<KanbanColumnId | null>(null);
