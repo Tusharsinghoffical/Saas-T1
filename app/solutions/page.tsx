@@ -110,7 +110,7 @@ export default function SolutionsPage() {
                   <span>AI Campaign Breakdown</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Type a quick goal like "Diwali Social Media Blitz" and let Groq AI break it down into creative assets, copywriting, and ad schedules.
+                  Type a quick goal like &quot;Diwali Social Media Blitz&quot; and let Groq AI break it down into creative assets, copywriting, and ad schedules.
                 </p>
               </div>
 
@@ -146,7 +146,7 @@ export default function SolutionsPage() {
                   <span>Dependency DAG Enforcement</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Tasks are hard-blocked from reaching "Completed" until all prerequisite tickets are verified and merged.
+                  Tasks are hard-blocked from reaching &quot;Completed&quot; until all prerequisite tickets are verified and merged.
                 </p>
               </div>
 
@@ -192,7 +192,7 @@ export default function SolutionsPage() {
                   <span>Daily Morning Checklist</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Staff get a focused "Due Today" list with clear time estimates and single-click completion toggles.
+                  Staff get a focused &quot;Due Today&quot; list with clear time estimates and single-click completion toggles.
                 </p>
               </div>
 
@@ -221,7 +221,7 @@ export default function SolutionsPage() {
 
         {/* Global CTA */}
         <div className="mt-12 p-8 sm:p-12 rounded-3xl bg-slate-950 text-white text-center space-y-6">
-          <h3 className="text-2xl sm:text-3xl font-black">Ready to Streamline Your Team's Deliverables?</h3>
+          <h3 className="text-2xl sm:text-3xl font-black">Ready to Streamline Your Team&apos;s Deliverables?</h3>
           <p className="text-sm text-slate-400 max-w-xl mx-auto">
             Set up your organization workspace in 60 seconds with our ₹0 Free Starter Pilot. No credit card or UPI mandate required.
           </p>
