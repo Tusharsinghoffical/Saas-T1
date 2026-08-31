@@ -1,4 +1,4 @@
-import { createClient } from "@/infrastructure/supabase/supabaseServer";
+import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
 import { UserRole } from "@/infrastructure/supabase/database.types";
 import { RequestContext } from "@/shared/types/context";
 import { UnauthorizedError, ForbiddenError, DomainError } from "@/shared/errors/domainErrors";
@@ -45,7 +45,7 @@ export async function requireAuth(): Promise<RequestContext> {
     throw new UnauthorizedError("Authentication required.");
   }
 
-  // Extract custom claims injected by Auth Hook or fallback to profiles table
+  // 1. Extract custom claims injected by Auth Hook
   let orgId =
     (user.app_metadata?.org_id as string) ||
     (user.user_metadata?.org_id as string);
@@ -56,6 +56,7 @@ export async function requireAuth(): Promise<RequestContext> {
     null
   ) as UserRole | null;
 
+  // 2. Fallback to profiles table via regular client
   if (!orgId || !role) {
     const { data } = await supabase
       .from("profiles")
@@ -70,6 +71,76 @@ export async function requireAuth(): Promise<RequestContext> {
     }
     if (profile?.role) {
       role = profile.role as UserRole;
+    }
+  }
+
+  // 3. Fallback to Admin Client (bypasses RLS) and self-heal missing organization
+  if (!orgId) {
+    try {
+      const adminClient = createAdminClient();
+      const { data: prof } = await (adminClient.from("profiles") as any)
+        .select("org_id, role")
+        .eq("id", user.id)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (prof?.org_id) {
+        orgId = prof.org_id;
+        if (prof.role) role = prof.role as UserRole;
+      } else {
+        // Check if user created an organization in organizations table
+        const { data: orgData } = await (adminClient.from("organizations") as any)
+          .select("id")
+          .eq("created_by", user.id)
+          .maybeSingle();
+
+        if (orgData?.id) {
+          orgId = orgData.id;
+          role = "admin";
+          // Self-heal profile
+          await (adminClient.from("profiles") as any).upsert({
+            id: user.id,
+            org_id: orgId,
+            role: "admin",
+            full_name: user.user_metadata?.full_name || "Admin User",
+          });
+        } else {
+          // Auto-create workspace for founding user
+          const orgName = (user.user_metadata?.org_name as string) || "My Workspace";
+          const { data: newOrg } = await (adminClient.from("organizations") as any)
+            .insert({
+              name: orgName,
+              slug: `org-${Date.now()}`,
+              tier: "free",
+            })
+            .select("id")
+            .single();
+
+          if (newOrg?.id) {
+            orgId = newOrg.id;
+            role = "admin";
+            await (adminClient.from("profiles") as any).upsert({
+              id: user.id,
+              org_id: orgId,
+              role: "admin",
+              full_name: user.user_metadata?.full_name || "Admin User",
+            });
+            await (adminClient.from("organizations") as any)
+              .update({ created_by: user.id })
+              .eq("id", orgId);
+          }
+        }
+      }
+
+      // Sync metadata so subsequent requests are fast
+      if (orgId) {
+        adminClient.auth.admin.updateUserById(user.id, {
+          app_metadata: { role: role || "admin", org_id: orgId },
+          user_metadata: { role: role || "admin", org_id: orgId },
+        }).catch(() => {});
+      }
+    } catch (adminErr) {
+      console.error("[requireAuth] Admin fallback lookup failed:", adminErr);
     }
   }
 
