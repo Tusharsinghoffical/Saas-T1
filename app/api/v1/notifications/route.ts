@@ -3,6 +3,7 @@ import { notificationController } from "@/domains/notifications/api/notification
 import { handleAuthError } from "@/shared/middleware/rbacGuard";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/v1/notifications

@@ -3,6 +3,7 @@ import { dashboardController } from "@/domains/tasks/api/dashboardController";
 import { handleAuthError } from "@/shared/middleware/rbacGuard";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/v1/dashboard/manager

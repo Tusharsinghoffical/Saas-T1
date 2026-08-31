@@ -194,6 +194,10 @@ export async function requireRole(
  * in an `_debug` field for easier troubleshooting.
  */
 export function handleAuthError(error: unknown) {
+  if ((error as any)?.digest === "DYNAMIC_SERVER_USAGE" || (error as any)?.message?.includes("DYNAMIC_SERVER_USAGE")) {
+    throw error;
+  }
+
   if (error instanceof DomainError) {
     // Business-layer errors: safe to expose message to client
     return NextResponse.json(

@@ -3,6 +3,7 @@ import { activityController } from "@/domains/activity/api/activityController";
 import { handleAuthError } from "@/shared/middleware/rbacGuard";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/v1/activity

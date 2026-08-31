@@ -3,6 +3,7 @@ import { taskController } from "@/domains/tasks/api/taskController";
 import { handleAuthError } from "@/shared/middleware/rbacGuard";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/v1/tasks
