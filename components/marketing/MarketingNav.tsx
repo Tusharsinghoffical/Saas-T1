@@ -321,55 +321,55 @@ export function MarketingNav() {
       </header>
 
       {/* ======================================================================== */}
-      {/* SLIDE-OUT COLLAPSIBLE APP DOWNLOAD WIDGET (SIDEBAR WITH ARROW < / >)    */}
+      {/* SLIDE-OUT MINIMAL APP DOWNLOAD WIDGET (TINY ICON ON SIDE)               */}
       {/* ======================================================================== */}
       {!isSideWidgetOpen ? (
         <button
           type="button"
           onClick={() => setIsSideWidgetOpen(true)}
-          className="fixed top-1/2 -translate-y-1/2 right-0 z-50 py-2.5 px-2 bg-slate-900/90 hover:bg-slate-950 text-white rounded-l-2xl border-l border-y border-slate-700 shadow-2xl backdrop-blur-md flex items-center gap-1.5 text-xs font-bold transition-all hover:-translate-x-1 cursor-pointer group"
-          title="Download & Install App"
+          className="fixed top-1/2 -translate-y-1/2 right-0 z-50 p-2 bg-slate-900/90 hover:bg-slate-950 text-white rounded-l-xl border-l border-y border-slate-700 shadow-xl backdrop-blur-md flex flex-col items-center justify-center gap-1 transition-all hover:-translate-x-1 cursor-pointer group"
+          title="Download App (< Click to expand)"
+          aria-label="Download App"
         >
-          <ChevronLeft className="w-4 h-4 text-indigo-400 group-hover:-translate-x-0.5 transition-transform" />
+          <ChevronLeft className="w-3.5 h-3.5 text-indigo-400 group-hover:-translate-x-0.5 transition-transform" />
           <Download className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="hidden sm:inline text-[11px] font-mono pr-1 text-slate-200">Download App</span>
         </button>
       ) : (
-        <div className="fixed top-1/2 -translate-y-1/2 right-4 z-50 w-80 max-w-[calc(100vw-2rem)] p-4 rounded-3xl bg-slate-900/95 text-white border border-slate-700 shadow-2xl backdrop-blur-xl space-y-3 animate-in slide-in-from-right duration-200">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-            <div className="flex items-center gap-2 font-bold text-xs">
-              <Download className="w-4 h-4 text-indigo-400" />
+        <div className="fixed top-1/2 -translate-y-1/2 right-4 z-50 w-72 max-w-[calc(100vw-2rem)] p-4 rounded-2xl bg-slate-900/95 text-white border border-slate-700 shadow-2xl backdrop-blur-xl space-y-3 animate-in slide-in-from-right duration-150">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex items-center gap-1.5 font-bold text-xs">
+              <Download className="w-3.5 h-3.5 text-indigo-400" />
               <span>Install TASQ-ONE App</span>
             </div>
             <button
               type="button"
               onClick={() => setIsSideWidgetOpen(false)}
               className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer flex items-center gap-0.5 text-xs font-bold"
-              title="Hide / Close"
+              title="Hide"
             >
               <span>Hide</span>
-              <ChevronRight className="w-4 h-4 text-indigo-400" />
+              <ChevronRight className="w-3.5 h-3.5 text-indigo-400" />
             </button>
           </div>
 
-          <div className="space-y-2.5 text-xs text-slate-300">
-            <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-2">
-                <Monitor className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Desktop (Chrome, Edge, Brave)</span>
+          <div className="space-y-2 text-xs text-slate-300">
+            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+              <div className="font-bold text-white flex items-center gap-1.5 text-[11px]">
+                <Monitor className="w-3 h-3 text-indigo-400" />
+                <span>Desktop (Chrome / Edge)</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Click the install icon in your address bar or select <code className="bg-slate-950 px-1 py-0.5 rounded text-slate-300">Settings → Install TASQ-ONE</code>.
+              <p className="text-[10.5px] text-slate-400 leading-relaxed">
+                Click the install icon in your address bar or select <code className="bg-slate-950 px-1 py-0.5 rounded text-slate-300">Settings → Install</code>.
               </p>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700/80 space-y-1.5">
-              <div className="font-bold text-white flex items-center gap-2">
-                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Mobile (iOS Safari &amp; Android)</span>
+            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-1">
+              <div className="font-bold text-white flex items-center gap-1.5 text-[11px]">
+                <Smartphone className="w-3 h-3 text-emerald-400" />
+                <span>Mobile (iOS / Android)</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Tap the browser Share menu <code className="bg-slate-950 px-1 py-0.5 rounded text-slate-300">Share → Add to Home Screen</code> for instant launch.
+              <p className="text-[10.5px] text-slate-400 leading-relaxed">
+                Tap browser Share menu <code className="bg-slate-950 px-1 py-0.5 rounded text-slate-300">Share → Add to Home Screen</code>.
               </p>
             </div>
           </div>
@@ -377,7 +377,7 @@ export function MarketingNav() {
           <button
             type="button"
             onClick={() => setIsSideWidgetOpen(false)}
-            className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs text-center transition-colors cursor-pointer shadow-md"
+            className="w-full py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs text-center transition-colors cursor-pointer shadow-md"
           >
             Got It
           </button>
