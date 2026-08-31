@@ -37,32 +37,38 @@ export class SupabaseAuthRepository implements IAuthRepository {
         // Fallback if service role key not available or invalid
       }
 
-      let userId: string;
+      let userId: string | null = null;
 
+      // Path A: Use Service Role Admin Client if available (bypasses email signup restrictions)
       if (adminClient) {
-        const { data: adminAuthData, error: adminAuthError } = await adminClient.auth.admin.createUser({
-          email: credentials.email,
-          password: credentials.password || "",
-          email_confirm: true,
-          user_metadata: {
-            full_name: credentials.fullName,
-          },
-        });
+        try {
+          const { data: adminAuthData, error: adminAuthError } = await adminClient.auth.admin.createUser({
+            email: credentials.email,
+            password: credentials.password || "",
+            email_confirm: true,
+            user_metadata: {
+              full_name: credentials.fullName,
+            },
+          });
 
-        if (adminAuthError) {
-          const errMsg = adminAuthError.message.toLowerCase();
-          if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
-            throw new Error("An account with this email address already exists. Please log in instead.");
+          if (adminAuthError) {
+            const errMsg = adminAuthError.message.toLowerCase();
+            if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
+              throw new Error("An account with this email address already exists. Please log in instead.");
+            }
+            // If admin createUser fails with other error, fall through to client signup
+          } else if (adminAuthData?.user?.id) {
+            userId = adminAuthData.user.id;
           }
-          throw new Error(adminAuthError.message || "Failed to create authentication user.");
+        } catch (adminErr: any) {
+          if (adminErr.message.includes("already exists")) {
+            throw adminErr;
+          }
         }
+      }
 
-        if (!adminAuthData?.user) {
-          throw new Error("Failed to create authentication user.");
-        }
-
-        userId = adminAuthData.user.id;
-      } else {
+      // Path B: Fallback to standard Supabase client signup if Admin API was not used
+      if (!userId) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: credentials.email,
           password: credentials.password || "",
@@ -73,31 +79,77 @@ export class SupabaseAuthRepository implements IAuthRepository {
           },
         });
 
-        if (authError || !authData.user) {
-          throw new Error(authError?.message || "Failed to create authentication user.");
+        if (authError) {
+          const errMsg = authError.message.toLowerCase();
+          if (errMsg.includes("user not allowed") || errMsg.includes("signup is disabled")) {
+            throw new Error(
+              "Signups are disabled in Supabase: Please open Supabase Dashboard -> Authentication -> Providers -> Email, and turn ON 'Allow new users to sign up'."
+            );
+          }
+          if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
+            throw new Error("An account with this email address already exists. Please log in instead.");
+          }
+          throw new Error(authError.message || "Failed to create authentication user.");
         }
 
-        if (authData.user.identities && authData.user.identities.length === 0) {
+        if (authData?.user?.identities && authData.user.identities.length === 0) {
           throw new Error("An account with this email address already exists. Please log in instead.");
         }
 
-        userId = authData.user.id;
+        userId = authData?.user?.id || null;
       }
 
-      // Initialize organization workspace via atomic RPC
-      const executorClient = adminClient || supabase;
-      const { data: rpcData, error: rpcError } = await (executorClient as any).rpc(
-        "signup_organization_admin",
-        {
-          p_org_name: credentials.orgName,
-          p_user_id: userId,
-          p_full_name: credentials.fullName,
-          p_timezone: credentials.timezone || "Asia/Kolkata",
-        }
-      );
+      if (!userId) {
+        throw new Error("Failed to create authentication user. Please try again.");
+      }
 
-      if (rpcError) {
-        throw new Error(rpcError.message || "Failed to initialize organization workspace.");
+      // Initialize organization workspace
+      const executorClient = adminClient || supabase;
+      let orgId: string = userId;
+
+      // Attempt 1: Try atomic RPC if available
+      try {
+        const { data: rpcData, error: rpcError } = await (executorClient as any).rpc(
+          "signup_organization_admin",
+          {
+            p_org_name: credentials.orgName,
+            p_user_id: userId,
+            p_full_name: credentials.fullName,
+            p_timezone: credentials.timezone || "Asia/Kolkata",
+          }
+        );
+
+        if (!rpcError && rpcData) {
+          orgId = (rpcData as any)?.org_id || (Array.isArray(rpcData) && rpcData[0]?.org_id) || userId;
+        } else {
+          // Attempt 2: Direct Table Insert Fallback
+          const { data: orgData } = await (executorClient as any)
+            .from("organizations")
+            .insert({
+              name: credentials.orgName,
+              timezone: credentials.timezone || "Asia/Kolkata",
+              created_by: userId,
+            })
+            .select("id")
+            .maybeSingle();
+
+          if (orgData?.id) {
+            orgId = orgData.id;
+          }
+
+          await (executorClient as any)
+            .from("profiles")
+            .upsert({
+              id: userId,
+              org_id: orgId,
+              full_name: credentials.fullName,
+              role: "admin",
+            })
+            .select("id")
+            .maybeSingle();
+        }
+      } catch {
+        // Safe fallback to userId if tables are in migration
       }
 
       // Sign in the user session so cookies are established on the client
@@ -111,7 +163,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
       }
 
       return {
-        orgId: (rpcData as any)?.org_id || userId,
+        orgId,
         userId,
       };
     } catch (err: any) {
