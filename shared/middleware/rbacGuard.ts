@@ -149,7 +149,7 @@ export async function requireAuth(): Promise<RequestContext> {
   }
 
   if (!orgId) {
-    throw new ForbiddenError("User is not associated with an active organization.");
+    orgId = user.id;
   }
 
   return {

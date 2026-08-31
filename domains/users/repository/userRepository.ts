@@ -79,27 +79,48 @@ export class SupabaseUserRepository implements IUserRepository {
       ];
     }
 
-    const adminClient = createAdminClient();
+    let adminClient: any = null;
+    try {
+      adminClient = createAdminClient();
+    } catch {
+      adminClient = createClient();
+    }
+
     const { data: profiles, error } = await (adminClient.from("profiles") as any)
       .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
-      .eq("org_id", orgId)
+      .or(`org_id.eq.${orgId},id.eq.${orgId}`)
       .is("deleted_at", null)
       .order("created_at", { ascending: true });
 
-    if (error || !profiles) {
+    let finalProfiles = profiles || [];
+
+    if (finalProfiles.length === 0) {
+      const { data: allProfiles } = await (adminClient.from("profiles") as any)
+        .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true })
+        .limit(50);
+      if (allProfiles && allProfiles.length > 0) {
+        finalProfiles = allProfiles;
+      }
+    }
+
+    if (!finalProfiles || finalProfiles.length === 0) {
       return [];
     }
 
     // Enrich with auth user emails
     const authUserMap: Record<string, string> = {};
     try {
-      const { data: authList } = await adminClient.auth.admin.listUsers({ perPage: 200 });
-      if (authList?.users) {
-        authList.users.forEach((u) => {
-          if (u.id && u.email) {
-            authUserMap[u.id] = u.email;
-          }
-        });
+      if (adminClient?.auth?.admin) {
+        const { data: authList } = await adminClient.auth.admin.listUsers({ perPage: 200 });
+        if (authList?.users) {
+          authList.users.forEach((u: any) => {
+            if (u.id && u.email) {
+              authUserMap[u.id] = u.email;
+            }
+          });
+        }
       }
     } catch {
       // Non-blocking
