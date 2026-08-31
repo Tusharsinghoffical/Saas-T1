@@ -11,16 +11,38 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data.user) {
-      const role =
+      let role =
         (data.user.app_metadata?.role as string) ||
-        (data.user.user_metadata?.role as string) ||
-        "admin";
+        (data.user.user_metadata?.role as string);
 
-      const targetPath = role === "employee" ? "/employee/dashboard" : next;
+      if (!role) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        const profile = profileData as { role?: string } | null;
+        if (profile?.role) {
+          role = profile.role;
+        }
+      }
+
+      const type = searchParams.get("type");
+      if (type === "invite" || type === "recovery") {
+        return NextResponse.redirect(`${origin}/accept-invite`);
+      }
+
+      let targetPath = next;
+      if (next === "/admin/dashboard" || !next) {
+        if (role === "employee") targetPath = "/employee/dashboard";
+        else if (role === "manager") targetPath = "/manager/dashboard";
+        else targetPath = "/admin/dashboard";
+      }
+
       return NextResponse.redirect(`${origin}${targetPath}`);
     }
   }
 
-  // If error or no code, return to login with error
   return NextResponse.redirect(`${origin}/login?error=Authentication%20failed`);
 }

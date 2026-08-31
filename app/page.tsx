@@ -101,6 +101,13 @@ export default function HomePage() {
   const [teamSize, setTeamSize] = useState<number>(8);
   const [hoursWastedPerPerson, setHoursWastedPerPerson] = useState<number>(4);
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -346,13 +353,14 @@ export default function HomePage() {
 
               {openDropdown === "products" && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xl z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150 normal-case tracking-normal">
-                  <a
-                    href="#workspace-experience"
+                  <button
+                    type="button"
                     onClick={() => {
                       setActiveTab("kanban");
+                      scrollToSection("workspace-experience");
                       setOpenDropdown(null);
                     }}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer"
                   >
                     <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shrink-0">
                       <LayoutDashboard className="w-4 h-4" />
@@ -361,15 +369,16 @@ export default function HomePage() {
                       <div className="font-bold text-xs text-slate-900">Sprint Delivery Board</div>
                       <div className="text-[11px] text-slate-500">Live multi-column drag-and-drop delivery board</div>
                     </div>
-                  </a>
+                  </button>
 
-                  <a
-                    href="#workspace-experience"
+                  <button
+                    type="button"
                     onClick={() => {
                       setActiveTab("ai");
+                      scrollToSection("workspace-experience");
                       setOpenDropdown(null);
                     }}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer"
                   >
                     <div className="p-2 rounded-lg bg-purple-50 text-purple-600 border border-purple-100 shrink-0">
                       <Bot className="w-4 h-4" />
@@ -378,15 +387,16 @@ export default function HomePage() {
                       <div className="font-bold text-xs text-slate-900">Instant AI Task Decomposer</div>
                       <div className="text-[11px] text-slate-500">Groq Llama 3.3 70B instant ticket structuring</div>
                     </div>
-                  </a>
+                  </button>
 
-                  <a
-                    href="#workspace-experience"
+                  <button
+                    type="button"
                     onClick={() => {
                       setActiveTab("employee");
+                      scrollToSection("workspace-experience");
                       setOpenDropdown(null);
                     }}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer"
                   >
                     <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 shrink-0">
                       <CheckSquare className="w-4 h-4" />
@@ -395,24 +405,25 @@ export default function HomePage() {
                       <div className="font-bold text-xs text-slate-900">Due Today Focus View</div>
                       <div className="text-[11px] text-slate-500">Distraction-free morning checklist for team members</div>
                     </div>
-                  </a>
+                  </button>
 
-                  <a
-                    href="#workspace-experience"
+                  <button
+                    type="button"
                     onClick={() => {
                       setActiveTab("broadcast");
+                      scrollToSection("workspace-experience");
                       setOpenDropdown(null);
                     }}
-                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left cursor-pointer"
                   >
-                    <div className="p-2 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
+                    <div className="p-2 rounded-lg bg-blue-50 text-blue-600 border border-indigo-100 shrink-0">
                       <Bell className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="font-bold text-xs text-slate-900">Automated Async Alerts</div>
                       <div className="text-[11px] text-slate-500">Slack release cards and executive email digests</div>
                     </div>
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
@@ -436,10 +447,11 @@ export default function HomePage() {
 
               {openDropdown === "solutions" && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xl z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150 normal-case tracking-normal">
-                  <a
-                    href="#tailored-solutions"
+                  <button
+                    type="button"
                     onClick={() => {
                       setSelectedRole("founders");
+                      scrollToSection("tailored-solutions");
                       setOpenDropdown(null);
                     }}
                     className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 text-left transition-colors cursor-pointer"
@@ -449,11 +461,12 @@ export default function HomePage() {
                       <div className="font-bold text-xs text-slate-900">Marketing &amp; Agencies</div>
                       <div className="text-[11px] text-slate-500">Multi-client sprint deliverables</div>
                     </div>
-                  </a>
-                  <a
-                    href="#tailored-solutions"
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => {
                       setSelectedRole("engineering");
+                      scrollToSection("tailored-solutions");
                       setOpenDropdown(null);
                     }}
                     className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 text-left transition-colors cursor-pointer"
@@ -463,11 +476,12 @@ export default function HomePage() {
                       <div className="font-bold text-xs text-slate-900">Software &amp; Product</div>
                       <div className="text-[11px] text-slate-500">Fast sprint cycles &amp; bug tracking</div>
                     </div>
-                  </a>
-                  <a
-                    href="#tailored-solutions"
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => {
                       setSelectedRole("operations");
+                      scrollToSection("tailored-solutions");
                       setOpenDropdown(null);
                     }}
                     className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 text-left transition-colors cursor-pointer"
@@ -477,7 +491,7 @@ export default function HomePage() {
                       <div className="font-bold text-xs text-slate-900">Operations &amp; SMBs</div>
                       <div className="text-[11px] text-slate-500">Centralized operations checklists</div>
                     </div>
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
@@ -501,9 +515,12 @@ export default function HomePage() {
 
               {openDropdown === "resources" && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xl z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150 normal-case tracking-normal">
-                  <a
-                    href="#roi-calculator"
-                    onClick={() => setOpenDropdown(null)}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      scrollToSection("roi-calculator");
+                      setOpenDropdown(null);
+                    }}
                     className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 text-left transition-colors cursor-pointer"
                   >
                     <Calculator className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -511,7 +528,7 @@ export default function HomePage() {
                       <div className="font-bold text-xs text-slate-900">ROI Time Calculator</div>
                       <div className="text-[11px] text-slate-500">Calculate ₹ savings per month</div>
                     </div>
-                  </a>
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -554,30 +571,35 @@ export default function HomePage() {
             </button>
           </nav>
 
-          {/* Action CTAs: Clean LOG IN + Bold High-Contrast GET STARTED */}
-          <div className="hidden sm:flex items-center gap-5 shrink-0">
+          {/* Action CTAs: Clean Staff Login + Register Company */}
+          <div className="hidden sm:flex items-center gap-3 shrink-0">
             {/* Install App with PWA pill */}
             <button
               type="button"
               onClick={() => setShowPwaModal(true)}
-              className="px-3 py-1.5 rounded-md hover:bg-indigo-100/70 transition-colors flex items-center gap-1.5 cursor-pointer text-indigo-700 font-semibold bg-indigo-50/80 border border-indigo-200/90 text-xs shadow-2xs"
+              className="px-2.5 py-1.5 rounded-lg hover:bg-indigo-100/70 transition-colors flex items-center gap-1.5 cursor-pointer text-indigo-700 font-semibold bg-indigo-50/80 border border-indigo-200/90 text-xs shadow-2xs"
+              title="Install App"
             >
               <Smartphone className="w-3.5 h-3.5 text-indigo-600" />
               <span>App</span>
             </button>
 
+            {/* Staff / Employee Login Button */}
             <Link
               href="/login"
-              className="text-xs font-bold uppercase tracking-wider text-slate-800 hover:text-slate-950 transition-colors py-2"
+              className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-950 hover:bg-slate-100 border border-slate-200 transition flex items-center gap-1.5"
             >
-              Log In
+              <Users className="w-3.5 h-3.5 text-slate-500" />
+              <span>Staff Login</span>
             </Link>
 
+            {/* Register Company CTA */}
             <Link
               href="/signup"
-              className="px-5 py-2.5 rounded-md text-xs font-extrabold uppercase tracking-wider text-white bg-[#0B0F19] hover:bg-slate-800 shadow-sm transition-all flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-[#0B0F19] hover:bg-slate-800 shadow-sm transition-all flex items-center gap-1.5"
             >
-              <span>Get Started</span>
+              <span>Register Company</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
@@ -595,27 +617,36 @@ export default function HomePage() {
         {/* Mobile Slideout Menu */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-b border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2 text-xs font-bold uppercase tracking-wider text-slate-700 animate-in slide-in-from-top-3 shadow-xl">
-            <a
-              href="#workspace-experience"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3.5 py-2.5 rounded-xl hover:bg-slate-50"
+            <button
+              type="button"
+              onClick={() => {
+                scrollToSection("workspace-experience");
+                setMobileMenuOpen(false);
+              }}
+              className="w-full text-left block px-3.5 py-2.5 rounded-xl hover:bg-slate-50 cursor-pointer"
             >
               Products
-            </a>
-            <a
-              href="#tailored-solutions"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3.5 py-2.5 rounded-xl hover:bg-slate-50"
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                scrollToSection("tailored-solutions");
+                setMobileMenuOpen(false);
+              }}
+              className="w-full text-left block px-3.5 py-2.5 rounded-xl hover:bg-slate-50 cursor-pointer"
             >
               Solutions
-            </a>
-            <a
-              href="#roi-calculator"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3.5 py-2.5 rounded-xl hover:bg-slate-50"
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                scrollToSection("roi-calculator");
+                setMobileMenuOpen(false);
+              }}
+              className="w-full text-left block px-3.5 py-2.5 rounded-xl hover:bg-slate-50 cursor-pointer"
             >
               Resources
-            </a>
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -626,20 +657,30 @@ export default function HomePage() {
             >
               Pricing
             </button>
-            <div className="pt-2 flex flex-col gap-2 normal-case tracking-normal">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 rounded-xl border border-slate-200 text-slate-800 font-bold"
-              >
-                Log In
-              </Link>
+            <div className="pt-3 border-t border-slate-100 flex flex-col gap-2 normal-case tracking-normal">
               <Link
                 href="/signup"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 rounded-xl bg-[#0B0F19] text-white font-extrabold shadow-sm"
+                className="w-full text-center py-2.5 px-4 rounded-xl bg-[#0B0F19] text-white font-extrabold shadow-sm flex items-center justify-center gap-2 text-xs"
               >
-                Get Started
+                <Building className="w-4 h-4 text-indigo-400" />
+                <span>Register Your Company</span>
+              </Link>
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2.5 px-4 rounded-xl border border-slate-200 text-slate-800 font-bold hover:bg-slate-50 flex items-center justify-center gap-2 text-xs"
+              >
+                <Users className="w-4 h-4 text-slate-500" />
+                <span>Staff &amp; Employee Login</span>
+              </Link>
+              <Link
+                href="/accept-invite"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full text-center py-2 rounded-xl text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold text-xs flex items-center justify-center gap-1.5"
+              >
+                <Key className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Have an Invite? Accept &amp; Join</span>
               </Link>
             </div>
           </div>
@@ -693,24 +734,30 @@ export default function HomePage() {
             </Link>
 
             {/* 2. Explore Live Workspace Demo */}
-            <a
-              href="#workspace-experience"
-              onClick={() => setActiveTab("kanban")}
-              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm sm:text-base border border-slate-200/90 shadow-sm transition-all flex items-center justify-center gap-2.5"
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("kanban");
+                scrollToSection("workspace-experience");
+              }}
+              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm sm:text-base border border-slate-200/90 shadow-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer"
             >
               <Play className="w-4 h-4 text-indigo-600 stroke-[2.5]" />
               <span>Explore Live Workspace Demo</span>
-            </a>
+            </button>
 
             {/* 3. Employee Daily View (Mint Green Pill) */}
-            <a
-              href="#workspace-experience"
-              onClick={() => setActiveTab("employee")}
-              className="px-6 py-3.5 rounded-2xl bg-[#ecfdf5] hover:bg-[#d1fae5] text-[#065f46] font-bold text-sm sm:text-base border border-[#a7f3d0] shadow-2xs transition-all flex items-center justify-center gap-2.5"
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("employee");
+                scrollToSection("workspace-experience");
+              }}
+              className="px-6 py-3.5 rounded-2xl bg-[#ecfdf5] hover:bg-[#d1fae5] text-[#065f46] font-bold text-sm sm:text-base border border-[#a7f3d0] shadow-2xs transition-all flex items-center justify-center gap-2.5 cursor-pointer"
             >
               <CheckSquare className="w-4 h-4 text-[#059669] stroke-[2.5]" />
               <span>Employee Daily View</span>
-            </a>
+            </button>
           </div>
 
           {/* 3 Key Value Highlights */}
@@ -1625,34 +1672,34 @@ export default function HomePage() {
               </div>
               <ul className="space-y-2.5 text-[11px]">
                 <li>
-                  <a href="#workspace-experience" onClick={() => setActiveTab("kanban")} className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setActiveTab("kanban"); scrollToSection("workspace-experience"); }} className="hover:text-white transition-colors cursor-pointer text-left">
                     Sprint Delivery Board
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#workspace-experience" onClick={() => setActiveTab("ai")} className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setActiveTab("ai"); scrollToSection("workspace-experience"); }} className="hover:text-white transition-colors cursor-pointer text-left">
                     AI Task Decomposer (Groq 70B)
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#workspace-experience" onClick={() => setActiveTab("employee")} className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setActiveTab("employee"); scrollToSection("workspace-experience"); }} className="hover:text-white transition-colors cursor-pointer text-left">
                     Due Today Focus Mode
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#workspace-experience" onClick={() => setActiveTab("broadcast")} className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setActiveTab("broadcast"); scrollToSection("workspace-experience"); }} className="hover:text-white transition-colors cursor-pointer text-left">
                     Automated Slack &amp; WhatsApp Alerts
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#workspace-experience" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("workspace-experience")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Task Dependency DAG
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#workspace-experience" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("workspace-experience")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Cloudflare R2 Attachments
-                  </a>
+                  </button>
                 </li>
                 <li>
                   <button type="button" onClick={() => setShowPricingModal(true)} className="hover:text-white transition-colors cursor-pointer text-indigo-400 font-semibold">
@@ -1669,34 +1716,34 @@ export default function HomePage() {
               </div>
               <ul className="space-y-2.5 text-[11px]">
                 <li>
-                  <a href="#tailored-solutions" onClick={() => setSelectedRole("founders")} className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setSelectedRole("founders"); scrollToSection("tailored-solutions"); }} className="hover:text-white transition-colors cursor-pointer text-left">
                     Marketing &amp; Client Agencies
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#tailored-solutions" onClick={() => setSelectedRole("engineering")} className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setSelectedRole("engineering"); scrollToSection("tailored-solutions"); }} className="hover:text-white transition-colors cursor-pointer text-left">
                     Software &amp; Product Teams
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#tailored-solutions" onClick={() => setSelectedRole("operations")} className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => { setSelectedRole("operations"); scrollToSection("tailored-solutions"); }} className="hover:text-white transition-colors cursor-pointer text-left">
                     Operations &amp; Growing SMBs
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#tailored-solutions" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("tailored-solutions")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Founders &amp; Startups
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#tailored-solutions" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("tailored-solutions")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Enterprise B2B Teams
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#tailored-solutions" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("tailored-solutions")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Remote &amp; Hybrid Workspaces
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -1708,29 +1755,29 @@ export default function HomePage() {
               </div>
               <ul className="space-y-2.5 text-[11px]">
                 <li>
-                  <a href="#roi-calculator" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("roi-calculator")} className="hover:text-white transition-colors cursor-pointer text-left">
                     ROI Capacity Calculator (₹ INR)
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#workspace-experience" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("workspace-experience")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Live Workspace Simulator
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <button type="button" onClick={() => setShowPwaModal(true)} className="hover:text-white transition-colors cursor-pointer">
+                  <button type="button" onClick={() => setShowPwaModal(true)} className="hover:text-white transition-colors cursor-pointer text-left">
                     Install Desktop / Mobile PWA
                   </button>
                 </li>
                 <li>
-                  <a href="#why-switch" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("why-switch")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Why Teams Switch from WhatsApp
-                  </a>
+                  </button>
                 </li>
                 <li>
-                  <a href="#workspace-experience" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("workspace-experience")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Developer Platform &amp; Webhooks
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -1786,9 +1833,9 @@ export default function HomePage() {
                   </button>
                 </li>
                 <li>
-                  <a href="#why-switch" className="hover:text-white transition-colors">
+                  <button type="button" onClick={() => scrollToSection("why-switch")} className="hover:text-white transition-colors cursor-pointer text-left">
                     Customer Stories
-                  </a>
+                  </button>
                 </li>
                 <li>
                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[10px]">

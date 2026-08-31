@@ -6,23 +6,18 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   CheckSquare,
-  Activity,
-  Settings,
-  CreditCard,
+  Users,
   LogOut,
-  Sparkles,
+  Shield,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Logo } from "@/components/ui/Logo";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function ManagerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const navItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Activity Log", href: "/admin/activity", icon: Activity },
-    { name: "Pricing & Plans", href: "/admin/pricing", icon: CreditCard },
-    { name: "Settings", href: "/admin/settings", icon: Settings },
+    { name: "Team Dashboard", href: "/manager/dashboard", icon: LayoutDashboard },
   ];
 
   return (
@@ -31,7 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="w-64 border-r border-slate-200 bg-white flex flex-col hidden md:flex sticky top-0 h-screen overflow-y-auto flex-shrink-0 z-30">
         {/* Brand Header */}
         <div className="h-20 px-5 flex items-center justify-between border-b border-slate-200">
-          <Logo size="md" href="/admin/dashboard" />
+          <Logo size="md" href="/manager/dashboard" />
         </div>
 
         {/* Navigation Links */}
@@ -59,12 +54,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* User Card & Logout */}
         <div className="p-4 border-t border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-primary/15 text-primary font-bold flex items-center justify-center text-xs">
-              AD
+            <div className="w-8 h-8 rounded-full bg-emerald-500/15 text-emerald-700 font-bold flex items-center justify-center text-xs">
+              MG
             </div>
             <div className="text-xs">
-              <div className="font-semibold text-slate-900">Admin User</div>
-              <div className="text-[11px] text-slate-500">Acme Corp</div>
+              <div className="font-semibold text-slate-900">Manager View</div>
+              <div className="text-[11px] text-slate-500">Team Operations</div>
             </div>
           </div>
           <Link
@@ -82,9 +77,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Sticky Top Header */}
         <header className="h-16 border-b border-slate-200 bg-white/90 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <span>Workspace Management</span>
+            <span>Manager Operations Hub</span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 font-semibold border border-emerald-500/20">
-              Active
+              Team Scoped
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -92,8 +87,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-6">{children}</main>
+        {/* Dynamic Page Content */}
+        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">{children}</main>
       </div>
     </div>
   );

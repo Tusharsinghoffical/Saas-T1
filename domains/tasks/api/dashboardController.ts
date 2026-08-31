@@ -1,14 +1,17 @@
 import { requireAuth, requireRole } from "@/shared/middleware/rbacGuard";
 import { getAdminDashboardUseCase } from "../usecases/getAdminDashboard";
+import { getManagerDashboardUseCase } from "../usecases/getManagerDashboard";
 import { getEmployeeDashboardUseCase } from "../usecases/getEmployeeDashboard";
 
 export class DashboardController {
   async getAdminDashboard(teamIdParam?: string | null) {
-    const auth = await requireRole(["admin", "manager"]);
-    const isManager = auth.role === "manager";
-    const teamId = isManager ? teamIdParam : null;
+    const auth = await requireRole(["admin"]);
+    return await getAdminDashboardUseCase(auth, teamIdParam);
+  }
 
-    return await getAdminDashboardUseCase(auth, teamId);
+  async getManagerDashboard(teamIdParam?: string | null) {
+    const auth = await requireRole(["manager", "admin"]);
+    return await getManagerDashboardUseCase(auth, teamIdParam);
   }
 
   async getEmployeeDashboard() {

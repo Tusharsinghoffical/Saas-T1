@@ -45,16 +45,31 @@ export async function requireAuth(): Promise<RequestContext> {
     throw new UnauthorizedError("Authentication required.");
   }
 
-  // Extract custom claims injected by Auth Hook
-  const orgId =
+  // Extract custom claims injected by Auth Hook or fallback to profiles table
+  let orgId =
     (user.app_metadata?.org_id as string) ||
     (user.user_metadata?.org_id as string);
 
-  const role = (
+  let role = (
     (user.app_metadata?.role as string) ||
     (user.user_metadata?.role as string) ||
     "employee"
   ) as UserRole;
+
+  if (!orgId) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("org_id, role")
+      .eq("id", user.id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    const profile = data as { org_id?: string; role?: string } | null;
+    if (profile?.org_id) {
+      orgId = profile.org_id;
+      if (profile.role) role = profile.role as UserRole;
+    }
+  }
 
   if (!orgId) {
     throw new ForbiddenError("User is not associated with an active organization.");

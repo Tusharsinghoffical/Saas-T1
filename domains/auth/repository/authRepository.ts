@@ -23,25 +23,63 @@ export class SupabaseAuthRepository implements IAuthRepository {
     }
 
     const supabase = createClient();
-    const adminClient = createAdminClient();
-
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: credentials.email,
-      password: credentials.password || "",
-      options: {
-        data: {
-          full_name: credentials.fullName,
-        },
-      },
-    });
-
-    if (authError || !authData.user) {
-      throw new Error(authError?.message || "Failed to create authentication user.");
+    let adminClient: any = null;
+    try {
+      adminClient = createAdminClient();
+    } catch {
+      // Fallback if service role key not available
     }
 
-    const userId = authData.user.id;
+    let userId: string;
 
-    const { data: rpcData, error: rpcError } = await (adminClient as any).rpc(
+    if (adminClient) {
+      const { data: adminAuthData, error: adminAuthError } = await adminClient.auth.admin.createUser({
+        email: credentials.email,
+        password: credentials.password || "",
+        email_confirm: true,
+        user_metadata: {
+          full_name: credentials.fullName,
+        },
+      });
+
+      if (adminAuthError) {
+        const errMsg = adminAuthError.message.toLowerCase();
+        if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
+          throw new Error("An account with this email address already exists. Please log in instead.");
+        }
+        throw new Error(adminAuthError.message || "Failed to create authentication user.");
+      }
+
+      if (!adminAuthData?.user) {
+        throw new Error("Failed to create authentication user.");
+      }
+
+      userId = adminAuthData.user.id;
+    } else {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password || "",
+        options: {
+          data: {
+            full_name: credentials.fullName,
+          },
+        },
+      });
+
+      if (authError || !authData.user) {
+        throw new Error(authError?.message || "Failed to create authentication user.");
+      }
+
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        throw new Error("An account with this email address already exists. Please log in instead.");
+      }
+
+      userId = authData.user.id;
+    }
+
+    // Initialize organization workspace via atomic RPC
+    const executorClient = adminClient || supabase;
+    const { data: rpcData, error: rpcError } = await (executorClient as any).rpc(
       "signup_organization_admin",
       {
         p_org_name: credentials.orgName,
@@ -53,6 +91,16 @@ export class SupabaseAuthRepository implements IAuthRepository {
 
     if (rpcError) {
       throw new Error(rpcError.message || "Failed to initialize organization workspace.");
+    }
+
+    // Sign in the user session so cookies are established on the client
+    try {
+      await supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password || "",
+      });
+    } catch {
+      // Non-blocking if session is established on client
     }
 
     return {

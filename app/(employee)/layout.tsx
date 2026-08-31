@@ -12,13 +12,15 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
         <Logo size="md" href="/employee/dashboard" />
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/admin/dashboard"
-            className="text-xs font-semibold px-3 py-1.5 min-h-[36px] flex items-center rounded-lg bg-slate-100 text-slate-700 hover:bg-primary/10 hover:text-primary transition"
-          >
-            ← Admin View
-          </Link>
           <NotificationBell />
+          <Link
+            href="/login"
+            className="text-xs font-semibold px-3 py-1.5 min-h-[36px] flex items-center rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+            title="Logout"
+          >
+            <LogOut className="w-3.5 h-3.5 mr-1.5" />
+            <span>Logout</span>
+          </Link>
         </div>
       </header>
 

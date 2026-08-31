@@ -1,6 +1,49 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+export type UserRole = "admin" | "manager" | "employee";
+
+/**
+ * Pure evaluation helper for 3-way strict RBAC routing.
+ * Evaluates whether a role is authorized for a target pathname,
+ * returning the appropriate dashboard redirection URL if blocked.
+ */
+export function evaluateRoleAccess(role: UserRole | string, pathname: string): string | null {
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isManagerRoute = pathname.startsWith("/manager");
+  const isEmployeeRoute = pathname.startsWith("/employee");
+
+  if (!isAdminRoute && !isManagerRoute && !isEmployeeRoute) {
+    return null;
+  }
+
+  // 1. Role: admin -> Confined to /admin/*
+  if (role === "admin") {
+    if (isManagerRoute || isEmployeeRoute) {
+      return "/admin/dashboard";
+    }
+    return null;
+  }
+
+  // 2. Role: manager -> Confined to /manager/*
+  if (role === "manager") {
+    if (isAdminRoute || isEmployeeRoute) {
+      return "/manager/dashboard";
+    }
+    return null;
+  }
+
+  // 3. Role: employee (default) -> Confined to /employee/*
+  if (role === "employee" || !role) {
+    if (isAdminRoute || isManagerRoute) {
+      return "/employee/dashboard";
+    }
+    return null;
+  }
+
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -50,8 +93,9 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAdminRoute = pathname.startsWith("/admin");
+  const isManagerRoute = pathname.startsWith("/manager");
   const isEmployeeRoute = pathname.startsWith("/employee");
-  const isProtectedRoute = isAdminRoute || isEmployeeRoute;
+  const isProtectedRoute = isAdminRoute || isManagerRoute || isEmployeeRoute;
 
   // 1. Unauthenticated users cannot access protected workspace routes
   if (isProtectedRoute && !user) {
@@ -61,12 +105,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user) {
-    // ── SECURITY FIX (FAIL 2.1 / FAIL 3): Email verification enforcement ──
-    // Supabase sets email_confirmed_at once the user clicks the confirmation
-    // link. Until then, the user has a valid session but an unverified email.
-    // Without this check any signup can access workspace routes immediately.
-    // The /api/v1/* routes are excluded because some paths (e.g., resend
-    // verification) are needed before confirmation.
+    // ── Email verification enforcement ──
     const isEmailVerified = Boolean(user.email_confirmed_at);
     if (isProtectedRoute && !isEmailVerified) {
       const verifyUrl = new URL("/auth/verify-email", request.url);
@@ -79,9 +118,10 @@ export async function middleware(request: NextRequest) {
       (user.user_metadata?.role as string) ||
       "employee";
 
-    // 2. Employees are blocked from accessing Admin-only routes
-    if (isAdminRoute && role === "employee") {
-      return NextResponse.redirect(new URL("/employee/dashboard", request.url));
+    // 2. Strict 3-Way Cross-Role Confinement
+    const redirectPath = evaluateRoleAccess(role, pathname);
+    if (redirectPath) {
+      return NextResponse.redirect(new URL(redirectPath, request.url));
     }
   }
 
@@ -91,6 +131,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/admin/:path*",
+    "/manager/:path*",
     "/employee/:path*",
     "/api/v1/:path*",
   ],

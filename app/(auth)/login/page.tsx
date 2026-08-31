@@ -190,17 +190,15 @@ export default function LoginPage() {
     <div>
       {/* Header */}
       <div className="text-center mb-6">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-3">
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Team Workspace Portal</span>
+        </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-          Sign in to TASQ-ONE
+          Employee &amp; Team Login
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5">
-          New to TASQ-ONE?{" "}
-          <Link
-            href="/signup"
-            className="text-primary hover:text-primary-700 font-bold hover:underline transition"
-          >
-            Create organization ($0 Free)
-          </Link>
+          Sign in with your organization credentials or secure magic link.
         </p>
       </div>
 

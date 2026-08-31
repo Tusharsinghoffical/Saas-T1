@@ -7,6 +7,8 @@ import {
   type OnboardingCompleteInput,
 } from "@/lib/validators/auth";
 import { authController } from "@/domains/auth/api/authController";
+import { userController } from "@/domains/users/api/userController";
+import { InviteUserInput } from "@/domains/users/usecases/inviteUser";
 
 export interface ActionResult<T = unknown> {
   success: boolean;
@@ -90,6 +92,66 @@ export async function loginWithMagicLink(
     return {
       success: false,
       error: err?.message || "An unexpected error occurred sending magic link.",
+    };
+  }
+}
+
+/**
+ * Server Action for accepting an employee invite and setting a new password.
+ */
+export async function acceptInviteAction(
+  password: string
+): Promise<ActionResult<{ redirectUrl: string }>> {
+  try {
+    await userController.acceptInvite(password);
+    return {
+      success: true,
+      data: { redirectUrl: "/employee/dashboard" },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Failed to accept invitation.",
+    };
+  }
+}
+
+/**
+ * Server Action for inviting an employee or manager.
+ */
+export async function inviteMemberAction(
+  input: InviteUserInput
+): Promise<ActionResult<{ message: string }>> {
+  try {
+    const result = await userController.inviteMember(input);
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Failed to dispatch invitation.",
+    };
+  }
+}
+
+/**
+ * Server Action for deactivating/soft-deleting a team member.
+ */
+export async function removeMemberAction(
+  targetUserId: string
+): Promise<ActionResult<{ message: string }>> {
+  try {
+    const result = await userController.removeMember(targetUserId);
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Failed to deactivate team member.",
     };
   }
 }

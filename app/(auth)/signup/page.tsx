@@ -193,18 +193,18 @@ export default function SignupPage() {
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-3">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Instant 2-Minute Workspace Setup</span>
+          <span>Founding Admin Workspace Setup</span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-          Create your organization
+          Register Your Company
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5">
-          Already have an account?{" "}
+          Already registered?{" "}
           <Link
             href="/login"
             className="text-primary hover:text-primary-700 font-bold hover:underline transition"
           >
-            Sign in
+            Employee &amp; Team Login
           </Link>
         </p>
       </div>

@@ -12,6 +12,7 @@ export interface UserProfile {
   email?: string;
   notificationPreferences?: Record<string, boolean> | null;
   createdAt?: string;
+  deletedAt?: string | null;
 }
 
 export interface TeamMember {
