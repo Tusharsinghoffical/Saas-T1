@@ -621,3 +621,72 @@ create trigger tr_notify_comment_mention
 after insert on public.task_comments
 for each row
 execute function notify_on_comment_mention();
+
+-- ------------------------------------------------------------------------------
+-- 7. AUTOMATIC USER PROVISIONING TRIGGER (AUTH -> PUBLIC.PROFILES / ORGANIZATIONS)
+-- ------------------------------------------------------------------------------
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_org_id uuid;
+  v_org_name text;
+  v_full_name text;
+  v_role text;
+begin
+  v_org_name := coalesce(
+    new.raw_user_meta_data->>'org_name',
+    new.raw_app_meta_data->>'org_name',
+    'Revonza Studio'
+  );
+  v_full_name := coalesce(
+    new.raw_user_meta_data->>'full_name',
+    new.raw_app_meta_data->>'full_name',
+    split_part(new.email, '@', 1)
+  );
+  v_role := coalesce(
+    new.raw_app_meta_data->>'role',
+    new.raw_user_meta_data->>'role',
+    'admin'
+  );
+
+  if new.raw_app_meta_data->>'org_id' is not null then
+    v_org_id := (new.raw_app_meta_data->>'org_id')::uuid;
+  elsif new.raw_user_meta_data->>'org_id' is not null then
+    v_org_id := (new.raw_user_meta_data->>'org_id')::uuid;
+  end if;
+
+  if v_org_id is null then
+    select id into v_org_id from public.organizations where created_by = new.id limit 1;
+    
+    if v_org_id is null then
+      insert into public.organizations (name, timezone, created_by)
+      values (v_org_name, 'Asia/Kolkata', new.id)
+      returning id into v_org_id;
+    end if;
+  end if;
+
+  insert into public.profiles (id, org_id, full_name, role, created_at)
+  values (new.id, v_org_id, v_full_name, v_role, now())
+  on conflict (id) do update set
+    org_id = coalesce(public.profiles.org_id, excluded.org_id),
+    full_name = coalesce(public.profiles.full_name, excluded.full_name),
+    role = coalesce(public.profiles.role, excluded.role);
+
+  update public.organizations 
+  set created_by = new.id 
+  where id = v_org_id and created_by is null;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute function public.handle_new_user();
