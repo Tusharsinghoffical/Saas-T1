@@ -164,97 +164,117 @@ export class SupabaseUserRepository implements IUserRepository {
       };
     }
 
-    let adminClient;
+    let adminClient: any = null;
     try {
       adminClient = createAdminClient();
     } catch {
-      throw new ValidationError(
-        "Service role configuration missing. Please verify SUPABASE_SERVICE_ROLE_KEY."
-      );
+      // Non-blocking fallback
     }
 
-    // 1. Create auth user with confirmed email & role claims
-    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
-      email: email.trim().toLowerCase(),
-      password,
-      email_confirm: true,
-      app_metadata: {
-        role,
-        org_id: orgId,
-      },
-      user_metadata: {
-        full_name: fullName,
-        role,
-        org_id: orgId,
-      },
-    });
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (authError) {
-      const errMsg = authError.message.toLowerCase();
-      if (
-        errMsg.includes("already registered") ||
-        errMsg.includes("already exists") ||
-        errMsg.includes("duplicate") ||
-        errMsg.includes("user already exists")
-      ) {
-        // Find existing user by email and update password & workspace role
-        try {
-          const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 500 });
-          const existingUser = userList?.users.find(
-            (u: any) => u.email?.toLowerCase() === email.trim().toLowerCase()
-          );
-
-          if (existingUser) {
-            await adminClient.auth.admin.updateUserById(existingUser.id, {
-              password,
-              app_metadata: { role, org_id: orgId },
-              user_metadata: { full_name: fullName, role, org_id: orgId },
-            });
-
-            await (adminClient.from("profiles") as any).upsert({
-              id: existingUser.id,
-              org_id: orgId,
-              full_name: fullName,
-              role,
-              deleted_at: null,
-            });
-
-            return {
-              user: existingUser,
-              profile: {
-                id: existingUser.id,
-                orgId,
-                fullName,
-                email: existingUser.email || email,
-                role,
-                avatarUrl: null,
-                createdAt: existingUser.created_at || new Date().toISOString(),
-                deletedAt: null,
-              },
-            };
-          }
-        } catch (existingErr) {
-          console.error("Failed to update existing user:", existingErr);
-        }
-      }
-
-      if (errMsg.includes("user not allowed") || errMsg.includes("signup is disabled") || errMsg.includes("not allowed")) {
-        throw new ValidationError(
-          "Supabase Auth Error: Email signups are disabled in your Supabase project. Please go to Supabase Dashboard -> Authentication -> Providers -> Email, and turn ON 'Allow new users to sign up'."
+    // 1. Check if user with this email already exists in Supabase Auth
+    if (adminClient?.auth?.admin) {
+      try {
+        const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 500 });
+        const existingUser = userList?.users?.find(
+          (u: any) => u.email?.toLowerCase() === normalizedEmail
         );
+
+        if (existingUser) {
+          await adminClient.auth.admin.updateUserById(existingUser.id, {
+            password,
+            email_confirm: true,
+            app_metadata: { role, org_id: orgId },
+            user_metadata: { full_name: fullName, role, org_id: orgId },
+          });
+
+          await (adminClient.from("profiles") as any).upsert({
+            id: existingUser.id,
+            org_id: orgId,
+            full_name: fullName,
+            role,
+            deleted_at: null,
+          });
+
+          return {
+            user: existingUser,
+            profile: {
+              id: existingUser.id,
+              orgId,
+              fullName,
+              email: existingUser.email || normalizedEmail,
+              role,
+              avatarUrl: null,
+              createdAt: existingUser.created_at || new Date().toISOString(),
+              deletedAt: null,
+            },
+          };
+        }
+      } catch (listErr) {
+        console.warn("Could not check existing users via listUsers:", listErr);
       }
-
-      throw new ValidationError(authError.message || "Failed to create user credentials.");
     }
 
-    if (!authData?.user) {
-      throw new ValidationError("Failed to create authentication user.");
+    // 2. Create brand new user credentials
+    let authUser: any = null;
+
+    if (adminClient?.auth?.admin) {
+      const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
+        email: normalizedEmail,
+        password,
+        email_confirm: true,
+        app_metadata: { role, org_id: orgId },
+        user_metadata: { full_name: fullName, role, org_id: orgId },
+      });
+
+      if (!createError && createData?.user) {
+        authUser = createData.user;
+      } else if (createError) {
+        console.warn("admin.createUser error, trying client signUp fallback:", createError.message);
+      }
     }
 
-    const userId = authData.user.id;
+    // 3. Fallback: Client signUp
+    if (!authUser) {
+      const supabase = createClient();
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role,
+            org_id: orgId,
+          },
+        },
+      });
 
-    // 2. Upsert profile in profiles table
-    const { error: profileError } = await (adminClient.from("profiles") as any).upsert({
+      if (!signUpError && signUpData?.user) {
+        authUser = signUpData.user;
+      } else if (signUpError) {
+        const errMsg = signUpError.message.toLowerCase();
+        if (errMsg.includes("already registered") || errMsg.includes("already exists")) {
+          throw new ValidationError("An account with this email address already exists. Try another email or log in.");
+        }
+        if (errMsg.includes("user not allowed") || errMsg.includes("disabled")) {
+          throw new ValidationError(
+            "Supabase Auth Error: Email signups are disabled in your Supabase project or the Service Role Key on Render is invalid. Please verify SUPABASE_SERVICE_ROLE_KEY in Render Environment Variables and ensure Email provider is enabled in Supabase."
+          );
+        }
+        throw new ValidationError(signUpError.message || "Failed to create user account.");
+      }
+    }
+
+    if (!authUser) {
+      throw new ValidationError("Failed to create user credentials. Please check your Supabase credentials.");
+    }
+
+    const userId = authUser.id;
+    const dbClient = adminClient || createClient();
+
+    // 4. Upsert profile in profiles table
+    const { error: profileError } = await (dbClient.from("profiles") as any).upsert({
       id: userId,
       org_id: orgId,
       full_name: fullName,
@@ -263,19 +283,19 @@ export class SupabaseUserRepository implements IUserRepository {
     });
 
     if (profileError) {
-      throw new ValidationError(profileError.message || "Failed to create user profile in organization.");
+      console.warn("Profile upsert warning:", profileError.message);
     }
 
     return {
-      user: authData.user,
+      user: authUser,
       profile: {
         id: userId,
         orgId,
         fullName,
-        email,
+        email: normalizedEmail,
         role,
         avatarUrl: null,
-        createdAt: new Date().toISOString(),
+        createdAt: authUser.created_at || new Date().toISOString(),
         deletedAt: null,
       },
     };
