@@ -22,20 +22,15 @@ import {
   Shield,
   Zap,
   Check,
-  X,
   XCircle,
   HelpCircle,
   Play,
-  Share2,
   Calendar,
   Lock,
   FileText,
   Building,
   Bot,
   Flame,
-  Download,
-  Monitor,
-  Menu,
   ChevronRight,
   CreditCard,
   CheckCheck,
@@ -58,7 +53,6 @@ import {
   SlidersHorizontal,
   Command,
   Hash,
-  Share,
   Calculator,
   Workflow,
   BarChart3,
@@ -67,11 +61,39 @@ import {
   Radio,
   ExternalLink,
   ShieldCheck,
-  Sparkle,
 } from "lucide-react";
-import { Modal } from "@/components/ui/modal";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+
+interface DemoTask {
+  id: string;
+  title: string;
+  column: "todo" | "in_progress" | "review" | "completed";
+  priority: "urgent" | "high" | "medium" | "low" | "verified";
+  desc: string;
+  tag: string;
+  assignee: string;
+  due: string;
+  blocker: string | null;
+}
+
+interface ChecklistItem {
+  id: string;
+  title: string;
+  duration: string;
+  done: boolean;
+  tag: string;
+}
+
+interface AiResult {
+  key: string;
+  title: string;
+  priority: string;
+  department: string;
+  assignee: string;
+  criteria: string[];
+  estimate: string;
+}
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"kanban" | "ai" | "employee" | "broadcast">("kanban");
@@ -84,15 +106,27 @@ export default function HomePage() {
   const [teamSize, setTeamSize] = useState<number>(8);
   const [hoursWastedPerPerson, setHoursWastedPerPerson] = useState<number>(4);
 
+  const aiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (aiTimeoutRef.current) {
+        clearTimeout(aiTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 
   // Interactive Live Demo Tasks State with realistic Indian names and business deliverables
-  const [demoTasks, setDemoTasks] = useState([
+  const [demoTasks, setDemoTasks] = useState<DemoTask[]>([
     {
       id: "TSQ-101",
       title: "Prepare Enterprise Client Proposal & SLA",
@@ -151,7 +185,7 @@ export default function HomePage() {
   ]);
 
   // Interactive Employee Focus Checklist State (Indian SMB Workflow)
-  const [employeeChecklist, setEmployeeChecklist] = useState([
+  const [employeeChecklist, setEmployeeChecklist] = useState<ChecklistItem[]>([
     { id: "e1", title: "Review Razorpay UPI Webhook PR #412", duration: "45m", done: true, tag: "Code Review" },
     { id: "e2", title: "Optimize Redis rate limiter for Diwali traffic spike", duration: "1h 15m", done: false, tag: "Performance" },
     { id: "e3", title: "Deploy GST & TDS invoice schema to staging", duration: "30m", done: false, tag: "DevOps" },
@@ -160,15 +194,7 @@ export default function HomePage() {
   // AI Task Decomposition Simulator State
   const [aiPrompt, setAiPrompt] = useState("Launch UPI Auto-Pay integration for recurring B2B subscriptions");
   const [aiGenerating, setAiGenerating] = useState(false);
-  const [aiResult, setAiResult] = useState<{
-    key: string;
-    title: string;
-    priority: string;
-    department: string;
-    assignee: string;
-    criteria: string[];
-    estimate: string;
-  }>({
+  const [aiResult, setAiResult] = useState<AiResult>({
     key: "TSQ-128",
     title: "Launch UPI Auto-Pay Integration for Recurring B2B Subscriptions",
     priority: "urgent",
@@ -186,7 +212,10 @@ export default function HomePage() {
   const handleSimulateAi = (prompt: string) => {
     setAiGenerating(true);
     setAiPrompt(prompt);
-    setTimeout(() => {
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current);
+    }
+    aiTimeoutRef.current = setTimeout(() => {
       if (prompt.toLowerCase().includes("proposal") || prompt.toLowerCase().includes("sla") || prompt.toLowerCase().includes("sales")) {
         setAiResult({
           key: "TSQ-132",

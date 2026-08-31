@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { ShieldCheck, Lock, Database, Key, Server, CheckCircle2, ShieldAlert } from "lucide-react";
+import { ShieldCheck, Lock, Database, Key } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 

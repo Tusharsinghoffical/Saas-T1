@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { FileText, ArrowLeft, ShieldCheck, Scale, CheckCircle2, AlertTriangle } from "lucide-react";
+import { FileText, Scale } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
@@ -22,7 +21,16 @@ export default function TermsOfServicePage() {
             Terms of Service
           </h1>
           <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed">
-            Last Updated: August 31, 2026 • Applies to TASQ-ONE Work OS (<a href="https://tasq-one.onrender.com" className="text-indigo-600 underline">tasq-one.onrender.com</a>)
+            Last Updated: August 31, 2026 • Applies to TASQ-ONE Work OS (
+            <a
+              href="https://tasq-one.onrender.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 underline"
+            >
+              tasq-one.onrender.com
+            </a>
+            )
           </p>
         </div>
       </section>

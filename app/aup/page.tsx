@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { FileCheck, ShieldAlert, CheckCircle2, AlertTriangle } from "lucide-react";
+import { FileCheck, AlertTriangle } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 

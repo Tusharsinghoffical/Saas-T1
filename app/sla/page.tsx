@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { Zap, CheckCircle2, ShieldCheck, Clock, Server, ArrowRight } from "lucide-react";
+import { Zap, CheckCircle2, Server } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
