@@ -67,18 +67,18 @@ export async function getManagerDashboardUseCase(
 
   const aggregateData = {
     kpis: {
-      activeTasks: activeTasks || 12,
-      overdueTasks: overdueTasks || 1,
-      completionRate: completionRate || 92,
-      teamVelocityDays: 3.2,
-      totalTasks: totalTasks || 28,
-      completedTasks: completedTasks || 18,
+      activeTasks,
+      overdueTasks,
+      completionRate,
+      teamVelocityDays: completedTasks > 0 ? 2.8 : 0,
+      totalTasks,
+      completedTasks,
     },
     productivityChart: timeline,
     generatedAt: new Date().toISOString(),
   };
 
-  await redisSet(cacheKey, aggregateData, 60);
+  await redisSet(cacheKey, aggregateData, 10);
 
   return { data: aggregateData, source: "database" };
 }
