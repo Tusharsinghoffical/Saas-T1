@@ -1,29 +1,46 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Clock,
   Calendar,
   CheckCircle2,
   AlertTriangle,
-  ChevronDown,
   RefreshCw,
   Sparkles,
-  MessageSquare,
-  Paperclip,
   CheckSquare,
   Lock,
+  Search,
+  Filter,
+  Zap,
+  Radio,
+  Flame,
+  ArrowRight,
+  TrendingUp,
+  ListTodo,
+  Layers,
+  ChevronRight,
+  Smile,
+  Sun,
+  Moon,
+  Sunset,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
 import { captureEvent } from "@/lib/analytics/posthog";
+import { createClient } from "@/lib/supabase/client";
 
 export default function EmployeeDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
   const [selectedTask, setSelectedTask] = useState<KanbanTaskItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<"all" | "dueToday" | "upcoming" | "completed">("all");
 
   const [buckets, setBuckets] = useState<{
     dueToday: KanbanTaskItem[];
@@ -35,7 +52,15 @@ export default function EmployeeDashboardPage() {
     recentlyCompleted: [],
   });
 
-  const fetchMyTasks = async () => {
+  // Dynamic greeting based on time of day
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return { text: "Good Morning", icon: Sun, color: "text-amber-500" };
+    if (hour < 18) return { text: "Good Afternoon", icon: Sunset, color: "text-orange-500" };
+    return { text: "Good Evening", icon: Moon, color: "text-indigo-400" };
+  }, []);
+
+  const fetchMyTasks = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetch("/api/v1/dashboard/me");
@@ -48,11 +73,48 @@ export default function EmployeeDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchMyTasks();
-  }, []);
+  }, [fetchMyTasks]);
+
+  // Realtime Supabase Channel Subscription for Live Task Updates
+  useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
+
+    if (!hasSupabase) {
+      setIsConnected(true);
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+      const channel = supabase
+        .channel("realtime:employee_tasks")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "tasks",
+          },
+          () => {
+            fetchMyTasks();
+          }
+        )
+        .subscribe((status) => {
+          setIsConnected(status === "SUBSCRIBED");
+        });
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (e) {
+      console.warn("Realtime task subscription notice:", e);
+    }
+  }, [fetchMyTasks]);
 
   // Quick Status Update on Card
   const handleQuickStatusUpdate = async (
@@ -64,7 +126,6 @@ export default function EmployeeDashboardPage() {
     // Check dependency blocker
     if (newStatus === "in_progress" || newStatus === "completed") {
       const depIds = task.dependencyTaskIds || [];
-      // Combine all tasks to check prerequisites
       const allList = [
         ...buckets.dueToday,
         ...buckets.upcoming,
@@ -88,10 +149,7 @@ export default function EmployeeDashboardPage() {
 
     // Optimistic re-bucketing
     setBuckets((prev) => {
-      // Remove from all buckets
-      const filterOut = (list: KanbanTaskItem[]) =>
-        list.filter((t) => t.id !== task.id);
-
+      const filterOut = (list: KanbanTaskItem[]) => list.filter((t) => t.id !== task.id);
       const dueToday = filterOut(prev.dueToday);
       const upcoming = filterOut(prev.upcoming);
       const recentlyCompleted = filterOut(prev.recentlyCompleted);
@@ -103,11 +161,9 @@ export default function EmployeeDashboardPage() {
           recentlyCompleted: [updatedTask, ...recentlyCompleted],
         };
       } else {
-        // Re-insert into dueToday or upcoming
         const dueTime = task.dueDate || task.due_date;
         const isToday =
-          dueTime &&
-          new Date(dueTime).toDateString() === new Date().toDateString();
+          dueTime && new Date(dueTime).toDateString() === new Date().toDateString();
 
         if (isToday) {
           return {
@@ -125,7 +181,6 @@ export default function EmployeeDashboardPage() {
       }
     });
 
-    // Fire analytics events
     captureEvent("task_status_changed", {
       taskId: task.id,
       oldStatus: previousStatus,
@@ -139,7 +194,6 @@ export default function EmployeeDashboardPage() {
       });
     }
 
-    // API PATCH call
     try {
       const res = await fetch(`/api/v1/tasks/${task.id}`, {
         method: "PATCH",
@@ -149,7 +203,7 @@ export default function EmployeeDashboardPage() {
       const json = await res.json();
       if (!json.success) {
         setToastMessage(json.error || "Failed to update status.");
-        fetchMyTasks(); // rollback on error
+        fetchMyTasks();
       }
     } catch {
       setToastMessage("Network error: Status update failed.");
@@ -165,30 +219,54 @@ export default function EmployeeDashboardPage() {
   };
 
   const statusColors: Record<string, string> = {
-    pending: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300",
-    in_progress: "bg-primary/10 text-primary border-primary/20",
+    pending: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+    in_progress: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
     in_review: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-    completed: "bg-success/10 text-success border-success/20",
+    completed: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   };
 
-  const statusLabels: Record<string, string> = {
-    pending: "Pending",
-    in_progress: "In Progress",
-    in_review: "In Review",
-    completed: "Completed",
+  const allEmployeeTasks = useMemo(() => {
+    return [
+      ...buckets.dueToday,
+      ...buckets.upcoming,
+      ...buckets.recentlyCompleted,
+    ];
+  }, [buckets]);
+
+  // Overall Task Completion Stats
+  const totalTasks = allEmployeeTasks.length;
+  const completedCount = buckets.recentlyCompleted.length;
+  const dueTodayCount = buckets.dueToday.length;
+  const upcomingCount = buckets.upcoming.length;
+  const inProgressCount = allEmployeeTasks.filter((t) => t.status === "in_progress").length;
+  const completionPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+
+  // Filter Helper
+  const filterList = (tasks: KanbanTaskItem[]) => {
+    return tasks.filter((t) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (t.tags && t.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())));
+
+      const matchesPriority = priorityFilter === "all" || t.priority === priorityFilter;
+
+      return matchesSearch && matchesPriority;
+    });
   };
 
-  const allEmployeeTasks = [
-    ...buckets.dueToday,
-    ...buckets.upcoming,
-    ...buckets.recentlyCompleted,
-  ];
+  const filteredDueToday = filterList(buckets.dueToday);
+  const filteredUpcoming = filterList(buckets.upcoming);
+  const filteredCompleted = filterList(buckets.recentlyCompleted);
+
+  const GreetingIcon = greeting.icon;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="p-3.5 rounded-xl bg-urgent/10 border border-urgent/20 text-xs text-urgent font-medium flex items-center justify-between animate-fade-in">
+        <div className="p-3.5 rounded-xl bg-urgent/10 border border-urgent/20 text-xs text-urgent font-medium flex items-center justify-between animate-fade-in shadow-sm">
           <span>{toastMessage}</span>
           <button
             onClick={() => setToastMessage(null)}
@@ -199,144 +277,363 @@ export default function EmployeeDashboardPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            My Workspace
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Your personal queue organized by deadline and focus priority.
-          </p>
-        </div>
+      {/* 🚀 Hero Welcome & Daily Progress Command Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 p-6 text-white shadow-xl border border-indigo-800/40">
+        {/* Subtle Background Glow Elements */}
+        <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={fetchMyTasks}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-primary transition"
-          >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-primary" : ""}`}
-            />
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-indigo-200 backdrop-blur-md border border-white/10">
+                <GreetingIcon className={`w-3.5 h-3.5 ${greeting.color}`} />
+                <span>{greeting.text}</span>
+              </span>
 
-      {/* Section 1: Due Today */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            <Clock className="w-4 h-4 text-primary" />
-            <span>Due Today</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary">
-              {buckets.dueToday.length}
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-2.5">
-          {buckets.dueToday.map((task) => (
-            <TaskListItem
-              key={task.id}
-              task={task}
-              onCardClick={() => {
-                setSelectedTask(task);
-                setIsDetailOpen(true);
-              }}
-              onStatusChange={(status) => handleQuickStatusUpdate(task, status)}
-              priorityVariants={priorityVariants}
-              statusColors={statusColors}
-              statusLabels={statusLabels}
-            />
-          ))}
-
-          {buckets.dueToday.length === 0 && (
-            <div className="p-6 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
-              🎉 All tasks due today are cleared! Great job.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Section 2: Upcoming (7 Days) */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span>Upcoming (Next 7 Days)</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-              {buckets.upcoming.length}
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-2.5">
-          {buckets.upcoming.map((task) => (
-            <TaskListItem
-              key={task.id}
-              task={task}
-              onCardClick={() => {
-                setSelectedTask(task);
-                setIsDetailOpen(true);
-              }}
-              onStatusChange={(status) => handleQuickStatusUpdate(task, status)}
-              priorityVariants={priorityVariants}
-              statusColors={statusColors}
-              statusLabels={statusLabels}
-            />
-          ))}
-
-          {buckets.upcoming.length === 0 && (
-            <div className="p-5 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
-              No upcoming tasks scheduled for the next 7 days.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Section 3: Recently Completed */}
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            <CheckCircle2 className="w-4 h-4 text-success" />
-            <span>Recently Completed</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-success/10 text-success">
-              {buckets.recentlyCompleted.length}
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {buckets.recentlyCompleted.map((task) => (
-            <div
-              key={task.id}
-              onClick={() => {
-                setSelectedTask(task);
-                setIsDetailOpen(true);
-              }}
-              className="p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-3 text-xs opacity-75 hover:opacity-100 transition cursor-pointer"
-            >
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
-                <span className="line-through text-slate-500 dark:text-slate-400 font-medium">
-                  {task.title}
-                </span>
-              </div>
-              <span className="text-[10px] font-semibold text-slate-400">
-                Completed
+              {/* Realtime Status Indicator */}
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border backdrop-blur-md transition-colors ${
+                  isConnected
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                    : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                }`}
+              >
+                <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"}`} />
+                <span>{isConnected ? "Live Sync Active" : "Syncing..."}</span>
               </span>
             </div>
-          ))}
 
-          {buckets.recentlyCompleted.length === 0 && (
-            <div className="p-4 rounded-xl text-center text-xs text-slate-400">
-              No tasks completed in the last 7 days yet.
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              My Personal Focus Workspace
+            </h1>
+            <p className="text-xs sm:text-sm text-indigo-200/80 max-w-xl">
+              Track your daily sprint goals, tackle assigned deadlines, and mark subtasks with instant zero-lag updates.
+            </p>
+          </div>
+
+          {/* Quick Progress Bar & Action */}
+          <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 min-w-[240px] flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-indigo-200 font-medium flex items-center gap-1.5">
+                <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
+                Sprint Completion
+              </span>
+              <span className="font-extrabold text-emerald-400 text-sm">{completionPercentage}%</span>
             </div>
-          )}
+
+            {/* Progress Track */}
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-400 to-teal-300 transition-all duration-500 rounded-full"
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-indigo-300/80 pt-1">
+              <span>{completedCount} of {totalTasks} tasks completed</span>
+              <button
+                type="button"
+                onClick={fetchMyTasks}
+                disabled={isLoading}
+                className="hover:text-white flex items-center gap-1 font-semibold transition"
+                title="Refresh Workspace"
+              >
+                <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* 📊 KPI Summary Metric Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        {/* Card 1: Due Today */}
+        <div
+          onClick={() => setActiveTab(activeTab === "dueToday" ? "all" : "dueToday")}
+          className={`p-4 rounded-xl border transition-all cursor-pointer shadow-sm ${
+            dueTodayCount > 0
+              ? "bg-rose-500/5 dark:bg-rose-950/20 border-rose-500/30 hover:border-rose-500/50"
+              : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300"
+          } ${activeTab === "dueToday" ? "ring-2 ring-rose-500" : ""}`}
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span>Due Today</span>
+            <Clock className={`w-4 h-4 ${dueTodayCount > 0 ? "text-rose-500 animate-pulse" : "text-slate-400"}`} />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className={`text-2xl sm:text-3xl font-extrabold ${dueTodayCount > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-white"}`}>
+              {dueTodayCount}
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">urgent tasks</span>
+          </div>
+        </div>
+
+        {/* Card 2: In Progress */}
+        <div
+          className="p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm"
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span>In Progress</span>
+            <Zap className="w-4 h-4 text-indigo-500" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
+              {inProgressCount}
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">in flight</span>
+          </div>
+        </div>
+
+        {/* Card 3: Upcoming (7 Days) */}
+        <div
+          onClick={() => setActiveTab(activeTab === "upcoming" ? "all" : "upcoming")}
+          className={`p-4 rounded-xl border transition-all cursor-pointer shadow-sm ${
+            activeTab === "upcoming" ? "ring-2 ring-primary" : ""
+          } bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300`}
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span>Upcoming (7D)</span>
+            <Calendar className="w-4 h-4 text-primary" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+              {upcomingCount}
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">scheduled</span>
+          </div>
+        </div>
+
+        {/* Card 4: Completed */}
+        <div
+          onClick={() => setActiveTab(activeTab === "completed" ? "all" : "completed")}
+          className={`p-4 rounded-xl border transition-all cursor-pointer shadow-sm ${
+            activeTab === "completed" ? "ring-2 ring-emerald-500" : ""
+          } bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300`}
+        >
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span>Completed</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+              {completedCount}
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">cleared</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 🔍 Search, Filter & Tabs Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-sm">
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              activeTab === "all"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+            }`}
+          >
+            All Tasks ({totalTasks})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("dueToday")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+              activeTab === "dueToday"
+                ? "bg-rose-600 text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            Due Today ({dueTodayCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("upcoming")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+              activeTab === "upcoming"
+                ? "bg-primary text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" />
+            Upcoming ({upcomingCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("completed")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+              activeTab === "completed"
+                ? "bg-emerald-600 text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Done ({completedCount})
+          </button>
+        </div>
+
+        {/* Search & Priority Controls */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:w-48">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tasks..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+          >
+            <option value="all">All Priorities</option>
+            <option value="urgent">🔴 Urgent</option>
+            <option value="high">🟠 High</option>
+            <option value="medium">🔵 Medium</option>
+            <option value="low">⚪ Low</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 📋 Section 1: Due Today */}
+      {(activeTab === "all" || activeTab === "dueToday") && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping inline-block" />
+              <span>Due Today / Priority Action</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                {filteredDueToday.length}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {filteredDueToday.map((task) => (
+              <TaskListItem
+                key={task.id}
+                task={task}
+                onCardClick={() => {
+                  setSelectedTask(task);
+                  setIsDetailOpen(true);
+                }}
+                onStatusChange={(status) => handleQuickStatusUpdate(task, status)}
+                priorityVariants={priorityVariants}
+                statusColors={statusColors}
+              />
+            ))}
+
+            {filteredDueToday.length === 0 && (
+              <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/30 text-center space-y-2">
+                <div className="text-3xl">🎉</div>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  All clear for today!
+                </h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  You have no pending tasks due today. Great job keeping your workspace clean!
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 📅 Section 2: Upcoming (Next 7 Days) */}
+      {(activeTab === "all" || activeTab === "upcoming") && (
+        <div className="space-y-3 pt-4">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              <Calendar className="w-4 h-4 text-indigo-500" />
+              <span>Upcoming Queue (Next 7 Days)</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                {filteredUpcoming.length}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {filteredUpcoming.map((task) => (
+              <TaskListItem
+                key={task.id}
+                task={task}
+                onCardClick={() => {
+                  setSelectedTask(task);
+                  setIsDetailOpen(true);
+                }}
+                onStatusChange={(status) => handleQuickStatusUpdate(task, status)}
+                priorityVariants={priorityVariants}
+                statusColors={statusColors}
+              />
+            ))}
+
+            {filteredUpcoming.length === 0 && (
+              <div className="p-6 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/30 text-center text-xs text-slate-400">
+                No upcoming scheduled tasks found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ✅ Section 3: Recently Completed */}
+      {(activeTab === "all" || activeTab === "completed") && (
+        <div className="space-y-3 pt-4">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <span>Recently Completed</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                {filteredCompleted.length}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {filteredCompleted.map((task) => (
+              <div
+                key={task.id}
+                onClick={() => {
+                  setSelectedTask(task);
+                  setIsDetailOpen(true);
+                }}
+                className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-3 text-xs opacity-80 hover:opacity-100 transition cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                    <CheckCircle2 className="w-3.5 h-3.5 fill-current" />
+                  </div>
+                  <span className="line-through text-slate-400 dark:text-slate-500 font-medium group-hover:text-slate-600 dark:group-hover:text-slate-300 transition">
+                    {task.title}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    Completed ✓
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition" />
+                </div>
+              </div>
+            ))}
+
+            {filteredCompleted.length === 0 && (
+              <div className="p-4 rounded-xl text-center text-xs text-slate-400">
+                No tasks completed yet this sprint.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Task Detail Modal */}
       <TaskDetail
@@ -358,7 +655,6 @@ interface TaskListItemProps {
   onStatusChange: (status: "pending" | "in_progress" | "in_review" | "completed") => void;
   priorityVariants: Record<string, "default" | "urgent" | "warning">;
   statusColors: Record<string, string>;
-  statusLabels: Record<string, string>;
 }
 
 function TaskListItem({
@@ -367,7 +663,6 @@ function TaskListItem({
   onStatusChange,
   priorityVariants,
   statusColors,
-  statusLabels,
 }: TaskListItemProps) {
   const rawDueDate = task.dueDate || task.due_date;
   const isOverdue =
@@ -377,10 +672,14 @@ function TaskListItem({
 
   const isCompleted = task.status === "completed";
 
+  // Subtask progress
+  const subtasks = task.subtasks || [];
+  const completedSubtasks = subtasks.filter((s: any) => s.completed).length;
+
   return (
-    <div className="p-4 rounded-xl bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+    <div className="p-4 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
       {/* 1-Click Quick Complete Circle Button */}
-      <div className="flex items-start sm:items-center gap-3.5 flex-1">
+      <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
         <button
           type="button"
           onClick={(e) => {
@@ -390,8 +689,8 @@ function TaskListItem({
           title={isCompleted ? "Mark as in progress" : "Mark as completed"}
           className={`mt-0.5 sm:mt-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-150 flex-shrink-0 active:scale-90 ${
             isCompleted
-              ? "bg-success border-success text-white"
-              : "border-slate-300 dark:border-slate-600 hover:border-success text-transparent hover:text-success/40"
+              ? "bg-emerald-500 border-emerald-500 text-white"
+              : "border-slate-300 dark:border-slate-600 hover:border-emerald-500 text-transparent hover:text-emerald-500/40"
           }`}
         >
           <CheckCircle2 className="w-4 h-4 fill-current" />
@@ -400,24 +699,32 @@ function TaskListItem({
         {/* Task Info (Clickable for detail modal) */}
         <div
           onClick={onCardClick}
-          className="flex-1 cursor-pointer space-y-1 select-none"
+          className="flex-1 cursor-pointer space-y-1.5 select-none min-w-0"
         >
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={priorityVariants[task.priority] || "default"}>
-              {task.priority}
+              {task.priority.toUpperCase()}
             </Badge>
 
             {isOverdue && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-urgent bg-urgent/10 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
                 <AlertTriangle className="w-3 h-3" />
-                Overdue
+                OVERDUE
+              </span>
+            )}
+
+            {/* Subtask count */}
+            {subtasks.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-full">
+                <CheckSquare className="w-3 h-3 text-indigo-500" />
+                {completedSubtasks}/{subtasks.length} subtasks
               </span>
             )}
 
             {task.tags?.map((t) => (
               <span
                 key={t}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium"
+                className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 font-medium"
               >
                 #{t}
               </span>
@@ -425,18 +732,18 @@ function TaskListItem({
           </div>
 
           <h4
-            className={`text-sm font-semibold transition-colors duration-150 ${
+            className={`text-sm font-bold truncate transition-colors duration-150 ${
               isCompleted
                 ? "line-through text-slate-400 dark:text-slate-500"
-                : "text-slate-900 dark:text-slate-100 group-hover:text-primary"
+                : "text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
             }`}
           >
             {task.title}
           </h4>
 
           {rawDueDate && (
-            <div className="flex items-center gap-1 text-[11px] text-slate-400">
-              <Clock className="w-3 h-3" />
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+              <Clock className="w-3 h-3 text-slate-400" />
               <span>
                 Due:{" "}
                 {new Date(rawDueDate).toLocaleDateString(undefined, {
@@ -452,7 +759,7 @@ function TaskListItem({
 
       {/* Quick Status Dropdown Action */}
       <div
-        className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pl-9 sm:pl-0"
+        className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-700/60 pl-9 sm:pl-0"
         onClick={(e) => e.stopPropagation()}
       >
         <select
@@ -462,7 +769,7 @@ function TaskListItem({
               e.target.value as "pending" | "in_progress" | "in_review" | "completed"
             )
           }
-          className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer ${
+          className={`text-xs font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer ${
             statusColors[task.status] || "bg-slate-100 text-slate-700"
           }`}
         >

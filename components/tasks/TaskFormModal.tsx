@@ -73,6 +73,7 @@ export function TaskFormModal({
   const [status, setStatus] = useState<"pending" | "in_progress" | "in_review" | "completed">("pending");
   const [dueDate, setDueDate] = useState("");
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  const [membersList, setMembersList] = useState<OrgMember[]>(orgMembers || []);
   const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState("");
@@ -158,6 +159,23 @@ export function TaskFormModal({
 
       // Trigger automatic workload suggestion on open
       fetchAiWorkloadSuggestion(initialTask?.title || "New Task");
+
+      // Dynamically fetch live members from database
+      fetch("/api/v1/org/members")
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setMembersList(
+              json.data.map((m: any) => ({
+                id: m.id || m.user_id,
+                fullName: m.fullName || m.full_name || m.name || m.email || "Team Member",
+                role: m.role || "employee",
+                avatarUrl: m.avatarUrl || m.avatar_url || null,
+              }))
+            );
+          }
+        })
+        .catch(() => {});
     }
   }, [isOpen, initialTask]);
 
@@ -526,7 +544,7 @@ export function TaskFormModal({
           </div>
 
           <div className="flex flex-wrap gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-            {orgMembers.map((member) => {
+            {membersList.map((member) => {
               const isSelected = selectedAssignees.includes(member.id);
               return (
                 <button

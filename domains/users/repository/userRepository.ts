@@ -126,7 +126,7 @@ export class SupabaseUserRepository implements IUserRepository {
       // Non-blocking
     }
 
-    return profiles.map((p: any) => ({
+    return finalProfiles.map((p: any) => ({
       id: p.id,
       orgId: p.org_id,
       fullName: p.full_name || "Team Member",
