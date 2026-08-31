@@ -4,28 +4,40 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Check,
+  ShieldCheck,
   Smartphone,
   Monitor,
+  Check,
+  X,
+  Lock,
+  FileCheck,
+  Users,
+  Building,
+  Heart,
 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 
 export function MarketingFooter() {
+  const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showPwaModal, setShowPwaModal] = useState(false);
   const [legalModal, setLegalModal] = useState<
     "privacy" | "terms" | "security" | "cookies" | "compliance" | "about" | "contact" | null
   >(null);
-  const [showPricingModal, setShowPricingModal] = useState(false);
-  const [showPwaModal, setShowPwaModal] = useState(false);
-  const [cookieConsent, setCookieConsent] = useState({
+  const [cookieConsent, setCookieConsent] = useState<{
+    necessary: boolean;
+    analytics: boolean;
+    marketing: boolean;
+  }>({
     necessary: true,
     analytics: true,
+    marketing: false,
   });
 
   return (
     <>
-      <footer className="border-t border-slate-800 bg-[#0B0F19] text-slate-400 pt-16 pb-12">
+      <footer className="bg-[#0B0F19] text-slate-400 border-t border-slate-800 transition-colors pt-16 pb-12 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Top Row: Brand & Status Badge */}
+          {/* Top Row — Brand Identity, Version & System Status */}
           <div className="pb-10 border-b border-slate-800 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
@@ -63,7 +75,7 @@ export function MarketingFooter() {
 
           {/* 5-Column Navigation Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10">
-            {/* Column 1: Products */}
+            {/* Column 1: Products & OS */}
             <div className="space-y-3.5">
               <div className="text-[11px] font-mono font-bold text-slate-100 uppercase tracking-wider">
                 Products &amp; OS
@@ -90,7 +102,7 @@ export function MarketingFooter() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/features#kanban" className="hover:text-white transition-colors">
+                  <Link href="/features" className="hover:text-white transition-colors">
                     Task Dependency DAG
                   </Link>
                 </li>
@@ -103,7 +115,7 @@ export function MarketingFooter() {
                   <button
                     type="button"
                     onClick={() => setShowPricingModal(true)}
-                    className="hover:text-white transition-colors cursor-pointer text-indigo-400 font-semibold text-left"
+                    className="hover:text-white transition-colors cursor-pointer text-indigo-400 font-semibold"
                   >
                     Pricing Plans (₹0 Free)
                   </button>
@@ -142,11 +154,6 @@ export function MarketingFooter() {
                     Enterprise B2B Teams
                   </Link>
                 </li>
-                <li>
-                  <Link href="/solutions" className="hover:text-white transition-colors">
-                    Remote &amp; Hybrid Workspaces
-                  </Link>
-                </li>
               </ul>
             </div>
 
@@ -176,7 +183,7 @@ export function MarketingFooter() {
                   </button>
                 </li>
                 <li>
-                  <Link href="/#why-switch" className="hover:text-white transition-colors">
+                  <Link href="/solutions" className="hover:text-white transition-colors">
                     Why Teams Switch from WhatsApp
                   </Link>
                 </li>
@@ -188,7 +195,7 @@ export function MarketingFooter() {
               </ul>
             </div>
 
-            {/* Column 4: Trust & Legal */}
+            {/* Column 4: Trust & Compliance */}
             <div className="space-y-3.5">
               <div className="text-[11px] font-mono font-bold text-slate-100 uppercase tracking-wider">
                 Trust &amp; Compliance
@@ -267,7 +274,7 @@ export function MarketingFooter() {
                   </button>
                 </li>
                 <li>
-                  <Link href="/#why-switch" className="hover:text-white transition-colors">
+                  <Link href="/solutions" className="hover:text-white transition-colors">
                     Customer Stories
                   </Link>
                 </li>
@@ -328,7 +335,9 @@ export function MarketingFooter() {
         </div>
       </footer>
 
-      {/* Pricing Modal (₹ INR Pricing) */}
+      {/* ======================================================================== */}
+      {/* PRICING MODAL (₹ INR PRICING)                                            */}
+      {/* ======================================================================== */}
       <Modal
         isOpen={showPricingModal}
         onClose={() => setShowPricingModal(false)}
@@ -444,7 +453,9 @@ export function MarketingFooter() {
         </div>
       </Modal>
 
-      {/* PWA Install Modal */}
+      {/* ======================================================================== */}
+      {/* PWA INSTALL MODAL                                                        */}
+      {/* ======================================================================== */}
       <Modal
         isOpen={showPwaModal}
         onClose={() => setShowPwaModal(false)}
@@ -485,7 +496,9 @@ export function MarketingFooter() {
         </div>
       </Modal>
 
-      {/* Comprehensive Legal, Cookie & Compliance Modals */}
+      {/* ======================================================================== */}
+      {/* COMPREHENSIVE LEGAL, COOKIE & COMPLIANCE MODALS                          */}
+      {/* ======================================================================== */}
       <Modal
         isOpen={legalModal !== null}
         onClose={() => setLegalModal(null)}
@@ -607,16 +620,15 @@ export function MarketingFooter() {
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
                   <div>
                     <div className="font-bold text-slate-900">Performance &amp; Telemetry</div>
-                    <div className="text-[11px] text-slate-500">Helps us detect slow API routes and UI errors.</div>
+                    <div className="text-[11px] text-slate-500">Helps us detect slow API routes and UI errors (PostHog self-hosted).</div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setCookieConsent((prev) => ({ ...prev, analytics: !prev.analytics }))}
-                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
-                      cookieConsent.analytics
-                        ? "bg-indigo-600 text-white"
-                        : "bg-slate-200 text-slate-600"
-                    }`}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${cookieConsent.analytics
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-200 text-slate-600"
+                      }`}
                   >
                     {cookieConsent.analytics ? "Enabled" : "Disabled"}
                   </button>

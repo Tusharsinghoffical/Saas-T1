@@ -75,29 +75,10 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"kanban" | "ai" | "employee" | "broadcast">("kanban");
-  const [legalModal, setLegalModal] = useState<
-    "privacy" | "terms" | "security" | "cookies" | "compliance" | "about" | "contact" | null
-  >(null);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [showPwaModal, setShowPwaModal] = useState(false);
-  const [showPricingModal, setShowPricingModal] = useState(false);
-  const [cookieConsent, setCookieConsent] = useState<{
-    essential: boolean;
-    analytics: boolean;
-    marketing: boolean;
-  }>({
-    essential: true,
-    analytics: true,
-    marketing: false,
-  });
 
   // Role Showcase State
   const [selectedRole, setSelectedRole] = useState<"founders" | "engineering" | "operations">("founders");
-
-  // Header Dropdown & Mobile Menu State
-  const [openDropdown, setOpenDropdown] = useState<"products" | "solutions" | "resources" | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const headerRef = useRef<HTMLDivElement>(null);
 
   // ROI Calculator State
   const [teamSize, setTeamSize] = useState<number>(8);
@@ -109,17 +90,6 @@ export default function HomePage() {
       el.scrollIntoView({ behavior: "smooth" });
     }
   };
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Interactive Live Demo Tasks State with realistic Indian names and business deliverables
   const [demoTasks, setDemoTasks] = useState([
@@ -1253,7 +1223,7 @@ export default function HomePage() {
       </section>
 
       {/* ======================================================================== */}
-      {/* 11. ENTERPRISE MEGA FOOTER — REUSABLE UNIFIED MARKETING FOOTER            */}
+      {/* 11. ENTERPRISE MEGA FOOTER — STANDARDIZED MARKETING FOOTER               */}
       {/* ======================================================================== */}
       <MarketingFooter />
     </div>
