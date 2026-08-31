@@ -196,38 +196,36 @@ export function MarketingFooter() {
               </ul>
             </div>
 
-            {/* Column 4: Trust & Compliance */}
+            {/* Column 4: Trust & Legal */}
             <div className="space-y-3.5">
               <div className="text-[11px] font-mono font-bold text-slate-100 uppercase tracking-wider">
                 Trust &amp; Compliance
               </div>
               <ul className="space-y-2.5 text-[11px]">
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => setLegalModal("security")}
-                    className="hover:text-white transition-colors cursor-pointer text-left"
-                  >
-                    Security Measures (RLS &amp; AES-256)
-                  </button>
+                  <Link href="/privacy" className="hover:text-white transition-colors">
+                    Privacy Policy &amp; DPDP Act
+                  </Link>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => setLegalModal("privacy")}
-                    className="hover:text-white transition-colors cursor-pointer text-left"
-                  >
-                    Privacy Policy
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setLegalModal("terms")}
-                    className="hover:text-white transition-colors cursor-pointer text-left"
-                  >
+                  <Link href="/terms" className="hover:text-white transition-colors">
                     Terms of Service
-                  </button>
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/security" className="hover:text-white transition-colors">
+                    Security Architecture &amp; RLS
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/aup" className="hover:text-white transition-colors">
+                    Acceptable Use Policy (AUP)
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/sla" className="hover:text-white transition-colors">
+                    SaaS Subscription &amp; SLA
+                  </Link>
                 </li>
                 <li>
                   <button
@@ -236,15 +234,6 @@ export function MarketingFooter() {
                     className="hover:text-white transition-colors cursor-pointer text-left text-amber-300 font-semibold"
                   >
                     Cookie Preferences &amp; Consent
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    onClick={() => setLegalModal("compliance")}
-                    className="hover:text-white transition-colors cursor-pointer text-left"
-                  >
-                    DPDP Act 2023 (India) Compliance
                   </button>
                 </li>
               </ul>
@@ -326,33 +315,42 @@ export function MarketingFooter() {
               <span className="px-2.5 py-1 rounded-md bg-slate-800/80 text-[10px] font-mono font-bold text-slate-300 border border-slate-700">
                 English (India)
               </span>
-              <button
-                type="button"
-                onClick={() => setLegalModal("privacy")}
-                className="hover:text-white hover:underline cursor-pointer"
+              <Link
+                href="/privacy"
+                className="hover:text-white hover:underline"
               >
                 Privacy
-              </button>
-              <button
-                type="button"
-                onClick={() => setLegalModal("terms")}
-                className="hover:text-white hover:underline cursor-pointer"
+              </Link>
+              <Link
+                href="/terms"
+                className="hover:text-white hover:underline"
               >
                 Terms
-              </button>
+              </Link>
+              <Link
+                href="/security"
+                className="hover:text-white hover:underline"
+              >
+                Security
+              </Link>
+              <Link
+                href="/aup"
+                className="hover:text-white hover:underline"
+              >
+                AUP
+              </Link>
+              <Link
+                href="/sla"
+                className="hover:text-white hover:underline"
+              >
+                SLA
+              </Link>
               <button
                 type="button"
                 onClick={() => setLegalModal("cookies")}
                 className="hover:text-white hover:underline cursor-pointer"
               >
                 Cookies
-              </button>
-              <button
-                type="button"
-                onClick={() => setLegalModal("security")}
-                className="hover:text-white hover:underline cursor-pointer"
-              >
-                Security
               </button>
             </div>
           </div>
