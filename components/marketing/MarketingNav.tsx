@@ -61,7 +61,17 @@ export function MarketingNav() {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs font-bold uppercase tracking-wider text-slate-700">
+          <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-xs font-bold uppercase tracking-wider text-slate-700">
+            {/* Home Route Link */}
+            <Link
+              href="/"
+              className={`py-2 transition-colors ${
+                pathname === "/" ? "text-slate-950 font-extrabold" : "hover:text-slate-950"
+              }`}
+            >
+              Home
+            </Link>
+
             {/* Features / Products Link & Dropdown */}
             <div className="relative">
               <button
@@ -205,6 +215,26 @@ export function MarketingNav() {
             >
               Pricing
             </Link>
+
+            {/* About Route Link */}
+            <Link
+              href="/about"
+              className={`py-2 transition-colors ${
+                pathname === "/about" ? "text-slate-950 font-extrabold" : "hover:text-slate-950"
+              }`}
+            >
+              About
+            </Link>
+
+            {/* Contact Route Link */}
+            <Link
+              href="/contact"
+              className={`py-2 transition-colors ${
+                pathname === "/contact" ? "text-slate-950 font-extrabold" : "hover:text-slate-950"
+              }`}
+            >
+              Contact
+            </Link>
           </nav>
 
           {/* Action CTAs */}
@@ -254,6 +284,13 @@ export function MarketingNav() {
           <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-6 space-y-4 animate-in slide-in-from-top duration-200">
             <div className="space-y-2">
               <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block p-2 text-sm font-bold text-slate-800 rounded-lg hover:bg-slate-50"
+              >
+                Home
+              </Link>
+              <Link
                 href="/features"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block p-2 text-sm font-bold text-slate-800 rounded-lg hover:bg-slate-50"
@@ -273,6 +310,20 @@ export function MarketingNav() {
                 className="block p-2 text-sm font-bold text-slate-800 rounded-lg hover:bg-slate-50"
               >
                 Pricing &amp; Free Pilot
+              </Link>
+              <Link
+                href="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block p-2 text-sm font-bold text-slate-800 rounded-lg hover:bg-slate-50"
+              >
+                About TASQ-ONE
+              </Link>
+              <Link
+                href="/contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block p-2 text-sm font-bold text-slate-800 rounded-lg hover:bg-slate-50"
+              >
+                Contact Desk &amp; Queries
               </Link>
               <button
                 type="button"

@@ -246,22 +246,14 @@ export function MarketingFooter() {
               </div>
               <ul className="space-y-2.5 text-[11px]">
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => setLegalModal("about")}
-                    className="hover:text-white transition-colors cursor-pointer text-left"
-                  >
+                  <Link href="/about" className="hover:text-white transition-colors">
                     About TASQ-ONE
-                  </button>
+                  </Link>
                 </li>
                 <li>
-                  <button
-                    type="button"
-                    onClick={() => setLegalModal("contact")}
-                    className="hover:text-white transition-colors cursor-pointer text-left"
-                  >
+                  <Link href="/contact" className="hover:text-white transition-colors">
                     Contact Engineering &amp; Support
-                  </button>
+                  </Link>
                 </li>
                 <li>
                   <Link href="/solutions" className="hover:text-white transition-colors">
