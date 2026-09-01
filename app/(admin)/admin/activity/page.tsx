@@ -270,6 +270,193 @@ export default function ActivityLogPage() {
     return actors.size;
   }, [logs]);
 
+  // Helper to render human-readable status badge
+  const renderStatusBadge = (status?: string) => {
+    if (!status) return null;
+    switch (status) {
+      case "completed":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+            Completed
+          </span>
+        );
+      case "in_progress":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            In Progress
+          </span>
+        );
+      case "in_review":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+            In Review
+          </span>
+        );
+      case "pending":
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+            Pending
+          </span>
+        );
+    }
+  };
+
+  // Helper to render human-readable priority badge
+  const renderPriorityBadge = (priority?: string) => {
+    if (!priority) return null;
+    switch (priority) {
+      case "urgent":
+      case "high":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+            <Flame className="w-2.5 h-2.5 text-rose-500" />
+            High
+          </span>
+        );
+      case "medium":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+            Medium
+          </span>
+        );
+      case "low":
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            Low
+          </span>
+        );
+    }
+  };
+
+  // Human-friendly details formatter (No raw JSON/curly braces)
+  const renderLogDetails = (log: ActivityLogRecord) => {
+    const diff = log.diff || {};
+    const keys = Object.keys(diff);
+
+    if (keys.length === 0) {
+      return <span className="text-slate-400 italic text-[11px]">— No extra details —</span>;
+    }
+
+    // 1. Comments
+    if (log.action === "comment.created" || log.entity === "task_comments") {
+      const commentText = diff.body || diff.content || diff.text || "Added a comment";
+      return (
+        <div className="flex items-center gap-1.5 max-w-md">
+          <MessageSquare className="w-3 h-3 text-amber-500 flex-shrink-0" />
+          <span className="text-slate-800 dark:text-slate-200 font-medium italic truncate text-[11px] bg-slate-50 dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700">
+            &ldquo;{commentText}&rdquo;
+          </span>
+        </div>
+      );
+    }
+
+    // 2. Tasks
+    if (log.action.startsWith("task.") || log.entity === "tasks") {
+      const title = diff.title || (log.entityId ? `Task #${log.entityId.slice(0, 6)}` : null);
+      return (
+        <div className="flex items-center gap-2 flex-wrap max-w-lg">
+          {title && (
+            <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[240px] text-[11px]" title={title}>
+              {title}
+            </span>
+          )}
+          {diff.status && renderStatusBadge(diff.status)}
+          {diff.priority && renderPriorityBadge(diff.priority)}
+          {diff.assigneeIds && Array.isArray(diff.assigneeIds) && diff.assigneeIds.length > 0 && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+              <Users className="w-2.5 h-2.5" />
+              {diff.assigneeIds.length} Assignee{diff.assigneeIds.length > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    // 3. Members & Profiles
+    if (log.action.startsWith("member.") || log.entity === "profiles" || log.entity === "team_members") {
+      return (
+        <div className="flex items-center gap-2 flex-wrap">
+          {diff.fullName && (
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px]">
+              {diff.fullName}
+            </span>
+          )}
+          {diff.role && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 uppercase">
+              <Shield className="w-2.5 h-2.5" />
+              {diff.role}
+            </span>
+          )}
+          {diff.teamName && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
+              Team: {diff.teamName}
+            </span>
+          )}
+          {diff.email && (
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              {diff.email}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    // 4. Attachments
+    if (log.action.startsWith("attachment.") || log.entity === "task_attachments") {
+      return (
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300">
+          <Paperclip className="w-3 h-3 text-teal-500" />
+          <span className="font-semibold">{diff.file_name || diff.fileName || "File Attachment"}</span>
+          {diff.file_size && (
+            <span className="text-[10px] text-slate-400">({Math.round(diff.file_size / 1024)} KB)</span>
+          )}
+        </div>
+      );
+    }
+
+    // 5. Org Settings & Auth
+    if (log.action.startsWith("org.") || log.entity === "organizations") {
+      return (
+        <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+          {diff.event || diff.name || "Organization settings modified"}
+        </span>
+      );
+    }
+
+    if (log.action.startsWith("auth.")) {
+      return (
+        <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+          {diff.message || "User authentication event recorded"}
+        </span>
+      );
+    }
+
+    // 6. Generic formatted properties (NO raw curly braces)
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap max-w-md">
+        {keys.map((k) => {
+          const val = diff[k];
+          if (val === null || val === undefined) return null;
+          const displayVal = typeof val === "object" ? JSON.stringify(val) : String(val);
+          const formattedKey = k.replace(/_/g, " ");
+          return (
+            <span
+              key={k}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+            >
+              <span className="text-slate-400 capitalize">{formattedKey}:</span>
+              <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[120px]">{displayVal}</span>
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
@@ -408,7 +595,7 @@ export default function ActivityLogPage() {
                 <th className="py-3.5 px-5">Actor</th>
                 <th className="py-3.5 px-5">Action</th>
                 <th className="py-3.5 px-5">Entity</th>
-                <th className="py-3.5 px-5">Details / Diff</th>
+                <th className="py-3.5 px-5">Details & Changes</th>
                 <th className="py-3.5 px-5 text-right">Inspect</th>
               </tr>
             </thead>
@@ -485,15 +672,9 @@ export default function ActivityLogPage() {
                         </div>
                       </td>
 
-                      {/* Diff preview */}
-                      <td className="py-3.5 px-5 text-slate-500 dark:text-slate-400 max-w-xs truncate font-mono text-[11px]">
-                        {log.diff ? (
-                          <span className="bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-700">
-                            {JSON.stringify(log.diff)}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 italic">—</span>
-                        )}
+                      {/* Clean Human-Readable Details (No JSON curly braces) */}
+                      <td className="py-3.5 px-5">
+                        {renderLogDetails(log)}
                       </td>
 
                       {/* Inspect */}
@@ -502,7 +683,7 @@ export default function ActivityLogPage() {
                           type="button"
                           onClick={() => setSelectedLog(log)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-primary/10 transition text-[11px] font-semibold"
-                          title="Inspect Event Diff"
+                          title="Inspect Event Details"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>Inspect</span>
@@ -543,19 +724,20 @@ export default function ActivityLogPage() {
         </div>
       </div>
 
-      {/* ── Inspect Diff Modal ── */}
+      {/* ── Inspect Diff Modal (Clean Visual Card Inspector) ── */}
       <Modal
         isOpen={Boolean(selectedLog)}
         onClose={() => setSelectedLog(null)}
         title="Audit Event Details"
-        description="Comprehensive immutable record of this mutation event."
+        description="Comprehensive immutable record of this workspace mutation."
       >
         {selectedLog && (
           <div className="space-y-4 text-xs">
+            {/* Event Summary Grid */}
             <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
               <div>
                 <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Action</span>
-                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block">{selectedLog.action}</span>
+                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block">{getActionConfig(selectedLog.action).label}</span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Actor</span>
@@ -563,7 +745,7 @@ export default function ActivityLogPage() {
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Entity</span>
-                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block capitalize">{selectedLog.entity}</span>
+                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block capitalize">{selectedLog.entity.replace("_", " ")}</span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Timestamp</span>
@@ -574,21 +756,59 @@ export default function ActivityLogPage() {
               {selectedLog.entityId || selectedLog.entity_id ? (
                 <div className="col-span-2">
                   <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Entity ID</span>
-                  <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px] break-all">
+                  <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px] break-all bg-white dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 inline-block mt-0.5">
                     {selectedLog.entityId || selectedLog.entity_id}
                   </code>
                 </div>
               ) : null}
             </div>
 
+            {/* Structured Property Cards (Formatted, No raw JSON) */}
             <div>
               <div className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-primary" />
-                <span>Mutation Payload & Diff State</span>
+                <span>Changed Properties & Values</span>
               </div>
-              <pre className="p-4 rounded-2xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto max-h-72 border border-slate-800 leading-relaxed shadow-inner">
-                {JSON.stringify(selectedLog.diff || {}, null, 2)}
-              </pre>
+
+              {selectedLog.diff && Object.keys(selectedLog.diff).length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {Object.entries(selectedLog.diff).map(([key, val]) => {
+                    const formattedKey = key.replace(/_/g, " ");
+                    const isStatus = key === "status";
+                    const isPriority = key === "priority";
+
+                    return (
+                      <div
+                        key={key}
+                        className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between"
+                      >
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider capitalize">
+                          {formattedKey}
+                        </span>
+                        <div className="mt-1">
+                          {isStatus ? (
+                            renderStatusBadge(String(val))
+                          ) : isPriority ? (
+                            renderPriorityBadge(String(val))
+                          ) : typeof val === "object" ? (
+                            <pre className="text-[11px] font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-all">
+                              {JSON.stringify(val, null, 2)}
+                            </pre>
+                          ) : (
+                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">
+                              {String(val)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 text-slate-400 italic text-center">
+                  No property mutations recorded for this event.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -596,3 +816,4 @@ export default function ActivityLogPage() {
     </div>
   );
 }
+
