@@ -57,6 +57,7 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
   const navItems = [
     { name: "Team Kanban Board", href: "/manager/dashboard", icon: LayoutDashboard },
+    { name: "My Team", href: "/manager/team", icon: Users },
   ];
 
   return (
