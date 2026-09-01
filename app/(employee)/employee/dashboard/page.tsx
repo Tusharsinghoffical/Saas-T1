@@ -41,6 +41,7 @@ import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
 import { captureEvent } from "@/lib/analytics/posthog";
 import { createClient } from "@/lib/supabase/client";
+import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
 
 export default function EmployeeDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -90,17 +91,17 @@ export default function EmployeeDashboardPage() {
   const [greeting, setGreeting] = useState<{ text: string; icon: any; color: string }>({
     text: "Welcome",
     icon: Sparkles,
-    color: "text-amber-400",
+    color: "text-amber-500",
   });
 
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) {
-      setGreeting({ text: "Good Morning", icon: Sun, color: "text-amber-400" });
+      setGreeting({ text: "Good Morning", icon: Sun, color: "text-amber-500" });
     } else if (hour < 18) {
-      setGreeting({ text: "Good Afternoon", icon: Sunset, color: "text-orange-400" });
+      setGreeting({ text: "Good Afternoon", icon: Sunset, color: "text-orange-500" });
     } else {
-      setGreeting({ text: "Good Evening", icon: Moon, color: "text-indigo-300" });
+      setGreeting({ text: "Good Evening", icon: Moon, color: "text-indigo-400" });
     }
   }, []);
 
@@ -126,9 +127,14 @@ export default function EmployeeDashboardPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchMyTasks();
-  }, [fetchMyTasks]);
+  // 10-Second Auto-Refresh Hook
+  const {
+    isEnabled: isAutoRefreshEnabled,
+    toggle: toggleAutoRefresh,
+    secondsRemaining,
+    isRefreshing,
+    triggerManual,
+  } = useAutoRefresh(fetchMyTasks, 10, true);
 
   // Realtime Supabase Channel Subscription for Live Task Updates
   useEffect(() => {
@@ -284,7 +290,7 @@ export default function EmployeeDashboardPage() {
   const statusColors: Record<string, string> = {
     pending: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
     in_progress: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
-    in_review: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    in_review: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
     completed: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   };
 
@@ -354,234 +360,169 @@ export default function EmployeeDashboardPage() {
         </div>
       )}
 
-      {/* 👤 Premium Employee Profile & ID Command Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-7 shadow-2xl border border-indigo-800/40">
-        {/* Glow Spheres */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          {/* Left Column: Avatar & Comprehensive Details */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            {/* Avatar with Live Beacon */}
+      {/* ── Modern Sleek Profile Header Bar ── */}
+      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          {/* Identity Info */}
+          <div className="flex items-center gap-4">
             <div className="relative flex-shrink-0">
-              <div className="h-20 w-20 sm:h-22 sm:w-22 rounded-2xl bg-gradient-to-tr from-indigo-500 to-teal-400 p-[2px] shadow-lg shadow-indigo-500/25">
-                <div className="h-full w-full rounded-[14px] bg-slate-900 flex items-center justify-center font-extrabold text-2xl tracking-wider text-white">
-                  {initials}
-                </div>
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-md shadow-primary/20">
+                {initials}
               </div>
-              {/* Online Beacon */}
-              <span
-                title="Online & Synced"
-                className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center shadow"
-              >
-                <span className="h-2 w-2 rounded-full bg-white animate-ping" />
-              </span>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
             </div>
 
-            {/* Employee Information */}
-            <div className="space-y-2">
+            <div>
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Greeting */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-indigo-200 backdrop-blur-md border border-white/10">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
                   <GreetingIcon className={`w-3.5 h-3.5 ${greeting.color}`} />
-                  <span>{greeting.text}</span>
+                  <span>{greeting.text},</span>
                 </span>
-
-                {/* Role Badge */}
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
-                  <Shield className="w-3 h-3" />
+                <span className="text-base font-extrabold text-slate-900 dark:text-white">
+                  {employeeProfile.fullName}
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider">
                   {employeeProfile.role}
                 </span>
-
-                {/* Realtime Live Sync Pill */}
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border backdrop-blur-md transition-colors ${
-                    isConnected
-                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                      : "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                  }`}
-                >
-                  <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"}`} />
-                  <span>{isConnected ? "Realtime Sync Active" : "Connecting..."}</span>
-                </span>
               </div>
 
-              {/* Name & Title */}
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-                  {employeeProfile.fullName}
-                </h1>
-                <p className="text-xs sm:text-sm text-indigo-200/80 mt-0.5 flex items-center gap-2">
-                  <span>Workspace Member</span>
-                  <span className="text-indigo-400">•</span>
-                  <span>Personal Focus & Execution Workspace</span>
-                </p>
-              </div>
-
-              {/* Identity & Metadata Chips */}
-              <div className="flex items-center gap-2.5 flex-wrap pt-1 text-xs">
-                {/* Employee ID with Copy Button */}
+              {/* Identity details row */}
+              <div className="flex items-center gap-2.5 flex-wrap mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                 <button
                   type="button"
                   onClick={copyEmployeeId}
-                  title="Click to copy Employee ID"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-indigo-200 hover:text-white border border-white/10 transition group font-mono text-[11px] font-bold"
+                  title="Click to copy ID"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-mono text-[10px] font-bold text-slate-700 dark:text-slate-300 transition"
                 >
-                  <Hash className="w-3 h-3 text-indigo-400" />
-                  <span>ID: {employeeProfile.employeeCode}</span>
-                  {copiedId ? (
-                    <Check className="w-3 h-3 text-emerald-400" />
-                  ) : (
-                    <Copy className="w-3 h-3 text-indigo-300 group-hover:text-white transition opacity-70" />
-                  )}
+                  <Hash className="w-3 h-3 text-primary" />
+                  <span>{employeeProfile.employeeCode || "ID: EMP-0001"}</span>
+                  {copiedId ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-slate-400" />}
                 </button>
 
-                {/* Team / Squad Chip */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px] font-semibold">
-                  <Briefcase className="w-3 h-3 text-amber-400" />
-                  <span>Team: {employeeProfile.teamName || "General Squad"}</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                  <Briefcase className="w-3 h-3 text-amber-500" />
+                  <span>{employeeProfile.teamName || "General Squad"}</span>
                 </span>
 
-                {/* Email Chip */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px]">
-                  <Mail className="w-3 h-3 text-indigo-300" />
-                  <span>{employeeProfile.email}</span>
-                </span>
-
-                {/* Join Date */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px]">
-                  <CalendarDays className="w-3 h-3 text-teal-300" />
-                  <span>Since {formattedJoinDate}</span>
-                </span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">{employeeProfile.email}</span>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Sprint Completion Card */}
-          <div className="bg-white/5 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-white/10 min-w-[260px] flex flex-col justify-between space-y-3.5 flex-shrink-0">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-indigo-200 font-semibold flex items-center gap-1.5">
-                <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
-                Sprint Productivity
-              </span>
-              <span className="font-extrabold text-emerald-400 text-base">{completionPercentage}%</span>
-            </div>
+          {/* Right Action Area: Auto-Refresh & Sprint Progress */}
+          <div className="flex items-center gap-3 self-start md:self-center flex-wrap">
+            {/* 10-Second Auto-Refresh Control */}
+            <AutoRefreshBadge
+              isEnabled={isAutoRefreshEnabled}
+              toggle={toggleAutoRefresh}
+              secondsRemaining={secondsRemaining}
+              isRefreshing={isRefreshing || isLoading}
+              triggerManual={triggerManual}
+            />
 
-            {/* Progress Track */}
-            <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden p-[1px]">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-300 transition-all duration-500 rounded-full shadow-sm"
-                style={{ width: `${completionPercentage}%` }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] text-indigo-300/80 pt-0.5">
-              <span>{completedCount} of {totalTasks} tasks cleared</span>
-              <button
-                type="button"
-                onClick={fetchMyTasks}
-                disabled={isLoading}
-                className="hover:text-white flex items-center gap-1 font-semibold transition px-2 py-1 rounded-md bg-white/10 hover:bg-white/20"
-                title="Refresh Workspace"
-              >
-                <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin text-teal-300" : ""}`} />
-                Refresh
-              </button>
+            {/* Productivity Pill */}
+            <div className="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-2.5">
+              <div className="text-right">
+                <div className="text-[10px] uppercase font-bold text-slate-400">Sprint Progress</div>
+                <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                  {completedCount}/{totalTasks} Done ({completionPercentage}%)
+                </div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-bold text-[11px] text-emerald-600 dark:text-emerald-400">
+                {completionPercentage}%
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 📊 KPI Summary Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+      {/* ── Metric Snapshot Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Due Today */}
         <div
           onClick={() => setActiveTab(activeTab === "dueToday" ? "all" : "dueToday")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-sm ${
-            dueTodayCount > 0
-              ? "bg-rose-500/5 dark:bg-rose-950/20 border-rose-500/30 hover:border-rose-500/50"
-              : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300"
-          } ${activeTab === "dueToday" ? "ring-2 ring-rose-500" : ""}`}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
+            activeTab === "dueToday"
+              ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40 ring-2 ring-rose-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
+          }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>Due Today</span>
-            <Clock className={`w-4 h-4 ${dueTodayCount > 0 ? "text-rose-500 animate-pulse" : "text-slate-400"}`} />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl sm:text-3xl font-extrabold ${dueTodayCount > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-white"}`}>
-              {dueTodayCount}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
+              Due Today
             </span>
-            <span className="text-[11px] text-slate-400 font-medium">urgent tasks</span>
+            <Clock className="w-4 h-4 text-rose-500" />
           </div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{dueTodayCount}</div>
+          <div className="text-[11px] text-slate-400 mt-1">Immediate priority tasks</div>
         </div>
 
         {/* Card 2: In Progress */}
         <div
-          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm"
+          onClick={() => setActiveTab("all")}
+          className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all cursor-pointer"
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>In Progress</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+              In Progress
+            </span>
             <Zap className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
-              {inProgressCount}
-            </span>
-            <span className="text-[11px] text-slate-400 font-medium">in flight</span>
-          </div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{inProgressCount}</div>
+          <div className="text-[11px] text-slate-400 mt-1">Currently in flight</div>
         </div>
 
-        {/* Card 3: Upcoming (7 Days) */}
+        {/* Card 3: Upcoming (7D) */}
         <div
           onClick={() => setActiveTab(activeTab === "upcoming" ? "all" : "upcoming")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-sm ${
-            activeTab === "upcoming" ? "ring-2 ring-primary" : ""
-          } bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300`}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
+            activeTab === "upcoming"
+              ? "bg-indigo-50/80 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-500/40 ring-2 ring-indigo-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
+          }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>Upcoming (7D)</span>
-            <Calendar className="w-4 h-4 text-primary" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
-              {upcomingCount}
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+              Upcoming (7D)
             </span>
-            <span className="text-[11px] text-slate-400 font-medium">scheduled</span>
+            <Calendar className="w-4 h-4 text-indigo-500" />
           </div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{upcomingCount}</div>
+          <div className="text-[11px] text-slate-400 mt-1">Scheduled for next 7 days</div>
         </div>
 
         {/* Card 4: Completed */}
         <div
           onClick={() => setActiveTab(activeTab === "completed" ? "all" : "completed")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-sm ${
-            activeTab === "completed" ? "ring-2 ring-emerald-500" : ""
-          } bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300`}
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
+            activeTab === "completed"
+              ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/40 ring-2 ring-emerald-500/20"
+              : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
+          }`}
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <span>Completed</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              Completed
+            </span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
-              {completedCount}
-            </span>
-            <span className="text-[11px] text-slate-400 font-medium">cleared</span>
-          </div>
+          <div className="mt-2 text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{completedCount}</div>
+          <div className="text-[11px] text-emerald-600/70 dark:text-emerald-500 mt-1">Cleared this sprint</div>
         </div>
       </div>
 
-      {/* 🔍 Search, Filter & Tabs Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-sm">
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+      {/* ── Filter Bar & Tabs ── */}
+      <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        {/* Tab pills */}
+        <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
           <button
             type="button"
             onClick={() => setActiveTab("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === "all"
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+                ? "bg-primary text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
             All Tasks ({totalTasks})
@@ -589,74 +530,71 @@ export default function EmployeeDashboardPage() {
           <button
             type="button"
             onClick={() => setActiveTab("dueToday")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === "dueToday"
-                ? "bg-rose-600 text-white shadow-sm"
-                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+                ? "bg-rose-500 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
             Due Today ({dueTodayCount})
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("upcoming")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === "upcoming"
-                ? "bg-primary text-white shadow-sm"
-                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+                ? "bg-indigo-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <Calendar className="w-3.5 h-3.5" />
             Upcoming ({upcomingCount})
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("completed")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
               activeTab === "completed"
-                ? "bg-emerald-600 text-white shadow-sm"
-                : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Done ({completedCount})
+            Completed ({completedCount})
           </button>
         </div>
 
-        {/* Search & Priority Controls */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-48">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        {/* Search & Priority Filter */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-56">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <input
               type="text"
+              placeholder="Search tasks…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
-            className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+            className="text-xs px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium cursor-pointer"
           >
             <option value="all">All Priorities</option>
-            <option value="urgent">🔴 Urgent</option>
-            <option value="high">🟠 High</option>
-            <option value="medium">🔵 Medium</option>
-            <option value="low">⚪ Low</option>
+            <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
         </div>
       </div>
 
-      {/* 📋 Section 1: Due Today */}
+      {/* ── Section 1: Due Today / Priority Action ── */}
       {(activeTab === "all" || activeTab === "dueToday") && (
         <div className="space-y-3">
           <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping inline-block" />
+              <Clock className="w-4 h-4 text-rose-500" />
               <span>Due Today / Priority Action</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                 {filteredDueToday.length}
@@ -680,23 +618,19 @@ export default function EmployeeDashboardPage() {
             ))}
 
             {filteredDueToday.length === 0 && (
-              <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/30 text-center space-y-2">
-                <div className="text-3xl">🎉</div>
-                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                  All clear for today!
-                </h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  You have no pending tasks due today. Great job keeping your workspace clean!
-                </p>
+              <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 text-center space-y-1.5">
+                <div className="text-2xl">🎉</div>
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">All clear for today!</div>
+                <div className="text-[11px] text-slate-400">You have no pending tasks due today. Great job keeping your workspace clean!</div>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* 📅 Section 2: Upcoming (Next 7 Days) */}
+      {/* ── Section 2: Upcoming Queue (Next 7 Days) ── */}
       {(activeTab === "all" || activeTab === "upcoming") && (
-        <div className="space-y-3 pt-4">
+        <div className="space-y-3 pt-3">
           <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               <Calendar className="w-4 h-4 text-indigo-500" />
@@ -731,9 +665,9 @@ export default function EmployeeDashboardPage() {
         </div>
       )}
 
-      {/* ✅ Section 3: Recently Completed */}
+      {/* ── Section 3: Recently Completed ── */}
       {(activeTab === "all" || activeTab === "completed") && (
-        <div className="space-y-3 pt-4">
+        <div className="space-y-3 pt-3">
           <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -823,7 +757,7 @@ function TaskListItem({
   const completedSubtasks = subtasks.filter((s: any) => s.completed).length;
 
   return (
-    <div className="p-4 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
+    <div className="p-4 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-xs hover:shadow-md hover:border-primary/40 transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
       {/* 1-Click Quick Complete Circle Button */}
       <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
         <button
@@ -862,7 +796,7 @@ function TaskListItem({
             {/* Subtask count */}
             {subtasks.length > 0 && (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-full">
-                <CheckSquare className="w-3 h-3 text-indigo-500" />
+                <CheckSquare className="w-3 h-3 text-primary" />
                 {completedSubtasks}/{subtasks.length} subtasks
               </span>
             )}
@@ -881,7 +815,7 @@ function TaskListItem({
             className={`text-sm font-bold truncate transition-colors duration-150 ${
               isCompleted
                 ? "line-through text-slate-400 dark:text-slate-500"
-                : "text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                : "text-slate-900 dark:text-white group-hover:text-primary"
             }`}
           >
             {task.title}
@@ -915,7 +849,7 @@ function TaskListItem({
               e.target.value as "pending" | "in_progress" | "in_review" | "completed"
             )
           }
-          className={`text-xs font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer ${
+          className={`text-xs font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer ${
             statusColors[task.status] || "bg-slate-100 text-slate-700"
           }`}
         >

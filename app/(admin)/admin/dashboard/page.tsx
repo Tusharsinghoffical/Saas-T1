@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useRealtimeTasks } from "@/lib/supabase/useRealtimeTasks";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
+import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   pending:     { label: "Pending",     color: "text-slate-600 dark:text-slate-300",   bg: "bg-slate-100 dark:bg-slate-700",    dot: "bg-slate-400" },
@@ -189,9 +190,13 @@ export default function AdminDashboardPage() {
     }
   }, [setTasks]);
 
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+  const {
+    isEnabled: isAutoRefreshEnabled,
+    toggle: toggleAutoRefresh,
+    secondsRemaining,
+    isRefreshing,
+    triggerManual,
+  } = useAutoRefresh(fetchAllData, 10, true);
 
   const nowMs = Date.now();
   const liveKpis = useMemo(() => {
@@ -309,14 +314,14 @@ export default function AdminDashboardPage() {
             })}
           </div>
 
-          <button
-            type="button"
-            onClick={fetchAllData}
-            title="Refresh"
-            className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary transition shadow-sm"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-primary" : ""}`} />
-          </button>
+          {/* 10-Second Auto-Refresh Control */}
+          <AutoRefreshBadge
+            isEnabled={isAutoRefreshEnabled}
+            toggle={toggleAutoRefresh}
+            secondsRemaining={secondsRemaining}
+            isRefreshing={isRefreshing || isLoading}
+            triggerManual={triggerManual}
+          />
 
           <Link
             href="/admin/team"

@@ -31,6 +31,7 @@ import { ProductivityChart, type ProductivityDay } from "@/components/dashboard/
 import { useTaskStore } from "@/store/useTaskStore";
 import { useRealtimeTasks } from "@/lib/supabase/useRealtimeTasks";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
+import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
 
 export default function ManagerDashboardPage() {
   const [viewMode, setViewMode] = useState<"kanban" | "analytics">("kanban");
@@ -151,9 +152,13 @@ export default function ManagerDashboardPage() {
     }
   }, [setTasks]);
 
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+  const {
+    isEnabled: isAutoRefreshEnabled,
+    toggle: toggleAutoRefresh,
+    secondsRemaining,
+    isRefreshing,
+    triggerManual,
+  } = useAutoRefresh(fetchAllData, 10, true);
 
   // 2. Real-Time Dynamic KPI Calculations directly from Store State
   const nowMs = Date.now();
@@ -308,16 +313,15 @@ export default function ManagerDashboardPage() {
 
           {/* Right Column: Actions & View Switcher */}
           <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-3 flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={fetchAllData}
-                disabled={isLoading}
-                className="p-2.5 rounded-xl border border-white/10 bg-white/10 hover:bg-white/20 text-white transition"
-                title="Refresh Metrics"
-              >
-                <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-teal-300" : ""}`} />
-              </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* 10-Second Auto-Refresh Control */}
+              <AutoRefreshBadge
+                isEnabled={isAutoRefreshEnabled}
+                toggle={toggleAutoRefresh}
+                secondsRemaining={secondsRemaining}
+                isRefreshing={isRefreshing || isLoading}
+                triggerManual={triggerManual}
+              />
 
               {/* View Toggle */}
               <div className="flex items-center p-1 rounded-xl bg-white/10 border border-white/10 text-xs font-semibold">

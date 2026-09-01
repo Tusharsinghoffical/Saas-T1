@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { createClient } from "@/lib/supabase/client";
+import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
 
 interface EmployeeMember {
   id: string;
@@ -101,9 +102,13 @@ export default function ManagerTeamPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+  const {
+    isEnabled: isAutoRefreshEnabled,
+    toggle: toggleAutoRefresh,
+    secondsRemaining,
+    isRefreshing,
+    triggerManual,
+  } = useAutoRefresh(fetchMembers, 10, true);
 
   // Realtime subscription
   useEffect(() => {
@@ -262,15 +267,15 @@ export default function ManagerTeamPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={fetchMembers}
-            title="Refresh"
-            className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary transition shadow-sm"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-primary" : ""}`} />
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* 10-Second Auto-Refresh Control */}
+          <AutoRefreshBadge
+            isEnabled={isAutoRefreshEnabled}
+            toggle={toggleAutoRefresh}
+            secondsRemaining={secondsRemaining}
+            isRefreshing={isRefreshing || isLoading}
+            triggerManual={triggerManual}
+          />
 
           <Button
             onClick={() => { setCreatedCredentials(null); setErrorMessage(null); setIsAddModalOpen(true); }}

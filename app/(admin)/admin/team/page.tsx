@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { createClient } from "@/lib/supabase/client";
+import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
 
 interface TeamMember {
   id: string;
@@ -107,9 +108,13 @@ export default function AdminTeamPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+  const {
+    isEnabled: isAutoRefreshEnabled,
+    toggle: toggleAutoRefresh,
+    secondsRemaining,
+    isRefreshing,
+    triggerManual,
+  } = useAutoRefresh(fetchMembers, 10, true);
 
   // Realtime Supabase Channel Subscription for Team Profiles
   useEffect(() => {
@@ -369,15 +374,15 @@ export default function AdminTeamPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={fetchMembers}
-            title="Refresh team"
-            className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-primary transition"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`} />
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* 10-Second Auto-Refresh Control */}
+          <AutoRefreshBadge
+            isEnabled={isAutoRefreshEnabled}
+            toggle={toggleAutoRefresh}
+            secondsRemaining={secondsRemaining}
+            isRefreshing={isRefreshing || isLoading}
+            triggerManual={triggerManual}
+          />
 
           <Button
             onClick={() => {
