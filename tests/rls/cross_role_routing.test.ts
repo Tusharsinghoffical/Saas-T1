@@ -70,6 +70,8 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
       acceptInvite: vi.fn().mockResolvedValue({ success: true }),
       createUserWithPassword: vi.fn(),
       updateUserRole: vi.fn(),
+      ensureDefaultTeam: vi.fn().mockResolvedValue("team-default-1"),
+      assignUserToTeam: vi.fn().mockResolvedValue(true),
     };
 
     it("Admin can invite another Admin, Manager, or Employee", async () => {
@@ -150,6 +152,8 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         acceptInvite: vi.fn(),
         createUserWithPassword: vi.fn(),
         updateUserRole: vi.fn(),
+        ensureDefaultTeam: vi.fn().mockResolvedValue("team-default-1"),
+        assignUserToTeam: vi.fn().mockResolvedValue(true),
       };
 
       const res = await removeUserUseCase(adminCtx, "emp-2", mockRepo);
@@ -178,6 +182,8 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         acceptInvite: vi.fn(),
         createUserWithPassword: vi.fn(),
         updateUserRole: vi.fn(),
+        ensureDefaultTeam: vi.fn().mockResolvedValue("team-default-1"),
+        assignUserToTeam: vi.fn().mockResolvedValue(true),
       };
 
       await expect(removeUserUseCase(managerCtx, "admin-2", mockRepo)).rejects.toThrow(
@@ -201,6 +207,8 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         acceptInvite: vi.fn(),
         createUserWithPassword: vi.fn(),
         updateUserRole: vi.fn(),
+        ensureDefaultTeam: vi.fn().mockResolvedValue("team-default-1"),
+        assignUserToTeam: vi.fn().mockResolvedValue(true),
       };
 
       await expect(removeUserUseCase(adminCtx, "admin-1", mockRepo)).rejects.toThrow(
