@@ -24,6 +24,16 @@ import {
   Sun,
   Moon,
   Sunset,
+  User,
+  Mail,
+  Shield,
+  Building,
+  Copy,
+  Check,
+  Briefcase,
+  CalendarDays,
+  Award,
+  Hash,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -41,6 +51,30 @@ export default function EmployeeDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"all" | "dueToday" | "upcoming" | "completed">("all");
+  const [copiedId, setCopiedId] = useState(false);
+
+  // Employee Profile Details
+  const [employeeProfile, setEmployeeProfile] = useState<{
+    id: string;
+    employeeCode: string;
+    fullName: string;
+    email: string;
+    role: string;
+    teamId: string | null;
+    teamName: string;
+    avatarUrl: string | null;
+    joinedAt: string;
+  }>({
+    id: "",
+    employeeCode: "EMP-0001",
+    fullName: "Employee",
+    email: "employee@workspace.com",
+    role: "employee",
+    teamId: null,
+    teamName: "General Squad",
+    avatarUrl: null,
+    joinedAt: new Date().toISOString(),
+  });
 
   const [buckets, setBuckets] = useState<{
     dueToday: KanbanTaskItem[];
@@ -55,9 +89,9 @@ export default function EmployeeDashboardPage() {
   // Dynamic greeting based on time of day
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return { text: "Good Morning", icon: Sun, color: "text-amber-500" };
-    if (hour < 18) return { text: "Good Afternoon", icon: Sunset, color: "text-orange-500" };
-    return { text: "Good Evening", icon: Moon, color: "text-indigo-400" };
+    if (hour < 12) return { text: "Good Morning", icon: Sun, color: "text-amber-400" };
+    if (hour < 18) return { text: "Good Afternoon", icon: Sunset, color: "text-orange-400" };
+    return { text: "Good Evening", icon: Moon, color: "text-indigo-300" };
   }, []);
 
   const fetchMyTasks = useCallback(async () => {
@@ -66,7 +100,14 @@ export default function EmployeeDashboardPage() {
       const res = await fetch("/api/v1/dashboard/me");
       const json = await res.json();
       if (json.success && json.data) {
-        setBuckets(json.data);
+        if (json.data.profile) {
+          setEmployeeProfile(json.data.profile);
+        }
+        setBuckets({
+          dueToday: json.data.dueToday || [],
+          upcoming: json.data.upcoming || [],
+          recentlyCompleted: json.data.recentlyCompleted || [],
+        });
       }
     } catch {
       // Ignore
@@ -120,6 +161,13 @@ export default function EmployeeDashboardPage() {
       }
     };
   }, [fetchMyTasks]);
+
+  const copyEmployeeId = () => {
+    if (!employeeProfile.employeeCode) return;
+    navigator.clipboard.writeText(employeeProfile.employeeCode);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
 
   // Quick Status Update on Card
   const handleQuickStatusUpdate = async (
@@ -267,8 +315,22 @@ export default function EmployeeDashboardPage() {
 
   const GreetingIcon = greeting.icon;
 
+  const initials = employeeProfile.fullName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "EM";
+
+  const formattedJoinDate = employeeProfile.joinedAt
+    ? new Date(employeeProfile.joinedAt).toLocaleDateString(undefined, {
+        month: "short",
+        year: "numeric",
+      })
+    : "Active Member";
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+    <div className="max-w-6xl mx-auto space-y-6 pb-14">
       {/* Toast Alert */}
       {toastMessage && (
         <div className="p-3.5 rounded-xl bg-urgent/10 border border-urgent/20 text-xs text-urgent font-medium flex items-center justify-between animate-fade-in shadow-sm">
@@ -282,69 +344,138 @@ export default function EmployeeDashboardPage() {
         </div>
       )}
 
-      {/* 🚀 Hero Welcome & Daily Progress Command Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 p-6 text-white shadow-xl border border-indigo-800/40">
-        {/* Subtle Background Glow Elements */}
-        <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      {/* 👤 Premium Employee Profile & ID Command Card */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-7 shadow-2xl border border-indigo-800/40">
+        {/* Glow Spheres */}
+        <div className="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-indigo-200 backdrop-blur-md border border-white/10">
-                <GreetingIcon className={`w-3.5 h-3.5 ${greeting.color}`} />
-                <span>{greeting.text}</span>
-              </span>
-
-              {/* Realtime Status Indicator */}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          {/* Left Column: Avatar & Comprehensive Details */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            {/* Avatar with Live Beacon */}
+            <div className="relative flex-shrink-0">
+              <div className="h-20 w-20 sm:h-22 sm:w-22 rounded-2xl bg-gradient-to-tr from-indigo-500 to-teal-400 p-[2px] shadow-lg shadow-indigo-500/25">
+                <div className="h-full w-full rounded-[14px] bg-slate-900 flex items-center justify-center font-extrabold text-2xl tracking-wider text-white">
+                  {initials}
+                </div>
+              </div>
+              {/* Online Beacon */}
               <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border backdrop-blur-md transition-colors ${
-                  isConnected
-                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                    : "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                }`}
+                title="Online & Synced"
+                className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center shadow"
               >
-                <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"}`} />
-                <span>{isConnected ? "Live Sync Active" : "Syncing..."}</span>
+                <span className="h-2 w-2 rounded-full bg-white animate-ping" />
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              My Personal Focus Workspace
-            </h1>
-            <p className="text-xs sm:text-sm text-indigo-200/80 max-w-xl">
-              Track your daily sprint goals, tackle assigned deadlines, and mark subtasks with instant zero-lag updates.
-            </p>
+            {/* Employee Information */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Greeting */}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-indigo-200 backdrop-blur-md border border-white/10">
+                  <GreetingIcon className={`w-3.5 h-3.5 ${greeting.color}`} />
+                  <span>{greeting.text}</span>
+                </span>
+
+                {/* Role Badge */}
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-wider">
+                  <Shield className="w-3 h-3" />
+                  {employeeProfile.role}
+                </span>
+
+                {/* Realtime Live Sync Pill */}
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border backdrop-blur-md transition-colors ${
+                    isConnected
+                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                      : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                  }`}
+                >
+                  <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"}`} />
+                  <span>{isConnected ? "Realtime Sync Active" : "Connecting..."}</span>
+                </span>
+              </div>
+
+              {/* Name & Title */}
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                  {employeeProfile.fullName}
+                </h1>
+                <p className="text-xs sm:text-sm text-indigo-200/80 mt-0.5 flex items-center gap-2">
+                  <span>Workspace Member</span>
+                  <span className="text-indigo-400">•</span>
+                  <span>Personal Focus & Execution Workspace</span>
+                </p>
+              </div>
+
+              {/* Identity & Metadata Chips */}
+              <div className="flex items-center gap-2.5 flex-wrap pt-1 text-xs">
+                {/* Employee ID with Copy Button */}
+                <button
+                  type="button"
+                  onClick={copyEmployeeId}
+                  title="Click to copy Employee ID"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-indigo-200 hover:text-white border border-white/10 transition group font-mono text-[11px] font-bold"
+                >
+                  <Hash className="w-3 h-3 text-indigo-400" />
+                  <span>ID: {employeeProfile.employeeCode}</span>
+                  {copiedId ? (
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3 h-3 text-indigo-300 group-hover:text-white transition opacity-70" />
+                  )}
+                </button>
+
+                {/* Team / Squad Chip */}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px] font-semibold">
+                  <Briefcase className="w-3 h-3 text-amber-400" />
+                  <span>Team: {employeeProfile.teamName || "General Squad"}</span>
+                </span>
+
+                {/* Email Chip */}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px]">
+                  <Mail className="w-3 h-3 text-indigo-300" />
+                  <span>{employeeProfile.email}</span>
+                </span>
+
+                {/* Join Date */}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px]">
+                  <CalendarDays className="w-3 h-3 text-teal-300" />
+                  <span>Since {formattedJoinDate}</span>
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Quick Progress Bar & Action */}
-          <div className="bg-white/5 backdrop-blur-md p-4 rounded-xl border border-white/10 min-w-[240px] flex flex-col justify-between space-y-3">
+          {/* Right Column: Sprint Completion Card */}
+          <div className="bg-white/5 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-white/10 min-w-[260px] flex flex-col justify-between space-y-3.5 flex-shrink-0">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-indigo-200 font-medium flex items-center gap-1.5">
+              <span className="text-indigo-200 font-semibold flex items-center gap-1.5">
                 <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
-                Sprint Completion
+                Sprint Productivity
               </span>
-              <span className="font-extrabold text-emerald-400 text-sm">{completionPercentage}%</span>
+              <span className="font-extrabold text-emerald-400 text-base">{completionPercentage}%</span>
             </div>
 
             {/* Progress Track */}
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden p-[1px]">
               <div
-                className="h-full bg-gradient-to-r from-emerald-400 to-teal-300 transition-all duration-500 rounded-full"
+                className="h-full bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-300 transition-all duration-500 rounded-full shadow-sm"
                 style={{ width: `${completionPercentage}%` }}
               />
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-indigo-300/80 pt-1">
-              <span>{completedCount} of {totalTasks} tasks completed</span>
+            <div className="flex items-center justify-between text-[11px] text-indigo-300/80 pt-0.5">
+              <span>{completedCount} of {totalTasks} tasks cleared</span>
               <button
                 type="button"
                 onClick={fetchMyTasks}
                 disabled={isLoading}
-                className="hover:text-white flex items-center gap-1 font-semibold transition"
+                className="hover:text-white flex items-center gap-1 font-semibold transition px-2 py-1 rounded-md bg-white/10 hover:bg-white/20"
                 title="Refresh Workspace"
               >
-                <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin text-teal-300" : ""}`} />
                 Refresh
               </button>
             </div>
@@ -357,7 +488,7 @@ export default function EmployeeDashboardPage() {
         {/* Card 1: Due Today */}
         <div
           onClick={() => setActiveTab(activeTab === "dueToday" ? "all" : "dueToday")}
-          className={`p-4 rounded-xl border transition-all cursor-pointer shadow-sm ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-sm ${
             dueTodayCount > 0
               ? "bg-rose-500/5 dark:bg-rose-950/20 border-rose-500/30 hover:border-rose-500/50"
               : "bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300"
@@ -377,7 +508,7 @@ export default function EmployeeDashboardPage() {
 
         {/* Card 2: In Progress */}
         <div
-          className="p-4 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm"
+          className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-sm"
         >
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>In Progress</span>
@@ -394,7 +525,7 @@ export default function EmployeeDashboardPage() {
         {/* Card 3: Upcoming (7 Days) */}
         <div
           onClick={() => setActiveTab(activeTab === "upcoming" ? "all" : "upcoming")}
-          className={`p-4 rounded-xl border transition-all cursor-pointer shadow-sm ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-sm ${
             activeTab === "upcoming" ? "ring-2 ring-primary" : ""
           } bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300`}
         >
@@ -413,7 +544,7 @@ export default function EmployeeDashboardPage() {
         {/* Card 4: Completed */}
         <div
           onClick={() => setActiveTab(activeTab === "completed" ? "all" : "completed")}
-          className={`p-4 rounded-xl border transition-all cursor-pointer shadow-sm ${
+          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-sm ${
             activeTab === "completed" ? "ring-2 ring-emerald-500" : ""
           } bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60 hover:border-slate-300`}
         >
