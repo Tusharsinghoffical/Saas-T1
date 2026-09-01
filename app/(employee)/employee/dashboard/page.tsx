@@ -73,7 +73,7 @@ export default function EmployeeDashboardPage() {
     teamId: null,
     teamName: "General Squad",
     avatarUrl: null,
-    joinedAt: new Date().toISOString(),
+    joinedAt: "",
   });
 
   const [buckets, setBuckets] = useState<{
@@ -86,12 +86,22 @@ export default function EmployeeDashboardPage() {
     recentlyCompleted: [],
   });
 
-  // Dynamic greeting based on time of day
-  const greeting = useMemo(() => {
+  // Client-hydrated greeting based on user's local timezone
+  const [greeting, setGreeting] = useState<{ text: string; icon: any; color: string }>({
+    text: "Welcome",
+    icon: Sparkles,
+    color: "text-amber-400",
+  });
+
+  useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return { text: "Good Morning", icon: Sun, color: "text-amber-400" };
-    if (hour < 18) return { text: "Good Afternoon", icon: Sunset, color: "text-orange-400" };
-    return { text: "Good Evening", icon: Moon, color: "text-indigo-300" };
+    if (hour < 12) {
+      setGreeting({ text: "Good Morning", icon: Sun, color: "text-amber-400" });
+    } else if (hour < 18) {
+      setGreeting({ text: "Good Afternoon", icon: Sunset, color: "text-orange-400" });
+    } else {
+      setGreeting({ text: "Good Evening", icon: Moon, color: "text-indigo-300" });
+    }
   }, []);
 
   const fetchMyTasks = useCallback(async () => {

@@ -172,7 +172,7 @@ export class SupabaseNotificationRepository implements INotificationRepository {
 
     const supabase = createClient();
     const { data: orgData } = await (supabase.from("organizations") as any)
-      .select("name, slack_webhook_url, slack_notifications_enabled")
+      .select("name, slack_webhook_url")
       .eq("id", orgId)
       .single();
 
@@ -181,7 +181,7 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     return {
       name: orgData.name,
       slackWebhookUrl: orgData.slack_webhook_url,
-      slackNotificationsEnabled: orgData.slack_notifications_enabled,
+      slackNotificationsEnabled: false,
     };
   }
 }

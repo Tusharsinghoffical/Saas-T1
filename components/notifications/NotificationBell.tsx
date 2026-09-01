@@ -37,6 +37,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
   const fetchNotifications = async () => {
     try {
       const res = await fetch("/api/v1/notifications");
+      if (!res.ok) return;
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setNotifications(json.data);
@@ -44,7 +45,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
         setUnreadCount(unread);
       }
     } catch {
-      // Ignore
+      // Ignore network errors gracefully
     }
   };
 

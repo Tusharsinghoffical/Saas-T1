@@ -10,11 +10,13 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PwaInstallPrompt() {
+  const [mounted, setMounted] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // 1. Register Service Worker
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -92,7 +94,7 @@ export function PwaInstallPrompt() {
     sessionStorage.setItem("tasq_pwa_dismissed", "true");
   };
 
-  if (isInstalled || !isVisible) {
+  if (!mounted || isInstalled || !isVisible) {
     return null;
   }
 

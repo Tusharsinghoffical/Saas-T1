@@ -58,16 +58,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} font-sans`}>
+    <html lang="en" className={`${inter.variable} font-sans`} suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/ONE_Header.png" type="image/png" />
         <link rel="apple-touch-icon" href="/ONE_Header.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
-      <body className="bg-background-light text-slate-900 antialiased selection:bg-primary/20 selection:text-primary">
+      <body
+        className="bg-background-light text-slate-900 antialiased selection:bg-primary/20 selection:text-primary"
+        suppressHydrationWarning
+      >
         {children}
         <PwaInstallPrompt />
         <AnalyticsProvider />

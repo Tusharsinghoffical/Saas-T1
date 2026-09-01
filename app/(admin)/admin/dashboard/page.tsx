@@ -117,7 +117,7 @@ export default function AdminDashboardPage() {
   const [orgId, setOrgId] = useState<string>("");
   const [chartData, setChartData] = useState<ProductivityDay[]>([]);
   const [cacheStatus, setCacheStatus] = useState<string>("live");
-  const [greeting, setGreeting] = useState<string>("Good Morning");
+  const [greeting, setGreeting] = useState<string>("Welcome");
 
   const { tasks, setTasks, upsertTask, isConnected } = useTaskStore();
   useRealtimeTasks(orgId || undefined);
