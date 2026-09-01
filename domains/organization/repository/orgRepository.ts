@@ -20,13 +20,14 @@ export class SupabaseOrgRepository implements IOrgRepository {
         name: "Acme Corp",
         timezone: "America/New_York",
         slackWebhookUrl: "",
-        slackNotificationsEnabled: true,
+        slackNotificationsEnabled: false,
       };
     }
 
     const adminClient = createAdminClient();
+    // Note: slack_notifications_enabled may not exist in all deployments — select only stable columns
     const { data: org, error } = await (adminClient.from("organizations") as any)
-      .select("id, name, timezone, slack_webhook_url, slack_notifications_enabled, logo_url, created_at")
+      .select("id, name, timezone, slack_webhook_url, logo_url, created_at")
       .eq("id", orgId)
       .single();
 
@@ -40,7 +41,7 @@ export class SupabaseOrgRepository implements IOrgRepository {
       logoUrl: org.logo_url,
       timezone: org.timezone,
       slackWebhookUrl: org.slack_webhook_url,
-      slackNotificationsEnabled: org.slack_notifications_enabled,
+      slackNotificationsEnabled: false, // column not in schema; default false
       createdAt: org.created_at,
     };
   }
@@ -52,7 +53,7 @@ export class SupabaseOrgRepository implements IOrgRepository {
         name: updates.name || "Acme Corp",
         timezone: updates.timezone || "America/New_York",
         slackWebhookUrl: updates.slackWebhookUrl || "",
-        slackNotificationsEnabled: updates.slackNotificationsEnabled ?? true,
+        slackNotificationsEnabled: false,
       };
     }
 
@@ -61,13 +62,14 @@ export class SupabaseOrgRepository implements IOrgRepository {
     if (updates.name !== undefined) dbPayload.name = updates.name;
     if (updates.timezone !== undefined) dbPayload.timezone = updates.timezone;
     if (updates.slackWebhookUrl !== undefined) dbPayload.slack_webhook_url = updates.slackWebhookUrl;
-    if (updates.slackNotificationsEnabled !== undefined)
-      dbPayload.slack_notifications_enabled = updates.slackNotificationsEnabled;
+    // NOTE: slack_notifications_enabled is not in the DB schema — skip writing it
+    // if (updates.slackNotificationsEnabled !== undefined)
+    //   dbPayload.slack_notifications_enabled = updates.slackNotificationsEnabled;
 
     const { data: updatedOrg, error } = await (adminClient.from("organizations") as any)
       .update(dbPayload)
       .eq("id", orgId)
-      .select()
+      .select("id, name, timezone, slack_webhook_url, logo_url, created_at")
       .single();
 
     if (error || !updatedOrg) {
@@ -80,7 +82,7 @@ export class SupabaseOrgRepository implements IOrgRepository {
       logoUrl: updatedOrg.logo_url,
       timezone: updatedOrg.timezone,
       slackWebhookUrl: updatedOrg.slack_webhook_url,
-      slackNotificationsEnabled: updatedOrg.slack_notifications_enabled,
+      slackNotificationsEnabled: false,
       createdAt: updatedOrg.created_at,
     };
   }
