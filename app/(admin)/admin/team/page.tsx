@@ -545,11 +545,22 @@ export default function AdminTeamPage() {
                       {member.email || "Workspace User"}
                     </td>
 
-                    {/* Team Assignment */}
+                    {/* Team Assignment — editable dropdown */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
-                        {member.teamName || "General"}
-                      </span>
+                      <select
+                        value={member.teamName || "General"}
+                        onChange={(e) => handleTeamChange(member.id, e.target.value)}
+                        className="text-xs font-semibold rounded-lg px-2.5 py-1 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer transition"
+                      >
+                        <option value="General">General</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="Product">Product &amp; Design</option>
+                        <option value="Marketing">Growth &amp; Marketing</option>
+                        <option value="Leadership">Leadership</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Operations">Operations</option>
+                        <option value="QA">QA</option>
+                      </select>
                     </td>
 
                     {/* Role Dropdown */}

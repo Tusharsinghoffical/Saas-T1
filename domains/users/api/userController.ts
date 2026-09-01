@@ -55,17 +55,59 @@ export class UserController {
     return await updateUserRoleUseCase(auth, { userId, role });
   }
 
-  async updateMember(userId: string, updates: { role?: "admin" | "manager" | "employee"; teamId?: string }) {
+  async updateMember(
+    userId: string,
+    updates: { role?: "admin" | "manager" | "employee"; teamId?: string; teamName?: string }
+  ) {
     const auth = await requireAuth();
+
+    // 1. Role update
     if (updates.role) {
       await updateUserRoleUseCase(auth, { userId, role: updates.role });
     }
-    if (updates.teamId) {
-      const { userRepository } = await import("../repository/userRepository");
-      await userRepository.assignUserToTeam(userId, auth.orgId, updates.teamId);
+
+    // 2. Team assignment — resolve teamName → teamId if needed
+    const { userRepository } = await import("../repository/userRepository");
+
+    let resolvedTeamId = updates.teamId;
+
+    if (!resolvedTeamId && updates.teamName) {
+      // Look up or create team by name in the org
+      const { createAdminClient } = await import(
+        "@/infrastructure/supabase/supabaseServer"
+      );
+      const adminClient = createAdminClient();
+      const clientToUse = adminClient;
+
+      const teamName = updates.teamName.trim();
+
+      // Try to find existing team with this name
+      const { data: existing } = await (clientToUse.from("teams") as any)
+        .select("id")
+        .eq("org_id", auth.orgId)
+        .ilike("name", teamName)
+        .limit(1)
+        .maybeSingle();
+
+      if (existing?.id) {
+        resolvedTeamId = existing.id;
+      } else {
+        // Create the team on-the-fly
+        const { data: created } = await (clientToUse.from("teams") as any)
+          .insert({ org_id: auth.orgId, name: teamName })
+          .select("id")
+          .single();
+        resolvedTeamId = created?.id ?? undefined;
+      }
     }
+
+    if (resolvedTeamId) {
+      await userRepository.assignUserToTeam(userId, auth.orgId, resolvedTeamId);
+    }
+
     return { success: true };
   }
+
 
   async inviteMember(input: InviteUserInput) {
     const auth = await requireAuth();

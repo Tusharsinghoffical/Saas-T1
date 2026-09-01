@@ -6,7 +6,8 @@ export const runtime = "nodejs";
 
 /**
  * PATCH /api/v1/org/members/[userId]
- * Updates member role or permissions.
+ * Updates member role, team assignment, or both.
+ * Accepts: { role?, teamId?, team_id?, teamName? }
  */
 export async function PATCH(
   request: NextRequest,
@@ -17,6 +18,7 @@ export async function PATCH(
     const result = await userController.updateMember(params.userId, {
       role: body.role,
       teamId: body.teamId || body.team_id,
+      teamName: body.teamName || body.team_name,
     });
     return NextResponse.json(result);
   } catch (error) {
