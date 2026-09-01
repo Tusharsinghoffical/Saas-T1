@@ -16,6 +16,17 @@ export class AuthError extends DomainError {
   }
 }
 
+// In-memory cache for resolved user contexts (15s TTL) to prevent hammering Supabase auth on parallel requests
+const authContextCache = new Map<string, { context: RequestContext; expiresAt: number }>();
+
+export function invalidateAuthCache(userId?: string) {
+  if (userId) {
+    authContextCache.delete(userId);
+  } else {
+    authContextCache.clear();
+  }
+}
+
 /**
  * Validates that the requesting user is authenticated and retrieves
  * their org_id and role from the Supabase JWT claims or profile.
@@ -43,6 +54,12 @@ export async function requireAuth(): Promise<RequestContext> {
 
   if (error || !user) {
     throw new UnauthorizedError("Authentication required.");
+  }
+
+  // Fast L1 Memory Cache Check (0ms)
+  const cached = authContextCache.get(user.id);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.context;
   }
 
   // 1. Extract custom claims injected by Auth Hook
@@ -152,12 +169,17 @@ export async function requireAuth(): Promise<RequestContext> {
     orgId = user.id;
   }
 
-  return {
+  const context: RequestContext = {
     userId: user.id,
     orgId,
     role,
     email: user.email || "",
   };
+
+  // Cache for 15 seconds to eliminate repeated DB lookups on parallel requests
+  authContextCache.set(user.id, { context, expiresAt: Date.now() + 15000 });
+
+  return context;
 }
 
 /**

@@ -102,19 +102,20 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
 
     const client = this.getClient();
 
-    // 1. Resolve manager's assigned teams
-    const { data: managedTeams } = await (client.from("teams") as any)
-      .select("id")
-      .eq("org_id", orgId)
-      .eq("manager_id", managerUserId);
-
-    const { data: memberTeams } = await (client.from("team_members") as any)
-      .select("team_id")
-      .eq("user_id", managerUserId);
+    // Resolve manager's assigned teams IN PARALLEL (eliminates sequential round trips)
+    const [managedTeamsRes, memberTeamsRes] = await Promise.all([
+      (client.from("teams") as any)
+        .select("id")
+        .eq("org_id", orgId)
+        .eq("manager_id", managerUserId),
+      (client.from("team_members") as any)
+        .select("team_id")
+        .eq("user_id", managerUserId),
+    ]);
 
     const managedIds = new Set<string>();
-    (managedTeams || []).forEach((t: any) => managedIds.add(t.id));
-    (memberTeams || []).forEach((m: any) => managedIds.add(m.team_id));
+    (managedTeamsRes.data || []).forEach((t: any) => managedIds.add(t.id));
+    (memberTeamsRes.data || []).forEach((m: any) => managedIds.add(m.team_id));
 
     const validTeamIds = Array.from(managedIds);
 
@@ -211,48 +212,55 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
 
     const client = this.getClient();
 
-    // 1. Get task IDs where user is explicitly assigned
-    const { data: assignments, error: assignErr } = await (client.from("task_assignees") as any)
-      .select("task_id")
-      .eq("user_id", userId);
+    // Run assignments lookup and a broad org-task prefetch IN PARALLEL (eliminates sequential waterfall)
+    const [assignmentsResult, broadTasksResult] = await Promise.all([
+      (client.from("task_assignees") as any)
+        .select("task_id")
+        .eq("user_id", userId),
+      (client.from("tasks") as any)
+        .select(`
+          *,
+          task_assignees (
+            user_id,
+            profiles:user_id (id, full_name, avatar_url)
+          )
+        `)
+        .eq("org_id", orgId)
+        .eq("created_by", userId)
+        .order("created_at", { ascending: false }),
+    ]);
 
-    const assignedTaskIds: string[] = (assignments || []).map((a: any) => a.task_id).filter(Boolean);
+    const assignedTaskIds: string[] = ((assignmentsResult.data as any[]) || [])
+      .map((a: any) => a.task_id)
+      .filter(Boolean);
 
-    // 2. Fetch tasks matching assigned IDs OR created by this user in this organization
-    let tasksQuery = (client.from("tasks") as any)
-      .select(`
-        *,
-        task_assignees (
-          user_id,
-          profiles:user_id (id, full_name, avatar_url)
-        )
-      `)
-      .eq("org_id", orgId)
-      .order("created_at", { ascending: false });
+    let rawTasks: any[] = broadTasksResult.data || [];
 
+    // Fetch additionally assigned tasks not yet in result
     if (assignedTaskIds.length > 0) {
-      tasksQuery = tasksQuery.or(`id.in.(${assignedTaskIds.join(",")}),created_by.eq.${userId}`);
-    } else {
-      tasksQuery = tasksQuery.eq("created_by", userId);
-    }
+      const existingIds = new Set(rawTasks.map((t: any) => t.id));
+      const missingIds = assignedTaskIds.filter((id) => !existingIds.has(id));
 
-    const { data: rawTasks, error: tasksErr } = await tasksQuery;
-
-    if (tasksErr) {
-      console.warn("[getEmployeeTasks notice]", tasksErr.message);
-      // Fallback query without embedded join
-      if (assignedTaskIds.length > 0) {
-        const { data: fallbackTasks } = await (client.from("tasks") as any)
-          .select("*")
+      if (missingIds.length > 0) {
+        const { data: assignedTasks } = await (client.from("tasks") as any)
+          .select(`
+            *,
+            task_assignees (
+              user_id,
+              profiles:user_id (id, full_name, avatar_url)
+            )
+          `)
           .eq("org_id", orgId)
-          .in("id", assignedTaskIds)
+          .in("id", missingIds)
           .order("created_at", { ascending: false });
-        return fallbackTasks || [];
+
+        if (assignedTasks) {
+          rawTasks = [...rawTasks, ...assignedTasks];
+        }
       }
-      return [];
     }
 
-    return rawTasks || [];
+    return rawTasks;
   }
 }
 

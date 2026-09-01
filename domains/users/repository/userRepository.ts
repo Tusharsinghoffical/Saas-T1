@@ -159,14 +159,27 @@ export class SupabaseUserRepository implements IUserRepository {
     }
     const clientToUse = adminClient || createClient();
 
-    let { data: profiles } = await (clientToUse.from("profiles") as any)
-      .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
-      .or(`org_id.eq.${orgId},id.eq.${orgId}`)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true });
+    // Run profiles, auth users, and team memberships ALL IN PARALLEL (eliminates 3-step waterfall)
+    const [profilesResult, authUsersResult, teamMembershipsResult] = await Promise.all([
+      // 1. Profiles query
+      (clientToUse.from("profiles") as any)
+        .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+        .or(`org_id.eq.${orgId},id.eq.${orgId}`)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: true }),
+      // 2. Auth users (email enrichment + ghost-user synthesis)
+      adminClient?.auth?.admin
+        ? adminClient.auth.admin.listUsers({ perPage: 200 }).catch(() => ({ data: { users: [] } }))
+        : Promise.resolve({ data: { users: [] } }),
+      // 3. Team memberships
+      (clientToUse.from("team_members") as any)
+        .select(`user_id, team_id, teams:team_id (id, name)`)
+        .catch(() => ({ data: [] })),
+    ]);
 
-    let finalProfiles: any[] = profiles || [];
+    let finalProfiles: any[] = profilesResult.data || [];
 
+    // Fallback: fetch all profiles if org-scoped query returned nothing
     if (finalProfiles.length === 0) {
       const { data: allProfiles } = await (clientToUse.from("profiles") as any)
         .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
@@ -180,59 +193,43 @@ export class SupabaseUserRepository implements IUserRepository {
 
     // Enrich with auth user emails and synthesize any unsynced auth users
     const authUserMap: Record<string, string> = {};
-    if (adminClient?.auth?.admin) {
-      try {
-        const { data: authList } = await adminClient.auth.admin.listUsers({ perPage: 200 });
-        if (authList?.users && authList.users.length > 0) {
-          const profileIds = new Set(finalProfiles.map((p: any) => p.id));
-          authList.users.forEach((u: any) => {
-            if (u.id && u.email) {
-              authUserMap[u.id] = u.email;
-              if (!profileIds.has(u.id)) {
-                finalProfiles.push({
-                  id: u.id,
-                  org_id: orgId,
-                  full_name: u.user_metadata?.full_name || u.email.split("@")[0],
-                  role: u.app_metadata?.role || u.user_metadata?.role || "employee",
-                  avatar_url: null,
-                  created_at: u.created_at,
-                  deleted_at: null,
-                });
-              }
-            }
-          });
+    const authUsers = (authUsersResult as any)?.data?.users || [];
+    if (authUsers.length > 0) {
+      const profileIds = new Set(finalProfiles.map((p: any) => p.id));
+      authUsers.forEach((u: any) => {
+        if (u.id && u.email) {
+          authUserMap[u.id] = u.email;
+          if (!profileIds.has(u.id)) {
+            finalProfiles.push({
+              id: u.id,
+              org_id: orgId,
+              full_name: u.user_metadata?.full_name || u.email.split("@")[0],
+              role: u.app_metadata?.role || u.user_metadata?.role || "employee",
+              avatar_url: null,
+              created_at: u.created_at,
+              deleted_at: null,
+            });
+          }
         }
-      } catch {
-        // Non-blocking
-      }
+      });
     }
 
     if (!finalProfiles || finalProfiles.length === 0) {
       return [];
     }
 
-    // Fetch team memberships and map to users
+    // Build team membership map from parallel result
     const teamMemberMap: Record<string, { teamId: string; teamName: string }> = {};
-    try {
-      const { data: teamMemberships } = await (clientToUse.from("team_members") as any)
-        .select(`
-          user_id,
-          team_id,
-          teams:team_id (id, name)
-        `);
-
-      if (teamMemberships && Array.isArray(teamMemberships)) {
-        teamMemberships.forEach((tm: any) => {
-          if (tm.user_id && tm.team_id) {
-            teamMemberMap[tm.user_id] = {
-              teamId: tm.team_id,
-              teamName: tm.teams?.name || "Assigned Team",
-            };
-          }
-        });
-      }
-    } catch {
-      // Non-blocking
+    const teamMemberships = (teamMembershipsResult as any)?.data || [];
+    if (Array.isArray(teamMemberships)) {
+      teamMemberships.forEach((tm: any) => {
+        if (tm.user_id && tm.team_id) {
+          teamMemberMap[tm.user_id] = {
+            teamId: tm.team_id,
+            teamName: tm.teams?.name || "Assigned Team",
+          };
+        }
+      });
     }
 
     return finalProfiles.map((p: any) => ({
