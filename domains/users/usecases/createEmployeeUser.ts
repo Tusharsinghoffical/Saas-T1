@@ -2,6 +2,7 @@ import { RequestContext } from "@/shared/types/context";
 import { ForbiddenError, ValidationError } from "@/shared/errors/domainErrors";
 import { IUserRepository, userRepository } from "../repository/userRepository";
 import { UserProfile } from "../entities/UserProfile";
+import { recordActivityLogUseCase } from "@/domains/activity";
 
 export interface CreateEmployeeInput {
   fullName: string;
@@ -49,6 +50,21 @@ export async function createEmployeeUserUseCase(
       context.userId,
       input.teamId
     );
+
+    // Audit log
+    await recordActivityLogUseCase({
+      orgId: context.orgId,
+      actorId: context.userId,
+      action: "member.created",
+      entity: "profiles",
+      entityId: result.profile.id,
+      diff: {
+        fullName: cleanName,
+        email: cleanEmail,
+        role: input.role,
+      },
+    }).catch(() => {});
+
     return {
       user: result.user,
       profile: result.profile,
@@ -64,6 +80,20 @@ export async function createEmployeeUserUseCase(
     context.userId,
     input.teamId
   );
+
+  // Audit log
+  await recordActivityLogUseCase({
+    orgId: context.orgId,
+    actorId: context.userId,
+    action: "member.invited",
+    entity: "profiles",
+    diff: {
+      fullName: cleanName,
+      email: cleanEmail,
+      role: input.role,
+    },
+  }).catch(() => {});
+
   return {
     user: null,
     profile: {
@@ -79,3 +109,4 @@ export async function createEmployeeUserUseCase(
     message: inviteResult.message,
   };
 }
+

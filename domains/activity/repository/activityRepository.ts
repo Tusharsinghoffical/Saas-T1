@@ -13,6 +13,11 @@ export class SupabaseActivityRepository implements IActivityRepository {
     return Boolean(url) && !url.includes("your-project-ref");
   }
 
+  private getClient() {
+    const adminClient = createAdminClient();
+    return adminClient || createClient();
+  }
+
   async recordLog(input: ActivityLogInput): Promise<boolean> {
     if (!this.hasSupabase()) {
       console.log(
@@ -22,24 +27,32 @@ export class SupabaseActivityRepository implements IActivityRepository {
     }
 
     try {
-      // Validate that orgId is a valid UUID before attempting Postgres insert
-      const isValidUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.orgId);
-      if (!isValidUuid) {
+      if (!input.orgId) return false;
+
+      // UUID format validation for PostgreSQL UUID columns
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isValidOrgUuid = uuidRegex.test(input.orgId);
+      if (!isValidOrgUuid) {
         return false;
       }
 
-      const adminClient = createAdminClient();
-      const { error } = await (adminClient.from("activity_logs") as any).insert({
+      const client = this.getClient();
+      const isEntityUuid = input.entityId ? uuidRegex.test(input.entityId) : false;
+      const isActorUuid = input.actorId ? uuidRegex.test(input.actorId) : false;
+
+      const payload: Record<string, any> = {
         org_id: input.orgId,
-        actor_id: input.actorId || null,
+        actor_id: isActorUuid ? input.actorId : null,
         action: input.action,
         entity: input.entity,
-        entity_id: input.entityId || null,
+        entity_id: isEntityUuid ? input.entityId : null,
         diff: input.diff || null,
-      });
+      };
+
+      const { error } = await (client.from("activity_logs") as any).insert(payload);
 
       if (error) {
-        console.error("[Audit Log Error]", error.message);
+        console.error("[Audit Log Insert Error]", error.message);
         return false;
       }
       return true;
@@ -97,48 +110,75 @@ export class SupabaseActivityRepository implements IActivityRepository {
       return { logs: mockLogs, total: mockLogs.length };
     }
 
-    const supabase = createClient();
-    let query = (supabase.from("activity_logs") as any)
-      .select(`
-        id,
-        org_id,
-        action,
-        entity,
-        entity_id,
-        diff,
-        created_at,
-        actor:actor_id (
-          id,
-          full_name,
-          avatar_url
-        )
-      `, { count: "exact" })
-      .eq("org_id", orgId)
-      .order("created_at", { ascending: false });
+    try {
+      const client = this.getClient();
 
-    if (filters.entity) query = query.eq("entity", filters.entity);
-    if (filters.action) query = query.eq("action", filters.action);
+      // Query raw activity_logs directly without fragile schema join
+      let query = (client.from("activity_logs") as any)
+        .select("id, org_id, actor_id, action, entity, entity_id, diff, created_at", { count: "exact" })
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false });
 
-    const from = (filters.page - 1) * filters.limit;
-    const to = from + filters.limit - 1;
-    const { data: rawLogs, count, error } = await query.range(from, to);
+      if (filters.entity) query = query.eq("entity", filters.entity);
+      if (filters.action) query = query.eq("action", filters.action);
 
-    if (error) {
-      throw new Error(error.message);
+      const from = (filters.page - 1) * filters.limit;
+      const to = from + filters.limit - 1;
+      const { data: rawLogs, count, error } = await query.range(from, to);
+
+      if (error) {
+        console.error("[listLogs Error]", error.message);
+        return { logs: [], total: 0 };
+      }
+
+      const logsList = rawLogs || [];
+
+      // Collect unique actor IDs to batch hydrate profiles
+      const actorIds: string[] = Array.from(
+        new Set(logsList.map((l: any) => l.actor_id).filter(Boolean))
+      );
+
+      const profileMap = new Map<string, { id: string; fullName: string; avatarUrl: string | null }>();
+
+      if (actorIds.length > 0) {
+        try {
+          const { data: profiles } = await (client.from("profiles") as any)
+            .select("id, full_name, avatar_url")
+            .in("id", actorIds);
+
+          if (profiles && Array.isArray(profiles)) {
+            for (const p of profiles) {
+              profileMap.set(p.id, {
+                id: p.id,
+                fullName: p.full_name || "Team Member",
+                avatarUrl: p.avatar_url || null,
+              });
+            }
+          }
+        } catch {
+          // Non-blocking fallback for profiles lookup
+        }
+      }
+
+      const logs: ActivityLog[] = logsList.map((l: any) => ({
+        id: l.id,
+        orgId: l.org_id,
+        actorId: l.actor_id,
+        action: l.action,
+        entity: l.entity,
+        entityId: l.entity_id,
+        diff: l.diff,
+        createdAt: l.created_at,
+        actor: l.actor_id
+          ? profileMap.get(l.actor_id) || { id: l.actor_id, fullName: "Team Member", avatarUrl: null }
+          : { id: "system", fullName: "System", avatarUrl: null },
+      }));
+
+      return { logs, total: count || 0 };
+    } catch (err: any) {
+      console.error("[listLogs Exception]", err);
+      return { logs: [], total: 0 };
     }
-
-    const logs: ActivityLog[] = (rawLogs || []).map((l: any) => ({
-      id: l.id,
-      orgId: l.org_id,
-      action: l.action,
-      entity: l.entity,
-      entityId: l.entity_id,
-      diff: l.diff,
-      createdAt: l.created_at,
-      actor: l.actor ? { id: l.actor.id, fullName: l.actor.full_name, avatarUrl: l.actor.avatar_url } : undefined,
-    }));
-
-    return { logs, total: count || 0 };
   }
 
   async getAllLogsForCsv(orgId: string, entity?: string | null, action?: string | null): Promise<ActivityLog[]> {
@@ -147,44 +187,67 @@ export class SupabaseActivityRepository implements IActivityRepository {
       return logs;
     }
 
-    const supabase = createClient();
-    let query = (supabase.from("activity_logs") as any)
-      .select(`
-        id,
-        org_id,
-        action,
-        entity,
-        entity_id,
-        diff,
-        created_at,
-        actor:actor_id (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq("org_id", orgId)
-      .order("created_at", { ascending: false })
-      .limit(1000);
+    try {
+      const client = this.getClient();
+      let query = (client.from("activity_logs") as any)
+        .select("id, org_id, actor_id, action, entity, entity_id, diff, created_at")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(1000);
 
-    if (entity) query = query.eq("entity", entity);
-    if (action) query = query.eq("action", action);
+      if (entity) query = query.eq("entity", entity);
+      if (action) query = query.eq("action", action);
 
-    const { data: rawLogs, error } = await query;
-    if (error) {
-      throw new Error(error.message);
+      const { data: rawLogs, error } = await query;
+      if (error) {
+        console.error("[getAllLogsForCsv Error]", error.message);
+        return [];
+      }
+
+      const logsList = rawLogs || [];
+      const actorIds: string[] = Array.from(
+        new Set(logsList.map((l: any) => l.actor_id).filter(Boolean))
+      );
+
+      const profileMap = new Map<string, { id: string; fullName: string; avatarUrl: string | null }>();
+
+      if (actorIds.length > 0) {
+        try {
+          const { data: profiles } = await (client.from("profiles") as any)
+            .select("id, full_name, avatar_url")
+            .in("id", actorIds);
+
+          if (profiles && Array.isArray(profiles)) {
+            for (const p of profiles) {
+              profileMap.set(p.id, {
+                id: p.id,
+                fullName: p.full_name || "Team Member",
+                avatarUrl: p.avatar_url || null,
+              });
+            }
+          }
+        } catch {
+          // Non-blocking fallback
+        }
+      }
+
+      return logsList.map((l: any) => ({
+        id: l.id,
+        orgId: l.org_id,
+        actorId: l.actor_id,
+        action: l.action,
+        entity: l.entity,
+        entityId: l.entity_id,
+        diff: l.diff,
+        createdAt: l.created_at,
+        actor: l.actor_id
+          ? profileMap.get(l.actor_id) || { id: l.actor_id, fullName: "Team Member", avatarUrl: null }
+          : { id: "system", fullName: "System", avatarUrl: null },
+      }));
+    } catch (err: any) {
+      console.error("[getAllLogsForCsv Exception]", err);
+      return [];
     }
-
-    return (rawLogs || []).map((l: any) => ({
-      id: l.id,
-      orgId: l.org_id,
-      action: l.action,
-      entity: l.entity,
-      entityId: l.entity_id,
-      diff: l.diff,
-      createdAt: l.created_at,
-      actor: l.actor ? { id: l.actor.id, fullName: l.actor.full_name, avatarUrl: l.actor.avatar_url } : undefined,
-    }));
   }
 }
 

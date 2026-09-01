@@ -1,6 +1,7 @@
 import { RequestContext } from "@/shared/types/context";
 import { ForbiddenError, NotFoundError, ValidationError } from "@/shared/errors/domainErrors";
 import { IUserRepository, userRepository } from "../repository/userRepository";
+import { recordActivityLogUseCase } from "@/domains/activity";
 
 export async function removeUserUseCase(
   context: RequestContext,
@@ -31,8 +32,23 @@ export async function removeUserUseCase(
   // 5. Perform soft delete
   await repo.softDeleteUser(targetUserId, context.orgId);
 
+  // Audit log
+  await recordActivityLogUseCase({
+    orgId: context.orgId,
+    actorId: context.userId,
+    action: "member.removed",
+    entity: "profiles",
+    entityId: targetUserId,
+    diff: {
+      fullName: targetUser.fullName,
+      email: targetUser.email,
+      role: targetUser.role,
+    },
+  }).catch(() => {});
+
   return {
     success: true,
     message: `${targetUser.fullName || targetUser.email || "Member"} has been deactivated.`,
   };
 }
+

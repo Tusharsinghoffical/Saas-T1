@@ -1,6 +1,7 @@
 import { RequestContext } from "@/shared/types/context";
 import { ForbiddenError, ValidationError } from "@/shared/errors/domainErrors";
 import { IUserRepository, userRepository } from "../repository/userRepository";
+import { recordActivityLogUseCase } from "@/domains/activity";
 
 export interface UpdateUserRoleInput {
   userId: string;
@@ -31,6 +32,18 @@ export async function updateUserRoleUseCase(
   }
 
   await repo.updateUserRole(input.userId, context.orgId, input.role);
+
+  // Audit log
+  await recordActivityLogUseCase({
+    orgId: context.orgId,
+    actorId: context.userId,
+    action: "member.role_updated",
+    entity: "profiles",
+    entityId: input.userId,
+    diff: {
+      role: input.role,
+    },
+  }).catch(() => {});
 
   return {
     success: true,

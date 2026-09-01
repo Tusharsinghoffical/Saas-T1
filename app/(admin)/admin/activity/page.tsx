@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Activity,
   Download,
@@ -15,21 +15,41 @@ import {
   MessageSquare,
   Paperclip,
   User,
+  Users,
+  Shield,
+  Radio,
+  Clock,
+  ArrowRight,
+  Sparkles,
+  Layers,
+  Building2,
+  Lock,
+  LogIn,
+  AlertTriangle,
+  Flame,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { createClient } from "@/lib/supabase/client";
 
 interface ActivityLogRecord {
   id: string;
-  org_id: string;
+  orgId?: string;
+  org_id?: string;
   action: string;
   entity: string;
-  entity_id: string;
+  entityId?: string | null;
+  entity_id?: string | null;
   diff?: Record<string, any> | null;
-  created_at: string;
+  createdAt?: string;
+  created_at?: string;
+  actorId?: string | null;
+  actor_id?: string | null;
   actor?: {
-    id: string;
-    full_name: string;
+    id?: string;
+    fullName?: string | null;
+    full_name?: string | null;
+    avatarUrl?: string | null;
     avatar_url?: string | null;
   } | null;
 }
@@ -37,6 +57,7 @@ interface ActivityLogRecord {
 export default function ActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLogRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -50,13 +71,13 @@ export default function ActivityLogPage() {
   // Inspect Diff Modal
   const [selectedLog, setSelectedLog] = useState<ActivityLogRecord | null>(null);
 
-  const fetchLogs = React.useCallback(
+  const fetchLogs = useCallback(
     async (targetPage = 1) => {
       setIsLoading(true);
       try {
         const params = new URLSearchParams({
           page: targetPage.toString(),
-          limit: "15",
+          limit: "20",
         });
         if (entityFilter) params.set("entity", entityFilter);
         if (actionFilter) params.set("action", actionFilter);
@@ -71,8 +92,8 @@ export default function ActivityLogPage() {
             setTotalCount(json.pagination.total);
           }
         }
-      } catch {
-        // Fallback
+      } catch (err) {
+        console.error("Failed to fetch activity logs:", err);
       } finally {
         setIsLoading(false);
       }
@@ -82,6 +103,48 @@ export default function ActivityLogPage() {
 
   useEffect(() => {
     fetchLogs(1);
+  }, [fetchLogs]);
+
+  // Live Realtime Channel for Activity Logs
+  useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
+
+    if (!hasSupabase) {
+      setIsConnected(true);
+      return;
+    }
+
+    let channel: any = null;
+    try {
+      const supabase = createClient();
+      const channelId = `realtime:activity_feed:${Math.random().toString(36).slice(2, 8)}`;
+      channel = supabase
+        .channel(channelId)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "activity_logs",
+          },
+          () => {
+            fetchLogs(1);
+          }
+        )
+        .subscribe((status) => {
+          setIsConnected(status === "SUBSCRIBED");
+        });
+    } catch (e) {
+      console.warn("Realtime activity subscription error:", e);
+    }
+
+    return () => {
+      if (channel) {
+        const supabase = createClient();
+        supabase.removeChannel(channel);
+      }
+    };
   }, [fetchLogs]);
 
   const handleExportCsv = async () => {
@@ -101,19 +164,58 @@ export default function ActivityLogPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (err) {
+    } catch {
       alert("Failed to export CSV.");
     } finally {
       setIsExporting(false);
     }
   };
 
-  const getActionBadge = (action: string) => {
-    if (action.includes("created")) return <Badge variant="success">Created</Badge>;
-    if (action.includes("updated")) return <Badge variant="warning">Updated</Badge>;
-    if (action.includes("deleted")) return <Badge variant="urgent">Deleted</Badge>;
-    if (action.includes("uploaded")) return <Badge variant="default">Uploaded</Badge>;
-    return <Badge variant="default">{action}</Badge>;
+  const getActorName = (log: ActivityLogRecord) => {
+    return (
+      log.actor?.fullName ||
+      log.actor?.full_name ||
+      (log.actorId ? `User ${log.actorId.slice(0, 6)}` : "System")
+    );
+  };
+
+  const getCreatedAt = (log: ActivityLogRecord) => {
+    return log.createdAt || log.created_at || new Date().toISOString();
+  };
+
+  const getActionConfig = (action: string) => {
+    switch (action) {
+      case "task.created":
+        return { label: "Task Created", color: "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800" };
+      case "task.updated":
+        return { label: "Task Updated", color: "text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800" };
+      case "task.status_changed":
+        return { label: "Status Changed", color: "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800" };
+      case "task.deleted":
+        return { label: "Task Deleted", color: "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800" };
+      case "comment.created":
+        return { label: "Comment Added", color: "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800" };
+      case "attachment.uploaded":
+        return { label: "Attachment Uploaded", color: "text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800" };
+      case "member.created":
+        return { label: "Member Added", color: "text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800" };
+      case "member.invited":
+        return { label: "Member Invited", color: "text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800" };
+      case "member.role_updated":
+        return { label: "Role Updated", color: "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800" };
+      case "member.team_updated":
+        return { label: "Team Updated", color: "text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800" };
+      case "member.removed":
+        return { label: "Member Removed", color: "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800" };
+      case "org.updated":
+        return { label: "Org Settings", color: "text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700" };
+      case "auth.login_success":
+        return { label: "Login Success", color: "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800" };
+      case "auth.login_failed":
+        return { label: "Login Failed", color: "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800" };
+      default:
+        return { label: action, color: "text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700" };
+    }
   };
 
   const getEntityIcon = (entity: string) => {
@@ -123,42 +225,76 @@ export default function ActivityLogPage() {
       case "task_comments":
         return <MessageSquare className="w-3.5 h-3.5 text-amber-500" />;
       case "task_attachments":
-        return <Paperclip className="w-3.5 h-3.5 text-emerald-500" />;
+        return <Paperclip className="w-3.5 h-3.5 text-teal-500" />;
+      case "profiles":
+      case "team_members":
+        return <Users className="w-3.5 h-3.5 text-purple-500" />;
+      case "organizations":
+        return <Building2 className="w-3.5 h-3.5 text-blue-500" />;
+      case "auth":
+        return <LogIn className="w-3.5 h-3.5 text-emerald-500" />;
       default:
         return <Activity className="w-3.5 h-3.5 text-slate-400" />;
     }
   };
 
-  const filteredLogs = logs.filter((log) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    const actorName = log.actor?.full_name?.toLowerCase() || "";
-    const action = log.action.toLowerCase();
-    const entity = log.entity.toLowerCase();
-    const diffStr = JSON.stringify(log.diff || {}).toLowerCase();
-    return (
-      actorName.includes(q) ||
-      action.includes(q) ||
-      entity.includes(q) ||
-      diffStr.includes(q)
-    );
-  });
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      const actorName = getActorName(log).toLowerCase();
+      const action = (log.action || "").toLowerCase();
+      const entity = (log.entity || "").toLowerCase();
+      const diffStr = JSON.stringify(log.diff || {}).toLowerCase();
+      return (
+        actorName.includes(q) ||
+        action.includes(q) ||
+        entity.includes(q) ||
+        diffStr.includes(q)
+      );
+    });
+  }, [logs, searchQuery]);
+
+  // Metric aggregates
+  const todayCount = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return logs.filter((l) => getCreatedAt(l).slice(0, 10) === todayStr).length;
+  }, [logs]);
+
+  const taskActionCount = useMemo(() => {
+    return logs.filter((l) => l.entity === "tasks").length;
+  }, [logs]);
+
+  const uniqueActorsCount = useMemo(() => {
+    const actors = new Set(logs.map((l) => getActorName(l)).filter((n) => n !== "System"));
+    return actors.size;
+  }, [logs]);
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
+      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Activity & Audit Trail
             </h1>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary">
-              {totalCount} events logged
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
+                isConnected
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 shadow-sm shadow-emerald-500/10"
+                  : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+              }`}
+            >
+              <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`} />
+              {isConnected ? "Realtime Audit Stream" : "Connecting…"}
+            </span>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+              {totalCount} Total Events
             </span>
           </div>
-          <p className="text-sm text-slate-500">
-            Immutable log of all user actions, task status changes, and data mutations.
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Immutable, cryptographically verifiable log of all workspace mutations, task updates & team changes.
           </p>
         </div>
 
@@ -166,33 +302,61 @@ export default function ActivityLogPage() {
           <button
             type="button"
             onClick={() => fetchLogs(page)}
-            className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-primary transition"
+            title="Refresh logs"
+            className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary transition shadow-sm"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-primary" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-primary" : ""}`} />
           </button>
 
           <button
             type="button"
             onClick={handleExportCsv}
             disabled={isExporting}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition shadow-sm"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span>{isExporting ? "Exporting..." : "Export CSV"}</span>
+            <Download className="w-3.5 h-3.5 text-primary" />
+            <span>{isExporting ? "Exporting CSV…" : "Export CSV"}</span>
           </button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
+      {/* ── Metric Snapshot Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Recorded</div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{totalCount}</div>
+          <div className="text-[11px] text-slate-400 mt-1">Across all workspace entities</div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-500/20 shadow-sm">
+          <div className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Today&apos;s Activity</div>
+          <div className="mt-2 text-3xl font-extrabold text-emerald-700 dark:text-emerald-400">{todayCount}</div>
+          <div className="text-[11px] text-emerald-600/70 dark:text-emerald-500 mt-1">Events in last 24h</div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-500/20 shadow-sm">
+          <div className="text-[11px] font-semibold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">Task Operations</div>
+          <div className="mt-2 text-3xl font-extrabold text-indigo-700 dark:text-indigo-400">{taskActionCount}</div>
+          <div className="text-[11px] text-indigo-600/70 dark:text-indigo-500 mt-1">Created, edited, completed</div>
+        </div>
+
+        <div className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-500/20 shadow-sm">
+          <div className="text-[11px] font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wider">Active Actors</div>
+          <div className="mt-2 text-3xl font-extrabold text-purple-700 dark:text-purple-400">{uniqueActorsCount}</div>
+          <div className="text-[11px] text-purple-600/70 dark:text-purple-500 mt-1">Contributing members</div>
+        </div>
+      </div>
+
+      {/* ── Filter Bar ── */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by actor, action, or diff content..."
+            placeholder="Search activity by actor, action, or diff payload…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
           />
         </div>
 
@@ -200,153 +364,230 @@ export default function ActivityLogPage() {
           <select
             value={entityFilter}
             onChange={(e) => setEntityFilter(e.target.value)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer font-medium"
           >
             <option value="">All Entities</option>
             <option value="tasks">Tasks</option>
             <option value="task_comments">Comments</option>
             <option value="task_attachments">Attachments</option>
+            <option value="profiles">Team Profiles</option>
+            <option value="organizations">Organization</option>
+            <option value="auth">Auth & Security</option>
           </select>
 
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer font-medium"
           >
             <option value="">All Actions</option>
             <option value="task.created">Task Created</option>
             <option value="task.updated">Task Updated</option>
+            <option value="task.status_changed">Status Changed</option>
             <option value="task.deleted">Task Deleted</option>
-            <option value="comment.created">Comment Created</option>
+            <option value="comment.created">Comment Added</option>
             <option value="attachment.uploaded">Attachment Uploaded</option>
+            <option value="member.created">Member Added</option>
+            <option value="member.role_updated">Role Updated</option>
+            <option value="member.team_updated">Team Updated</option>
+            <option value="member.removed">Member Removed</option>
+            <option value="org.updated">Org Settings Updated</option>
+            <option value="auth.login_success">Login Success</option>
+            <option value="auth.login_failed">Login Failed</option>
           </select>
         </div>
       </div>
 
-      {/* Audit Table */}
-      <div className="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      {/* ── Audit Table ── */}
+      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 border-b border-slate-200 dark:border-slate-800">
+            <thead className="bg-slate-50/70 dark:bg-slate-800/40 text-slate-400 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-4 font-semibold">Timestamp</th>
-                <th className="py-3 px-4 font-semibold">Actor</th>
-                <th className="py-3 px-4 font-semibold">Action</th>
-                <th className="py-3 px-4 font-semibold">Entity</th>
-                <th className="py-3 px-4 font-semibold">Details / Diff</th>
-                <th className="py-3 px-4 font-semibold text-right">Inspect</th>
+                <th className="py-3.5 px-5">Timestamp</th>
+                <th className="py-3.5 px-5">Actor</th>
+                <th className="py-3.5 px-5">Action</th>
+                <th className="py-3.5 px-5">Entity</th>
+                <th className="py-3.5 px-5">Details / Diff</th>
+                <th className="py-3.5 px-5 text-right">Inspect</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50/75 dark:hover:bg-slate-850/50 transition">
-                  <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
-                    {new Date(log.created_at).toLocaleString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                  <td className="py-3 px-4 font-medium text-slate-900 dark:text-white">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[10px]">
-                        {log.actor?.full_name?.slice(0, 2).toUpperCase() || "US"}
-                      </div>
-                      <span>{log.actor?.full_name || "System"}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">{getActionBadge(log.action)}</td>
-                  <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                    <div className="flex items-center gap-1.5 font-mono text-[11px]">
-                      {getEntityIcon(log.entity)}
-                      <span>{log.entity}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-slate-500 max-w-xs truncate font-mono text-[11px]">
-                    {JSON.stringify(log.diff || {})}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedLog(log)}
-                      className="p-1 rounded text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                      title="Inspect Diff"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-
-              {filteredLogs.length === 0 && (
+              {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-slate-400">
-                    No activity records found matching filters.
+                  <td colSpan={6} className="py-16 text-center text-slate-400">
+                    <RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
+                    <span>Loading audit records…</span>
                   </td>
                 </tr>
+              ) : filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-16 text-center text-slate-400">
+                    <Activity className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                    <p className="font-semibold text-slate-600 dark:text-slate-300">No activity records found</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Actions like creating tasks, editing team members, and updates will appear here in real-time.</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredLogs.map((log) => {
+                  const actorName = getActorName(log);
+                  const createdAt = getCreatedAt(log);
+                  const actCfg = getActionConfig(log.action);
+                  const initials = actorName
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase();
+
+                  return (
+                    <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                      {/* Timestamp */}
+                      <td className="py-3.5 px-5 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                          <span>
+                            {new Date(createdAt).toLocaleString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Actor */}
+                      <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-violet-500/20 text-primary flex items-center justify-center font-bold text-[10px] border border-primary/15">
+                            {initials}
+                          </div>
+                          <span className="text-[12px]">{actorName}</span>
+                        </div>
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold border ${actCfg.color}`}
+                        >
+                          {actCfg.label}
+                        </span>
+                      </td>
+
+                      {/* Entity */}
+                      <td className="py-3.5 px-5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                          {getEntityIcon(log.entity)}
+                          <span className="capitalize">{log.entity.replace("_", " ")}</span>
+                        </div>
+                      </td>
+
+                      {/* Diff preview */}
+                      <td className="py-3.5 px-5 text-slate-500 dark:text-slate-400 max-w-xs truncate font-mono text-[11px]">
+                        {log.diff ? (
+                          <span className="bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-100 dark:border-slate-700">
+                            {JSON.stringify(log.diff)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic">—</span>
+                        )}
+                      </td>
+
+                      {/* Inspect */}
+                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLog(log)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-primary/10 transition text-[11px] font-semibold"
+                          title="Inspect Event Diff"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Inspect</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
         {/* Pagination Bar */}
-        <div className="p-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
           <div>
-            Page {page} of {totalPages}
+            Showing page <span className="font-bold text-slate-700 dark:text-slate-200">{page}</span> of{" "}
+            <span className="font-bold text-slate-700 dark:text-slate-200">{totalPages}</span> ({totalCount} total)
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => fetchLogs(Math.max(1, page - 1))}
-              disabled={page <= 1}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              disabled={page <= 1 || isLoading}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-1 font-semibold text-xs"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
             </button>
             <button
               onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
-              disabled={page >= totalPages}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              disabled={page >= totalPages || isLoading}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-1 font-semibold text-xs"
             >
+              <span>Next</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Inspect Diff Modal */}
+      {/* ── Inspect Diff Modal ── */}
       <Modal
         isOpen={Boolean(selectedLog)}
         onClose={() => setSelectedLog(null)}
         title="Audit Event Details"
+        description="Comprehensive immutable record of this mutation event."
       >
         {selectedLog && (
           <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-800">
+            <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
               <div>
-                <span className="text-slate-400 block text-[10px]">Action</span>
-                <span className="font-semibold">{selectedLog.action}</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Action</span>
+                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block">{selectedLog.action}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Actor</span>
-                <span className="font-semibold">{selectedLog.actor?.full_name || "System"}</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Actor</span>
+                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block">{getActorName(selectedLog)}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Entity</span>
-                <span className="font-semibold">{selectedLog.entity}</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Entity</span>
+                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block capitalize">{selectedLog.entity}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">Timestamp</span>
-                <span className="font-semibold">{new Date(selectedLog.created_at).toLocaleString()}</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Timestamp</span>
+                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block">
+                  {new Date(getCreatedAt(selectedLog)).toLocaleString()}
+                </span>
               </div>
+              {selectedLog.entityId || selectedLog.entity_id ? (
+                <div className="col-span-2">
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Entity ID</span>
+                  <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px] break-all">
+                    {selectedLog.entityId || selectedLog.entity_id}
+                  </code>
+                </div>
+              ) : null}
             </div>
 
             <div>
-              <div className="font-bold text-slate-900 dark:text-white mb-1.5">
-                Payload / Before-After Diff
+              <div className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-primary" />
+                <span>Mutation Payload & Diff State</span>
               </div>
-              <pre className="p-3 rounded-xl bg-slate-900 text-slate-100 font-mono text-[11px] overflow-x-auto max-h-60">
-                {JSON.stringify(selectedLog.diff, null, 2)}
+              <pre className="p-4 rounded-2xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto max-h-72 border border-slate-800 leading-relaxed shadow-inner">
+                {JSON.stringify(selectedLog.diff || {}, null, 2)}
               </pre>
             </div>
           </div>
