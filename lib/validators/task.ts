@@ -9,9 +9,9 @@ export const createTaskSchema = z.object({
   priority: taskPriorityEnum.optional().default("medium"),
   status: taskStatusEnum.optional().default("pending"),
   dueDate: z.string().optional().nullable(),
-  teamId: z.string().uuid().optional().nullable(),
-  assigneeIds: z.array(z.string().uuid()).optional().default([]),
-  dependencyTaskIds: z.array(z.string().uuid()).optional().default([]),
+  teamId: z.string().optional().nullable(),
+  assigneeIds: z.array(z.string()).optional().default([]),
+  dependencyTaskIds: z.array(z.string()).optional().default([]),
 });
 
 export const updateTaskSchema = z.object({
@@ -20,9 +20,9 @@ export const updateTaskSchema = z.object({
   priority: taskPriorityEnum.optional(),
   status: taskStatusEnum.optional(),
   dueDate: z.string().optional().nullable(),
-  teamId: z.string().uuid().optional().nullable(),
-  assigneeIds: z.array(z.string().uuid()).optional(),
-  dependencyTaskIds: z.array(z.string().uuid()).optional(),
+  teamId: z.string().optional().nullable(),
+  assigneeIds: z.array(z.string()).optional(),
+  dependencyTaskIds: z.array(z.string()).optional(),
 });
 
 export const employeeStatusUpdateSchema = z.object({

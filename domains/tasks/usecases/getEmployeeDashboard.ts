@@ -72,10 +72,33 @@ export async function getEmployeeDashboardUseCase(
   let completedCount = 0;
 
   tasks.forEach((t: any) => {
-    const dueTime = t.due_date ? new Date(t.due_date).getTime() : null;
+    const dueTime = t.due_date ? new Date(t.due_date).getTime() : (t.dueDate ? new Date(t.dueDate).getTime() : null);
     const updatedTime = t.updated_at
       ? new Date(t.updated_at).getTime()
-      : new Date(t.created_at).getTime();
+      : (t.created_at ? new Date(t.created_at).getTime() : now.getTime());
+
+    const formattedTask = {
+      id: t.id,
+      title: t.title,
+      description: t.description || null,
+      status: t.status || "pending",
+      priority: t.priority || "medium",
+      dueDate: t.due_date || t.dueDate || null,
+      due_date: t.due_date || t.dueDate || null,
+      tags: t.tags || [],
+      subtasks: t.subtasks || [],
+      assignees: Array.isArray(t.assignees)
+        ? t.assignees
+        : (t.task_assignees || []).map((a: any) => ({
+            id: a.profiles?.id || a.user_id,
+            fullName: a.profiles?.full_name || "Assignee",
+            avatarUrl: a.profiles?.avatar_url,
+          })),
+      dependencyTaskIds: t.dependency_task_ids || (t.task_dependencies || []).map((d: any) => d.depends_on_task_id) || [],
+      created_by: t.created_by,
+      created_at: t.created_at,
+      updated_at: t.updated_at,
+    };
 
     if (t.status === "in_progress") {
       inProgressCount++;
@@ -84,19 +107,17 @@ export async function getEmployeeDashboardUseCase(
     }
 
     if (t.status === "completed") {
-      if (updatedTime >= sevenDaysAgo) {
-        recentlyCompleted.push(t);
-      }
+      recentlyCompleted.push(formattedTask);
     } else {
       if (dueTime && dueTime >= startOfToday && dueTime <= endOfToday) {
-        dueToday.push(t);
+        dueToday.push(formattedTask);
       } else if (dueTime && dueTime > endOfToday && dueTime <= sevenDaysFromNow) {
-        upcoming.push(t);
+        upcoming.push(formattedTask);
       } else {
         if (dueTime && dueTime < startOfToday) {
-          dueToday.push(t);
+          dueToday.push(formattedTask);
         } else {
-          upcoming.push(t);
+          upcoming.push(formattedTask);
         }
       }
     }

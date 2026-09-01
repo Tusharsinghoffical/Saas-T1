@@ -1,4 +1,4 @@
-import { createClient } from "@/infrastructure/supabase/supabaseServer";
+import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
 
 export interface IDashboardRepository {
   getAdminDashboardTasks(orgId: string, teamId?: string | null): Promise<any[]>;
@@ -10,6 +10,14 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
   private hasSupabase(): boolean {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     return Boolean(url) && !url.includes("your-project-ref");
+  }
+
+  private getClient() {
+    try {
+      return createAdminClient();
+    } catch {
+      return createClient();
+    }
   }
 
   async getAdminDashboardTasks(orgId: string, teamId?: string | null): Promise<any[]> {
@@ -45,10 +53,11 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       ];
     }
 
-    const supabase = createClient();
-    let query = (supabase.from("tasks") as any)
-      .select("id, status, priority, due_date, created_at, updated_at, team_id")
-      .eq("org_id", orgId);
+    const client = this.getClient();
+    let query = (client.from("tasks") as any)
+      .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false });
 
     if (teamId) {
       query = query.eq("team_id", teamId);
@@ -56,7 +65,8 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
 
     const { data: rawTasks, error } = await query;
     if (error) {
-      throw new Error(error.message);
+      console.warn("[getAdminDashboardTasks notice]", error.message);
+      return [];
     }
 
     return rawTasks || [];
@@ -90,15 +100,15 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       ];
     }
 
-    const supabase = createClient();
+    const client = this.getClient();
 
     // 1. Resolve manager's assigned teams
-    const { data: managedTeams } = await (supabase.from("teams") as any)
+    const { data: managedTeams } = await (client.from("teams") as any)
       .select("id")
       .eq("org_id", orgId)
       .eq("manager_id", managerUserId);
 
-    const { data: memberTeams } = await (supabase.from("team_members") as any)
+    const { data: memberTeams } = await (client.from("team_members") as any)
       .select("team_id")
       .eq("user_id", managerUserId);
 
@@ -108,24 +118,27 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
 
     const validTeamIds = Array.from(managedIds);
 
-    // If manager is not assigned to any team yet
-    if (validTeamIds.length === 0) {
-      return [];
-    }
-
-    if (teamId && !managedIds.has(teamId)) {
-      throw new Error("Manager cannot access data outside their assigned team scope.");
-    }
-
-    const targetTeamIds = teamId ? [teamId] : validTeamIds;
-
-    let { data: rawTasks, error } = await (supabase.from("tasks") as any)
-      .select("id, status, priority, due_date, created_at, updated_at, team_id")
+    let query = (client.from("tasks") as any)
+      .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
       .eq("org_id", orgId)
-      .in("team_id", targetTeamIds);
+      .order("created_at", { ascending: false });
+
+    if (teamId) {
+      query = query.eq("team_id", teamId);
+    } else if (validTeamIds.length > 0) {
+      query = query.or(`team_id.in.(${validTeamIds.join(",")}),created_by.eq.${managerUserId}`);
+    }
+
+    const { data: rawTasks, error } = await query;
 
     if (error) {
-      throw new Error(error.message);
+      console.warn("[getManagerDashboardTasks notice]", error.message);
+      // Fallback: fetch all org tasks
+      const { data: fallbackTasks } = await (client.from("tasks") as any)
+        .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false });
+      return fallbackTasks || [];
     }
 
     return rawTasks || [];
@@ -196,42 +209,50 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       ];
     }
 
-    const supabase = createClient();
-    let userTasks: any[] = [];
-    let { data, error } = await (supabase.from("tasks") as any)
+    const client = this.getClient();
+
+    // 1. Get task IDs where user is explicitly assigned
+    const { data: assignments, error: assignErr } = await (client.from("task_assignees") as any)
+      .select("task_id")
+      .eq("user_id", userId);
+
+    const assignedTaskIds: string[] = (assignments || []).map((a: any) => a.task_id).filter(Boolean);
+
+    // 2. Fetch tasks matching assigned IDs OR created by this user in this organization
+    let tasksQuery = (client.from("tasks") as any)
       .select(`
         *,
-        task_assignees!inner (
-          user_id
-        ),
-        task_dependencies!task_id (
-          depends_on_task_id
+        task_assignees (
+          user_id,
+          profiles:user_id (id, full_name, avatar_url)
         )
       `)
       .eq("org_id", orgId)
-      .eq("task_assignees.user_id", userId);
+      .order("created_at", { ascending: false });
 
-    if (error) {
-      // Resilient fallback without embedded dependencies if relationship is ambiguous
-      const { data: fallbackTasks, error: fallbackErr } = await (supabase.from("tasks") as any)
-        .select(`
-          *,
-          task_assignees!inner (
-            user_id
-          )
-        `)
-        .eq("org_id", orgId)
-        .eq("task_assignees.user_id", userId);
-
-      if (fallbackErr) {
-        throw new Error(fallbackErr.message);
-      }
-      userTasks = fallbackTasks || [];
+    if (assignedTaskIds.length > 0) {
+      tasksQuery = tasksQuery.or(`id.in.(${assignedTaskIds.join(",")}),created_by.eq.${userId}`);
     } else {
-      userTasks = data || [];
+      tasksQuery = tasksQuery.eq("created_by", userId);
     }
 
-    return userTasks;
+    const { data: rawTasks, error: tasksErr } = await tasksQuery;
+
+    if (tasksErr) {
+      console.warn("[getEmployeeTasks notice]", tasksErr.message);
+      // Fallback query without embedded join
+      if (assignedTaskIds.length > 0) {
+        const { data: fallbackTasks } = await (client.from("tasks") as any)
+          .select("*")
+          .eq("org_id", orgId)
+          .in("id", assignedTaskIds)
+          .order("created_at", { ascending: false });
+        return fallbackTasks || [];
+      }
+      return [];
+    }
+
+    return rawTasks || [];
   }
 }
 

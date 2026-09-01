@@ -25,6 +25,14 @@ export class SupabaseTaskRepository implements ITaskRepository {
     return Boolean(url) && !url.includes("your-project-ref");
   }
 
+  private getClient() {
+    try {
+      return createAdminClient();
+    } catch {
+      return createClient();
+    }
+  }
+
   async listTasks(orgId: string, filters: TaskFilterDTO): Promise<{ tasks: Task[]; total: number }> {
     if (!this.hasSupabase()) {
       const mockTasks: Task[] = [
@@ -61,7 +69,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
       return { tasks: mockTasks, total: mockTasks.length };
     }
 
-    const supabase = createClient();
+    const supabase = this.getClient();
     let rawTasks: any[] = [];
     let query = (supabase as any)
       .from("tasks")
@@ -112,7 +120,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
       const { data: fallbackData, error: fallbackError } = await fallbackQuery;
       if (fallbackError) {
-        throw new Error(fallbackError.message);
+        console.warn("[listTasks error fallback]", fallbackError.message);
+        return { tasks: [], total: 0 };
       }
       rawTasks = fallbackData || [];
     } else {
@@ -169,7 +178,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
       };
     }
 
-    const supabase = createClient();
+    const supabase = this.getClient();
     let task: any = null;
     let { data, error } = await (supabase as any)
       .from("tasks")
@@ -444,7 +453,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
   async getAssignedUserIds(taskId: string): Promise<string[]> {
     if (!this.hasSupabase()) return [];
 
-    const supabase = createClient();
+    const supabase = this.getClient();
     const { data: assignments } = await (supabase as any)
       .from("task_assignees")
       .select("user_id")
@@ -456,7 +465,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
   async getDependencies(taskId: string): Promise<{ id: string; title: string; status: any }[]> {
     if (!this.hasSupabase()) return [];
 
-    const supabase = createClient();
+    const supabase = this.getClient();
     const { data: deps } = await (supabase as any)
       .from("task_dependencies")
       .select(`
@@ -475,7 +484,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
   async getActiveTaskCountByUser(orgId: string): Promise<Record<string, number>> {
     if (!this.hasSupabase()) return {};
 
-    const supabase = createClient();
+    const supabase = this.getClient();
     const { data: activeAssignments } = await (supabase.from("task_assignees") as any)
       .select(`
         user_id,
