@@ -30,6 +30,9 @@ export interface KanbanTaskItem {
   dependencyTaskIds?: string[];
   dependencies?: { id: string; title: string; status: string }[];
   task_dependencies?: { depends_on_task_id: string; tasks?: { id: string; title: string; status: string } }[];
+  createdBy?: string | null;
+  created_by?: string | null;
+  org_id?: string | null;
 }
 
 export interface TaskCardProps {

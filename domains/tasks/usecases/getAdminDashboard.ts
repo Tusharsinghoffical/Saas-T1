@@ -1,6 +1,7 @@
 import { RequestContext } from "@/shared/types/context";
 import { redisGet, redisSet } from "@/infrastructure/redis/redisClient";
 import { IDashboardRepository, dashboardRepository } from "../repository/dashboardRepository";
+import { userRepository } from "@/domains/users/repository/userRepository";
 
 export async function getAdminDashboardUseCase(
   context: RequestContext,
@@ -10,6 +11,30 @@ export async function getAdminDashboardUseCase(
   const chartCacheKey = teamId
     ? `dashboard:admin:${context.orgId}:charts:team:${teamId}`
     : `dashboard:admin:${context.orgId}:charts`;
+
+  // 0. Fetch admin profile + org name for sidebar display
+  let adminProfile: any = null;
+  try {
+    const [profile, orgSettings] = await Promise.all([
+      userRepository.getProfileById(context.userId).catch(() => null),
+      import("@/domains/organization/repository/orgRepository").then(m => 
+        m.orgRepository.getOrgById(context.orgId)
+      ).catch(() => null),
+    ]);
+
+    if (profile) {
+      adminProfile = {
+        fullName: profile.fullName || "Admin User",
+        email: profile.email || "",
+        orgName: (orgSettings as any)?.name || context.orgId || "Organization",
+        role: "admin",
+        avatarUrl: profile.avatarUrl || null,
+        employeeCode: null,
+      };
+    }
+  } catch {
+    // Non-blocking
+  }
 
   // 1. Fetch live tasks directly (unblocked by full cache for instant bottom-up visibility)
   const tasks = await repo.getAdminDashboardTasks(context.orgId, teamId);
@@ -64,6 +89,7 @@ export async function getAdminDashboardUseCase(
   }
 
   const aggregateData = {
+    adminProfile,
     kpis: {
       activeTasks,
       overdueTasks,
@@ -78,3 +104,4 @@ export async function getAdminDashboardUseCase(
 
   return { data: aggregateData, source: chartSource };
 }
+
