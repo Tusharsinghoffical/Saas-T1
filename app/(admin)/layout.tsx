@@ -170,28 +170,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Org Info Footer */}
-        <div className="mx-3 mb-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/50">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="w-3 h-3 text-slate-400" />
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Workspace</span>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400">Organization</span>
-              <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[100px]">
-                {isLoadingProfile ? "…" : (profile?.orgName || "—")}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-400">Plan</span>
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-primary">
-                <Layers className="w-2.5 h-2.5" /> Pro
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Logout */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800">
           <Link
