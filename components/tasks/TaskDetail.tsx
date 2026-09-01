@@ -87,38 +87,76 @@ export function TaskDetail({
   // Subtasks local state
   const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
 
+  const fetchComments = React.useCallback(async () => {
+    if (!task) return;
+    try {
+      const res = await fetch(`/api/v1/tasks/${task.id}/comments`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setComments(json.data);
+      }
+    } catch {
+      // Ignore
+    }
+  }, [task]);
+
+  const fetchAttachments = React.useCallback(async () => {
+    if (!task) return;
+    try {
+      const res = await fetch(`/api/v1/tasks/${task.id}/attachments`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setAttachments(json.data);
+      }
+    } catch {
+      // Ignore
+    }
+  }, [task]);
+
   useEffect(() => {
     if (!task || !isOpen) return;
 
     setSubtasks(task.subtasks || []);
-
-    const fetchComments = async () => {
-      try {
-        const res = await fetch(`/api/v1/tasks/${task.id}/comments`);
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          setComments(json.data);
-        }
-      } catch {
-        // Ignore
-      }
-    };
-
-    const fetchAttachments = async () => {
-      try {
-        const res = await fetch(`/api/v1/tasks/${task.id}/attachments`);
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          setAttachments(json.data);
-        }
-      } catch {
-        // Ignore
-      }
-    };
-
     fetchComments();
     fetchAttachments();
-  }, [task, isOpen]);
+
+    // Realtime channel for task comments
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
+    if (!hasSupabase) return;
+
+    let channel: any = null;
+    try {
+      const { createClient } = require("@/lib/supabase/client");
+      const supabase = createClient();
+      channel = supabase
+        .channel(`realtime:comments:${task.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "task_comments",
+            filter: `task_id=eq.${task.id}`,
+          },
+          () => {
+            fetchComments();
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime comments channel error:", e);
+    }
+
+    return () => {
+      if (channel) {
+        try {
+          const { createClient } = require("@/lib/supabase/client");
+          createClient().removeChannel(channel);
+        } catch {}
+      }
+    };
+  }, [task, isOpen, fetchComments, fetchAttachments]);
 
   if (!task || !isOpen) return null;
 
@@ -182,11 +220,13 @@ export function TaskDetail({
       });
       const json = await res.json();
       if (json.success && json.data) {
-        setComments([...comments, json.data]);
+        setComments((prev) => [...prev, json.data]);
         setNewComment("");
+      } else {
+        alert(json.error || json.message || "Failed to post comment. Please try again.");
       }
     } catch {
-      // Ignore
+      alert("Network error posting comment. Please try again.");
     } finally {
       setIsSubmittingComment(false);
     }
@@ -502,7 +542,14 @@ export function TaskDetail({
           <div className="space-y-3 mb-4 max-h-56 overflow-y-auto pr-1">
             {comments.map((com) => {
               const authorName =
-                com.profiles?.full_name || com.author?.full_name || "Team Member";
+                com.profiles?.full_name ||
+                (com.profiles as any)?.fullName ||
+                com.author?.full_name ||
+                (com.author as any)?.fullName ||
+                "Team Member";
+              const commentDate = com.created_at || (com as any).createdAt || new Date().toISOString();
+              const commentBody = com.content || (com as any).body || "";
+
               return (
                 <div
                   key={com.id}
@@ -518,7 +565,7 @@ export function TaskDetail({
                       </span>
                     </div>
                     <span className="text-[10px] text-slate-400">
-                      {new Date(com.created_at).toLocaleTimeString([], {
+                      {new Date(commentDate).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
@@ -526,7 +573,7 @@ export function TaskDetail({
                   </div>
 
                   <p className="text-slate-700 dark:text-slate-300 pl-7 leading-relaxed">
-                    {com.content}
+                    {commentBody}
                   </p>
                 </div>
               );

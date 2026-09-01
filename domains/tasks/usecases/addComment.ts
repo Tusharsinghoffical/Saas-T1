@@ -11,7 +11,7 @@ export async function addCommentUseCase(
 ): Promise<Comment> {
   const comment = await repo.addComment(taskId, context.userId, data);
 
-  // Record Activity Log
+  // Record Activity Log (non-blocking)
   await recordActivityLogUseCase({
     orgId: context.orgId,
     actorId: context.userId,
@@ -19,7 +19,7 @@ export async function addCommentUseCase(
     entity: "task_comments",
     entityId: comment.id,
     diff: { task_id: taskId, body: data.content },
-  });
+  }).catch(() => {});
 
   return comment;
 }
