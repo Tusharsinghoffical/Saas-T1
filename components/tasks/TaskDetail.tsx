@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { type OrgMember } from "@/components/tasks/TaskFormModal";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
+import { createClient } from "@/lib/supabase/client";
 import {
   Clock,
   Send,
@@ -24,31 +24,53 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
+export interface OrgMember {
+  id: string;
+  fullName?: string;
+  full_name?: string;
+  role?: string;
+  avatarUrl?: string | null;
+  avatar_url?: string | null;
+}
+
 export interface CommentItem {
   id: string;
-  task_id: string;
-  content: string;
-  created_at: string;
+  task_id?: string;
+  taskId?: string;
+  content?: string;
+  body?: string;
+  created_at?: string;
+  createdAt?: string;
   profiles?: {
-    id: string;
-    full_name: string;
+    id?: string;
+    full_name?: string;
+    fullName?: string;
     avatar_url?: string | null;
+    avatarUrl?: string | null;
   };
   author?: {
-    id: string;
-    full_name: string;
+    id?: string;
+    full_name?: string;
+    fullName?: string;
     avatar_url?: string | null;
+    avatarUrl?: string | null;
   };
 }
 
 export interface AttachmentItem {
   id: string;
-  task_id: string;
-  file_name: string;
-  file_url: string;
-  file_size: number;
+  task_id?: string;
+  taskId?: string;
+  file_name?: string;
+  fileName?: string;
+  file_url?: string;
+  fileUrl?: string;
+  file_size?: number;
+  fileSize?: number;
   file_type?: string;
-  created_at: string;
+  fileType?: string;
+  created_at?: string;
+  createdAt?: string;
 }
 
 export interface TaskDetailProps {
@@ -65,9 +87,9 @@ export function TaskDetail({
   onClose,
   task,
   orgMembers = [
-    { id: "mem-1", fullName: "Jane Doe", role: "admin" },
-    { id: "mem-2", fullName: "Alex Smith", role: "manager" },
-    { id: "mem-3", fullName: "Rohan Patel", role: "employee" },
+    { id: "mem-1", fullName: "Jane Doe", full_name: "Jane Doe", role: "admin" },
+    { id: "mem-2", fullName: "Alex Smith", full_name: "Alex Smith", role: "manager" },
+    { id: "mem-3", fullName: "Rohan Patel", full_name: "Rohan Patel", role: "employee" },
   ],
   allTasks = [],
   onTaskUpdated,
@@ -87,10 +109,11 @@ export function TaskDetail({
   // Subtasks local state
   const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
 
-  const fetchComments = React.useCallback(async () => {
+  const fetchComments = useCallback(async () => {
     if (!task) return;
     try {
-      const res = await fetch(`/api/v1/tasks/${task.id}/comments`);
+      const sanitizedTaskId = encodeURIComponent(task.id);
+      const res = await fetch(`/api/v1/tasks/${sanitizedTaskId}/comments`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setComments(json.data);
@@ -100,10 +123,11 @@ export function TaskDetail({
     }
   }, [task]);
 
-  const fetchAttachments = React.useCallback(async () => {
+  const fetchAttachments = useCallback(async () => {
     if (!task) return;
     try {
-      const res = await fetch(`/api/v1/tasks/${task.id}/attachments`);
+      const sanitizedTaskId = encodeURIComponent(task.id);
+      const res = await fetch(`/api/v1/tasks/${sanitizedTaskId}/attachments`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setAttachments(json.data);
@@ -127,7 +151,6 @@ export function TaskDetail({
 
     let channel: any = null;
     try {
-      const { createClient } = require("@/lib/supabase/client");
       const supabase = createClient();
       channel = supabase
         .channel(`realtime:comments:${task.id}`)
@@ -151,8 +174,8 @@ export function TaskDetail({
     return () => {
       if (channel) {
         try {
-          const { createClient } = require("@/lib/supabase/client");
-          createClient().removeChannel(channel);
+          const supabase = createClient();
+          supabase.removeChannel(channel);
         } catch {}
       }
     };
@@ -195,9 +218,10 @@ export function TaskDetail({
 
   const handleSelectMention = (member: OrgMember) => {
     if (mentionIndex === -1) return;
+    const memberName = member.fullName || member.full_name || "teammate";
     const before = newComment.slice(0, mentionIndex);
     const after = newComment.slice(textareaRef.current?.selectionStart || mentionIndex);
-    const updated = `${before}@${member.fullName} ${after}`;
+    const updated = `${before}@${memberName} ${after}`;
     setNewComment(updated);
     setMentionQuery(null);
     setMentionIndex(-1);
@@ -213,7 +237,8 @@ export function TaskDetail({
 
     setIsSubmittingComment(true);
     try {
-      const res = await fetch(`/api/v1/tasks/${task.id}/comments`, {
+      const sanitizedTaskId = encodeURIComponent(task.id);
+      const res = await fetch(`/api/v1/tasks/${sanitizedTaskId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: newComment.trim() }),
@@ -244,8 +269,9 @@ export function TaskDetail({
 
     setIsUploading(true);
     try {
+      const sanitizedTaskId = encodeURIComponent(task.id);
       // Step 1: Request presigned URL from API
-      const presignRes = await fetch(`/api/v1/tasks/${task.id}/attachments`, {
+      const presignRes = await fetch(`/api/v1/tasks/${sanitizedTaskId}/attachments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -275,7 +301,7 @@ export function TaskDetail({
       }
 
       // Step 3: Save attachment record
-      const saveRes = await fetch(`/api/v1/tasks/${task.id}/attachments`, {
+      const saveRes = await fetch(`/api/v1/tasks/${sanitizedTaskId}/attachments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -298,11 +324,39 @@ export function TaskDetail({
     }
   };
 
+  // Toggle Subtask Completion
+  const handleToggleSubtask = async (subtaskId: string) => {
+    const updatedSubtasks = subtasks.map((st) =>
+      st.id === subtaskId ? { ...st, completed: !st.completed } : st
+    );
+    setSubtasks(updatedSubtasks);
+
+    try {
+      const sanitizedTaskId = encodeURIComponent(task.id);
+      const res = await fetch(`/api/v1/tasks/${sanitizedTaskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subtasks: updatedSubtasks }),
+      });
+
+      const json = await res.json();
+      if (json.success && json.data) {
+        if (onTaskUpdated) {
+          onTaskUpdated(json.data);
+        }
+      }
+    } catch {
+      // Revert on failure
+      setSubtasks(subtasks);
+    }
+  };
+
   const filteredMembers =
     mentionQuery !== null
-      ? orgMembers.filter((m) =>
-          m.fullName.toLowerCase().includes(mentionQuery)
-        )
+      ? orgMembers.filter((m) => {
+          const name = m.fullName || m.full_name || "";
+          return name.toLowerCase().includes(mentionQuery);
+        })
       : [];
 
   const priorityVariants: Record<string, "default" | "urgent" | "warning"> = {
@@ -317,6 +371,8 @@ export function TaskDetail({
     if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1048576).toFixed(1)} MB`;
   };
+
+  const dueDateStr = task.dueDate || task.due_date;
 
   return (
     <Modal
@@ -350,10 +406,10 @@ export function TaskDetail({
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary uppercase">
             {task.status.replace("_", " ")}
           </span>
-          {task.dueDate && (
+          {dueDateStr && (
             <span className="text-xs text-slate-500 flex items-center gap-1 ml-auto">
               <Clock className="w-3.5 h-3.5" />
-              Due: {new Date(task.dueDate).toLocaleDateString()}
+              Due: {new Date(dueDateStr).toLocaleDateString()}
             </span>
           )}
         </div>
@@ -449,15 +505,22 @@ export function TaskDetail({
               {subtasks.map((st) => (
                 <div
                   key={st.id}
-                  className="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs"
+                  onClick={() => handleToggleSubtask(st.id)}
+                  className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs select-none"
                 >
                   <input
                     type="checkbox"
                     checked={st.completed}
-                    readOnly
-                    className="rounded border-slate-300 text-primary"
+                    onChange={() => {}} // Handled by onClick on container
+                    className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4"
                   />
-                  <span className={st.completed ? "line-through text-slate-400" : ""}>
+                  <span
+                    className={`${
+                      st.completed
+                        ? "line-through text-slate-400 dark:text-slate-500"
+                        : "text-slate-800 dark:text-slate-200"
+                    }`}
+                  >
                     {st.title}
                   </span>
                 </div>
@@ -466,27 +529,24 @@ export function TaskDetail({
           </div>
         )}
 
-        {/* File Attachments (Cloudflare R2) */}
+        {/* File Attachments Upload Section */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Paperclip className="w-3.5 h-3.5 text-primary" />
-              Attachments ({attachments.length})
-            </h4>
-            <span className="text-[11px] text-slate-400">Max 10MB per file</span>
-          </div>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+            <Paperclip className="w-3.5 h-3.5 text-primary" />
+            Attachments ({attachments.length})
+          </h4>
 
           {uploadError && (
-            <div className="mb-2 p-2 rounded bg-urgent/10 text-urgent text-xs flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5" />
+            <div className="mb-2 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{uploadError}</span>
             </div>
           )}
 
-          {/* Upload Drop Zone */}
-          <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl hover:border-primary cursor-pointer transition bg-slate-50/50 dark:bg-slate-900/50">
+          {/* Upload Dropzone */}
+          <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-primary dark:hover:border-primary rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-850/50 text-xs">
             <UploadCloud className="w-6 h-6 text-slate-400 mb-1" />
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
               {isUploading ? "Uploading to Cloudflare R2..." : "Click or drag to upload files"}
             </span>
             <input
@@ -503,31 +563,37 @@ export function TaskDetail({
           {/* Attachment List */}
           {attachments.length > 0 && (
             <div className="mt-2.5 space-y-1.5">
-              {attachments.map((att) => (
-                <div
-                  key={att.id}
-                  className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary" />
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">
-                      {att.file_name}
-                    </span>
-                    <span className="text-[10px] text-slate-400">
-                      ({formatBytes(att.file_size)})
-                    </span>
-                  </div>
+              {attachments.map((att) => {
+                const fileName = att.file_name || att.fileName || "File";
+                const fileUrl = att.file_url || att.fileUrl || "#";
+                const fileSize = att.file_size || att.fileSize || 0;
 
-                  <a
-                    href={att.file_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-1 text-slate-500 hover:text-primary transition"
+                return (
+                  <div
+                    key={att.id}
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              ))}
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-primary" />
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        {fileName}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        ({formatBytes(fileSize)})
+                      </span>
+                    </div>
+
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1 text-slate-500 hover:text-primary transition"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -543,12 +609,12 @@ export function TaskDetail({
             {comments.map((com) => {
               const authorName =
                 com.profiles?.full_name ||
-                (com.profiles as any)?.fullName ||
+                com.profiles?.fullName ||
                 com.author?.full_name ||
-                (com.author as any)?.fullName ||
+                com.author?.fullName ||
                 "Team Member";
-              const commentDate = com.created_at || (com as any).createdAt || new Date().toISOString();
-              const commentBody = com.content || (com as any).body || "";
+              const commentDate = com.created_at || com.createdAt || new Date().toISOString();
+              const commentBody = com.content || com.body || "";
 
               return (
                 <div
@@ -594,23 +660,26 @@ export function TaskDetail({
                 <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-700">
                   Mention Teammate
                 </div>
-                {filteredMembers.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => handleSelectMention(m)}
-                    className="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary flex items-center gap-2 transition"
-                  >
-                    <div className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[9px] flex items-center justify-center font-bold">
-                      {m.fullName.slice(0, 1)}
-                    </div>
-                    <span className="font-semibold">{m.fullName}</span>
-                  </button>
-                ))}
+                {filteredMembers.map((m) => {
+                  const mName = m.fullName || m.full_name || "Member";
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => handleSelectMention(m)}
+                      className="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary flex items-center gap-2 transition"
+                    >
+                      <div className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[9px] flex items-center justify-center font-bold">
+                        {mName.slice(0, 1)}
+                      </div>
+                      <span className="font-semibold">{mName}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
-            <div className="flex gap-2 items-start">
+            <div className="flex gap-2">
               <textarea
                 ref={textareaRef}
                 value={newComment}
