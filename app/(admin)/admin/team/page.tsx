@@ -115,10 +115,12 @@ export default function AdminTeamPage() {
       return;
     }
 
+    let channel: any = null;
     try {
       const supabase = createClient();
-      const channel = supabase
-        .channel("realtime:team_profiles")
+      const channelId = `realtime:team_profiles:${Math.random().toString(36).slice(2, 9)}`;
+      channel = supabase
+        .channel(channelId)
         .on(
           "postgres_changes",
           {
@@ -133,13 +135,16 @@ export default function AdminTeamPage() {
         .subscribe((status) => {
           setIsConnected(status === "SUBSCRIBED");
         });
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     } catch (e) {
       console.warn("Realtime profiles connection error:", e);
     }
+
+    return () => {
+      if (channel) {
+        const supabase = createClient();
+        supabase.removeChannel(channel);
+      }
+    };
   }, [fetchMembers]);
 
   // Filtered members list

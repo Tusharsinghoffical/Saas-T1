@@ -50,51 +50,58 @@ export function useRealtimeTasks(orgId: string = "11111111-1111-1111-1111-111111
 
     // Live Supabase Realtime Subscription
     const supabase = createClient();
-    const channelName = `realtime:tasks:${orgId}`;
+    const channelName = `realtime:tasks:${orgId}:${Math.random().toString(36).slice(2, 9)}`;
 
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "tasks",
-          filter: `org_id=eq.${orgId}`,
-        },
-        (payload) => {
-          const { eventType, new: newRow, old: oldRow } = payload;
+    let channel: any = null;
+    try {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "tasks",
+            filter: `org_id=eq.${orgId}`,
+          },
+          (payload) => {
+            const { eventType, new: newRow, old: oldRow } = payload;
 
-          if (eventType === "INSERT" || eventType === "UPDATE") {
-            const taskItem: KanbanTaskItem = {
-              id: (newRow as any).id,
-              title: (newRow as any).title,
-              description: (newRow as any).description,
-              status: (newRow as any).status,
-              priority: (newRow as any).priority,
-              dueDate: (newRow as any).due_date,
-              due_date: (newRow as any).due_date,
-            };
-            upsertTask(taskItem);
-          } else if (eventType === "DELETE") {
-            if ((oldRow as any)?.id) {
-              removeTask((oldRow as any).id);
+            if (eventType === "INSERT" || eventType === "UPDATE") {
+              const taskItem: KanbanTaskItem = {
+                id: (newRow as any).id,
+                title: (newRow as any).title,
+                description: (newRow as any).description,
+                status: (newRow as any).status,
+                priority: (newRow as any).priority,
+                dueDate: (newRow as any).due_date,
+                due_date: (newRow as any).due_date,
+              };
+              upsertTask(taskItem);
+            } else if (eventType === "DELETE") {
+              if ((oldRow as any)?.id) {
+                removeTask((oldRow as any).id);
+              }
             }
           }
-        }
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          setConnectionStatus(true);
-        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          setConnectionStatus(false);
-        } else if (status === "CLOSED") {
-          setConnectionStatus(false);
-        }
-      });
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            setConnectionStatus(true);
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            setConnectionStatus(false);
+          } else if (status === "CLOSED") {
+            setConnectionStatus(false);
+          }
+        });
+    } catch (err) {
+      console.warn("Supabase realtime subscription failed:", err);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [orgId, upsertTask, removeTask, setConnectionStatus]);
 }

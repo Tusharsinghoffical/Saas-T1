@@ -89,10 +89,12 @@ export default function EmployeeDashboardPage() {
       return;
     }
 
+    let channel: any = null;
     try {
       const supabase = createClient();
-      const channel = supabase
-        .channel("realtime:employee_tasks")
+      const channelId = `realtime:employee_tasks:${Math.random().toString(36).slice(2, 9)}`;
+      channel = supabase
+        .channel(channelId)
         .on(
           "postgres_changes",
           {
@@ -107,13 +109,16 @@ export default function EmployeeDashboardPage() {
         .subscribe((status) => {
           setIsConnected(status === "SUBSCRIBED");
         });
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     } catch (e) {
       console.warn("Realtime task subscription notice:", e);
     }
+
+    return () => {
+      if (channel) {
+        const supabase = createClient();
+        supabase.removeChannel(channel);
+      }
+    };
   }, [fetchMyTasks]);
 
   // Quick Status Update on Card

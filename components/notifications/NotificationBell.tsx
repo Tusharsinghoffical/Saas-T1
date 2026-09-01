@@ -61,27 +61,36 @@ export function NotificationBell({ userId }: { userId?: string }) {
 
     if (hasSupabase && userId) {
       const supabase = createClient();
-      const channel = supabase
-        .channel(`realtime:notifications:${userId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${userId}`,
-          },
-          (payload) => {
-            const newNotif = payload.new as NotificationItem;
-            setNotifications((prev) => [newNotif, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-          }
-        )
-        .subscribe();
+      const channelId = `realtime:notifications:${userId}:${Math.random().toString(36).slice(2, 9)}`;
+      let channel: any = null;
+
+      try {
+        channel = supabase
+          .channel(channelId)
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "notifications",
+              filter: `user_id=eq.${userId}`,
+            },
+            (payload) => {
+              const newNotif = payload.new as NotificationItem;
+              setNotifications((prev) => [newNotif, ...prev]);
+              setUnreadCount((prev) => prev + 1);
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn("Notification realtime subscription error:", err);
+      }
 
       return () => {
         clearInterval(interval);
-        supabase.removeChannel(channel);
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
       };
     }
 
