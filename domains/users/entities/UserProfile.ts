@@ -10,6 +10,8 @@ export interface UserProfile {
   role: "admin" | "manager" | "employee";
   avatarUrl?: string | null;
   email?: string;
+  teamId?: string | null;
+  teamName?: string | null;
   notificationPreferences?: Record<string, boolean> | null;
   createdAt?: string;
   deletedAt?: string | null;

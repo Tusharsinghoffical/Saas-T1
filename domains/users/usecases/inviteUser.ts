@@ -5,6 +5,7 @@ import { IUserRepository, userRepository } from "../repository/userRepository";
 export interface InviteUserInput {
   email: string;
   role: "admin" | "manager" | "employee";
+  teamId?: string | null;
 }
 
 export async function inviteUserUseCase(
@@ -29,6 +30,12 @@ export async function inviteUserUseCase(
     throw new ValidationError("A valid email address is required.");
   }
 
-  // 4. Dispatch invite with server-enforced orgId & role
-  return await repo.inviteUser(context.orgId, input.email.trim().toLowerCase(), input.role, context.userId);
+  // 4. Dispatch invite with server-enforced orgId & role & teamId
+  return await repo.inviteUser(
+    context.orgId,
+    input.email.trim().toLowerCase(),
+    input.role,
+    context.userId,
+    input.teamId
+  );
 }

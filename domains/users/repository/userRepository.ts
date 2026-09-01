@@ -6,20 +6,29 @@ export interface IUserRepository {
   getProfileById(userId: string): Promise<UserProfile | null>;
   listOrgMembers(orgId: string): Promise<UserProfile[]>;
   softDeleteUser(userId: string, orgId: string): Promise<boolean>;
+  ensureDefaultTeam(orgId: string): Promise<string>;
+  assignUserToTeam(userId: string, orgId: string, teamId?: string | null): Promise<string>;
   createUserWithPassword(
     orgId: string,
     email: string,
     password: string,
     fullName: string,
     role: "admin" | "manager" | "employee",
-    creatorId: string
+    creatorId: string,
+    teamId?: string | null
   ): Promise<{ user: any; profile: UserProfile }>;
   updateUserRole(
     userId: string,
     orgId: string,
     newRole: "admin" | "manager" | "employee"
   ): Promise<boolean>;
-  inviteUser(orgId: string, email: string, role: "admin" | "manager" | "employee", inviterId: string): Promise<{ success: boolean; message: string }>;
+  inviteUser(
+    orgId: string,
+    email: string,
+    role: "admin" | "manager" | "employee",
+    inviterId: string,
+    teamId?: string | null
+  ): Promise<{ success: boolean; message: string }>;
   acceptInvite(password: string): Promise<{ success: boolean }>;
 }
 
@@ -70,12 +79,75 @@ export class SupabaseUserRepository implements IUserRepository {
     };
   }
 
+  async ensureDefaultTeam(orgId: string): Promise<string> {
+    if (!this.hasSupabase()) {
+      return "team-default-1";
+    }
+
+    const adminClient = createAdminClient();
+    const clientToUse = adminClient || createClient();
+
+    // Check if an existing team exists for this org
+    const { data: existingTeams } = await (clientToUse.from("teams") as any)
+      .select("id, name")
+      .eq("org_id", orgId)
+      .limit(1);
+
+    if (existingTeams && existingTeams.length > 0) {
+      return existingTeams[0].id;
+    }
+
+    // Create default "General" team
+    const { data: newTeam, error } = await (clientToUse.from("teams") as any)
+      .insert({
+        org_id: orgId,
+        name: "General",
+      })
+      .select("id")
+      .single();
+
+    if (error || !newTeam) {
+      console.warn("Could not create default team:", error?.message);
+      return "11111111-1111-1111-1111-111111111111";
+    }
+
+    return newTeam.id;
+  }
+
+  async assignUserToTeam(userId: string, orgId: string, teamId?: string | null): Promise<string> {
+    if (!this.hasSupabase()) {
+      return teamId || "team-default-1";
+    }
+
+    const adminClient = createAdminClient();
+    const clientToUse = adminClient || createClient();
+
+    let targetTeamId = teamId;
+    if (!targetTeamId) {
+      targetTeamId = await this.ensureDefaultTeam(orgId);
+    }
+
+    try {
+      await (clientToUse.from("team_members") as any).upsert(
+        {
+          user_id: userId,
+          team_id: targetTeamId,
+        },
+        { onConflict: "team_id,user_id" }
+      );
+    } catch (err) {
+      console.warn("Could not assign user to team_members:", err);
+    }
+
+    return targetTeamId;
+  }
+
   async listOrgMembers(orgId: string): Promise<UserProfile[]> {
     if (!this.hasSupabase()) {
       return [
-        { id: "mem-1", orgId, fullName: "Jane Doe (Admin)", email: "jane@acme.com", role: "admin", avatarUrl: null, deletedAt: null },
-        { id: "mem-2", orgId, fullName: "Alex Smith (Lead)", email: "alex@acme.com", role: "manager", avatarUrl: null, deletedAt: null },
-        { id: "mem-3", orgId, fullName: "Rohan Patel (Dev)", email: "rohan@acme.com", role: "employee", avatarUrl: null, deletedAt: null },
+        { id: "mem-1", orgId, fullName: "Jane Doe (Admin)", email: "jane@acme.com", role: "admin", teamId: "team-1", teamName: "Leadership", avatarUrl: null, deletedAt: null },
+        { id: "mem-2", orgId, fullName: "Alex Smith (Lead)", email: "alex@acme.com", role: "manager", teamId: "team-2", teamName: "Engineering", avatarUrl: null, deletedAt: null },
+        { id: "mem-3", orgId, fullName: "Rohan Patel (Dev)", email: "rohan@acme.com", role: "employee", teamId: "team-2", teamName: "Engineering", avatarUrl: null, deletedAt: null },
       ];
     }
 
@@ -139,12 +211,38 @@ export class SupabaseUserRepository implements IUserRepository {
       return [];
     }
 
+    // Fetch team memberships and map to users
+    const teamMemberMap: Record<string, { teamId: string; teamName: string }> = {};
+    try {
+      const { data: teamMemberships } = await (clientToUse.from("team_members") as any)
+        .select(`
+          user_id,
+          team_id,
+          teams:team_id (id, name)
+        `);
+
+      if (teamMemberships && Array.isArray(teamMemberships)) {
+        teamMemberships.forEach((tm: any) => {
+          if (tm.user_id && tm.team_id) {
+            teamMemberMap[tm.user_id] = {
+              teamId: tm.team_id,
+              teamName: tm.teams?.name || "Assigned Team",
+            };
+          }
+        });
+      }
+    } catch {
+      // Non-blocking
+    }
+
     return finalProfiles.map((p: any) => ({
       id: p.id,
       orgId: p.org_id,
       fullName: p.full_name || "Team Member",
       email: authUserMap[p.id] || undefined,
       role: p.role || "employee",
+      teamId: teamMemberMap[p.id]?.teamId || null,
+      teamName: teamMemberMap[p.id]?.teamName || null,
       avatarUrl: p.avatar_url,
       notificationPreferences: p.notification_preferences,
       createdAt: p.created_at,
@@ -158,7 +256,8 @@ export class SupabaseUserRepository implements IUserRepository {
     password: string,
     fullName: string,
     role: "admin" | "manager" | "employee",
-    creatorId: string
+    creatorId: string,
+    teamId?: string | null
   ): Promise<{ user: any; profile: UserProfile }> {
     if (!this.hasSupabase()) {
       const mockId = "mock-" + Date.now();
@@ -170,6 +269,8 @@ export class SupabaseUserRepository implements IUserRepository {
           fullName,
           email,
           role,
+          teamId: teamId || "team-default-1",
+          teamName: "General",
           avatarUrl: null,
           createdAt: new Date().toISOString(),
           deletedAt: null,
@@ -210,6 +311,8 @@ export class SupabaseUserRepository implements IUserRepository {
             deleted_at: null,
           });
 
+          const assignedTeamId = await this.assignUserToTeam(existingUser.id, orgId, teamId);
+
           return {
             user: existingUser,
             profile: {
@@ -218,6 +321,7 @@ export class SupabaseUserRepository implements IUserRepository {
               fullName,
               email: existingUser.email || normalizedEmail,
               role,
+              teamId: assignedTeamId,
               avatarUrl: null,
               createdAt: existingUser.created_at || new Date().toISOString(),
               deletedAt: null,
@@ -304,6 +408,9 @@ export class SupabaseUserRepository implements IUserRepository {
       console.warn("Profile upsert warning:", profileError.message);
     }
 
+    // 5. Invariant: Guarantee team assignment in team_members
+    const assignedTeamId = await this.assignUserToTeam(userId, orgId, teamId);
+
     return {
       user: authUser,
       profile: {
@@ -312,6 +419,7 @@ export class SupabaseUserRepository implements IUserRepository {
         fullName,
         email: normalizedEmail,
         role,
+        teamId: assignedTeamId,
         avatarUrl: null,
         createdAt: authUser.created_at || new Date().toISOString(),
         deletedAt: null,
@@ -387,7 +495,8 @@ export class SupabaseUserRepository implements IUserRepository {
     orgId: string,
     email: string,
     role: "admin" | "manager" | "employee",
-    inviterId: string
+    inviterId: string,
+    teamId?: string | null
   ): Promise<{ success: boolean; message: string }> {
     if (!this.hasSupabase()) {
       return { success: true, message: `Mock invite sent to ${email}` };
@@ -397,6 +506,9 @@ export class SupabaseUserRepository implements IUserRepository {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const redirectTo = `${appUrl}/accept-invite`;
 
+    // Ensure default team if teamId not passed
+    const targetTeamId = teamId || (await this.ensureDefaultTeam(orgId));
+
     // Send single-use invite link via Supabase Auth Admin API
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       email,
@@ -405,6 +517,7 @@ export class SupabaseUserRepository implements IUserRepository {
         data: {
           org_id: orgId,
           role,
+          team_id: targetTeamId,
           invited_by: inviterId,
         },
       }
@@ -422,6 +535,9 @@ export class SupabaseUserRepository implements IUserRepository {
         role,
         full_name: email.split("@")[0],
       });
+
+      // Pre-assign user to team_members
+      await this.assignUserToTeam(inviteData.user.id, orgId, targetTeamId);
     }
 
     return { success: true, message: `Invite dispatched successfully to ${email}` };
@@ -433,12 +549,21 @@ export class SupabaseUserRepository implements IUserRepository {
     }
 
     const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({
+    const { data: userData, error } = await supabase.auth.updateUser({
       password,
     });
 
     if (error) {
       throw new Error(error.message || "Failed to set account password.");
+    }
+
+    // Ensure team assignment on acceptance
+    if (userData?.user?.id) {
+      const orgId = userData.user.user_metadata?.org_id || userData.user.app_metadata?.org_id;
+      const teamId = userData.user.user_metadata?.team_id || userData.user.app_metadata?.team_id;
+      if (orgId) {
+        await this.assignUserToTeam(userData.user.id, orgId, teamId);
+      }
     }
 
     return { success: true };

@@ -14,7 +14,10 @@ export async function PATCH(
 ) {
   try {
     const body = await request.json();
-    const result = await userController.updateRole(params.userId, body.role);
+    const result = await userController.updateMember(params.userId, {
+      role: body.role,
+      teamId: body.teamId || body.team_id,
+    });
     return NextResponse.json(result);
   } catch (error) {
     return handleAuthError(error);

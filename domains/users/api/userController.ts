@@ -55,6 +55,18 @@ export class UserController {
     return await updateUserRoleUseCase(auth, { userId, role });
   }
 
+  async updateMember(userId: string, updates: { role?: "admin" | "manager" | "employee"; teamId?: string }) {
+    const auth = await requireAuth();
+    if (updates.role) {
+      await updateUserRoleUseCase(auth, { userId, role: updates.role });
+    }
+    if (updates.teamId) {
+      const { userRepository } = await import("../repository/userRepository");
+      await userRepository.assignUserToTeam(userId, auth.orgId, updates.teamId);
+    }
+    return { success: true };
+  }
+
   async inviteMember(input: InviteUserInput) {
     const auth = await requireAuth();
 

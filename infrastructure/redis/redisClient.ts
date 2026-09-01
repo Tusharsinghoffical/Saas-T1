@@ -123,14 +123,38 @@ export async function redisDel(key: string): Promise<boolean> {
 }
 
 /**
- * Invalidates cached dashboard data for an organization or team.
+ * Invalidates cached dashboard data for an organization or team across all roles.
  */
 export async function invalidateOrgDashboardCache(orgId: string, teamId?: string | null) {
-  const baseKey = `dashboard:admin:${orgId}`;
-  await redisDel(baseKey);
+  // Clear memory cache keys matching this organization's dashboard
+  Array.from(memoryCache.keys()).forEach((key) => {
+    if (
+      key.startsWith(`dashboard:admin:${orgId}`) ||
+      key.startsWith(`dashboard:manager:${orgId}`) ||
+      key.startsWith(`dashboard:charts:${orgId}`)
+    ) {
+      memoryCache.delete(key);
+    }
+  });
+
+  // Clear common Redis keys
+  const keysToDelete = [
+    `dashboard:admin:${orgId}`,
+    `dashboard:admin:${orgId}:charts`,
+    `dashboard:manager:${orgId}`,
+    `dashboard:charts:${orgId}`,
+  ];
+
   if (teamId) {
-    await redisDel(`${baseKey}:team:${teamId}`);
+    keysToDelete.push(
+      `dashboard:admin:${orgId}:team:${teamId}`,
+      `dashboard:admin:${orgId}:charts:team:${teamId}`,
+      `dashboard:manager:${orgId}:team:${teamId}`,
+      `dashboard:charts:${orgId}:team:${teamId}`
+    );
   }
+
+  await Promise.all(keysToDelete.map((k) => redisDel(k)));
 }
 
 /**

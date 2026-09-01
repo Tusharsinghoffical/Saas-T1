@@ -7,16 +7,11 @@ export async function getAdminDashboardUseCase(
   teamId?: string | null,
   repo: IDashboardRepository = dashboardRepository
 ): Promise<{ data: any; source: "cache" | "database" }> {
-  const cacheKey = teamId
-    ? `dashboard:admin:${context.orgId}:team:${teamId}`
-    : `dashboard:admin:${context.orgId}`;
+  const chartCacheKey = teamId
+    ? `dashboard:admin:${context.orgId}:charts:team:${teamId}`
+    : `dashboard:admin:${context.orgId}:charts`;
 
-  // 1. Check Redis Cache (60s TTL)
-  const cachedData = await redisGet(cacheKey);
-  if (cachedData) {
-    return { data: cachedData, source: "cache" };
-  }
-
+  // 1. Fetch live tasks directly (unblocked by full cache for instant bottom-up visibility)
   const tasks = await repo.getAdminDashboardTasks(context.orgId, teamId);
   const nowMs = Date.now();
 
@@ -35,28 +30,37 @@ export async function getAdminDashboardUseCase(
   const totalTasks = tasks.length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const timeline = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(nowMs - i * 86400000);
-    const dateStr = d.toISOString().slice(0, 10);
+  // 2. Fetch or compute expensive 30-day historical chart data with 60s Redis cache
+  let timeline = await redisGet(chartCacheKey);
+  let chartSource: "cache" | "database" = "cache";
 
-    const completedCount = tasks.filter((t: any) => {
-      if (t.status !== "completed") return false;
-      const updatedDate = (t.updated_at || t.created_at || "").slice(0, 10);
-      return updatedDate === dateStr;
-    }).length;
+  if (!timeline) {
+    chartSource = "database";
+    timeline = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(nowMs - i * 86400000);
+      const dateStr = d.toISOString().slice(0, 10);
 
-    const createdCount = tasks.filter((t: any) => {
-      const createdDate = (t.created_at || "").slice(0, 10);
-      return createdDate === dateStr;
-    }).length;
+      const completedCount = tasks.filter((t: any) => {
+        if (t.status !== "completed") return false;
+        const updatedDate = (t.updated_at || t.created_at || "").slice(0, 10);
+        return updatedDate === dateStr;
+      }).length;
 
-    timeline.push({
-      date: dateStr,
-      label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-      completed: completedCount,
-      created: createdCount,
-    });
+      const createdCount = tasks.filter((t: any) => {
+        const createdDate = (t.created_at || "").slice(0, 10);
+        return createdDate === dateStr;
+      }).length;
+
+      timeline.push({
+        date: dateStr,
+        label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        completed: completedCount,
+        created: createdCount,
+      });
+    }
+
+    await redisSet(chartCacheKey, timeline, 60);
   }
 
   const aggregateData = {
@@ -72,7 +76,5 @@ export async function getAdminDashboardUseCase(
     generatedAt: new Date().toISOString(),
   };
 
-  await redisSet(cacheKey, aggregateData, 60);
-
-  return { data: aggregateData, source: "database" };
+  return { data: aggregateData, source: chartSource };
 }

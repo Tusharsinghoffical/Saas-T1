@@ -34,6 +34,8 @@ interface TeamMember {
   fullName: string;
   email: string | null;
   role: "admin" | "manager" | "employee";
+  teamId?: string | null;
+  teamName?: string | null;
   avatarUrl?: string | null;
   createdAt?: string;
 }
@@ -44,6 +46,7 @@ export default function AdminTeamPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [selectedTeam, setSelectedTeam] = useState<string>("General");
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -62,6 +65,7 @@ export default function AdminTeamPage() {
     email: string;
     password?: string;
     role: string;
+    teamName?: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -89,6 +93,8 @@ export default function AdminTeamPage() {
             fullName: m.fullName || m.full_name || "Team Member",
             email: m.email || null,
             role: m.role || "employee",
+            teamId: m.teamId || m.team_id || null,
+            teamName: m.teamName || m.team_name || (m.role === "admin" ? "Leadership" : "General"),
             avatarUrl: m.avatarUrl || m.avatar_url || null,
             createdAt: m.createdAt || m.created_at,
           }))
@@ -162,6 +168,9 @@ export default function AdminTeamPage() {
   const adminCount = members.filter((m) => m.role === "admin").length;
   const managerCount = members.filter((m) => m.role === "manager").length;
   const employeeCount = members.filter((m) => m.role === "employee").length;
+  const unassignedMembers = members.filter(
+    (m) => m.role !== "admin" && (!m.teamId || m.teamName === "Unassigned")
+  );
 
   // Handle Add Member Submit
   const handleAddMember = async (e: React.FormEvent) => {
@@ -193,6 +202,7 @@ export default function AdminTeamPage() {
           email: email.trim().toLowerCase(),
           password: creationMode === "direct" ? password : undefined,
           role,
+          teamName: selectedTeam,
         }),
       });
 
@@ -214,6 +224,7 @@ export default function AdminTeamPage() {
           email: email.trim().toLowerCase(),
           password,
           role,
+          teamName: selectedTeam,
         });
       } else {
         setIsAddModalOpen(false);
@@ -255,6 +266,29 @@ export default function AdminTeamPage() {
     }
   };
 
+  // Handle Team Assignment Change
+  const handleTeamChange = async (userId: string, newTeamName: string) => {
+    try {
+      const res = await fetch(`/api/v1/org/members/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamName: newTeamName }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error?.message || "Failed to update team assignment.");
+      }
+
+      setMembers((prev) =>
+        prev.map((m) => (m.id === userId ? { ...m, teamName: newTeamName } : m))
+      );
+      showToast(`Member assigned to team "${newTeamName}".`);
+    } catch (err: any) {
+      showToast(err.message || "Failed to update team assignment.", "error");
+    }
+  };
+
   // Handle Member Deletion / Removal
   const handleDeleteMember = async () => {
     if (!deletingMember) return;
@@ -281,7 +315,7 @@ export default function AdminTeamPage() {
 
   const copyCredentialsText = () => {
     if (!createdCredentials) return;
-    const text = `🎉 You've been added to TASQ-ONE Work OS!\n\nLogin URL: ${window.location.origin}/login\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nRole: ${createdCredentials.role.toUpperCase()}`;
+    const text = `🎉 You've been added to TASQ-ONE Work OS!\n\nLogin URL: ${window.location.origin}/login\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nRole: ${createdCredentials.role.toUpperCase()}\nTeam: ${createdCredentials.teamName || "General"}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -310,7 +344,7 @@ export default function AdminTeamPage() {
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               Team & Role Access
             </h1>
@@ -331,7 +365,7 @@ export default function AdminTeamPage() {
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Add team members, assign workspace roles (Admin, Manager, Employee), and control access.
+            Add team members, guarantee manager/team assignments, and manage RBAC role permissions.
           </p>
         </div>
 
@@ -349,6 +383,7 @@ export default function AdminTeamPage() {
             onClick={() => {
               setCreatedCredentials(null);
               setErrorMessage(null);
+              setSelectedTeam("General");
               setIsAddModalOpen(true);
             }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary-700 text-white text-xs font-semibold shadow-sm shadow-primary/25"
@@ -358,6 +393,34 @@ export default function AdminTeamPage() {
           </Button>
         </div>
       </div>
+
+      {/* Gap 2: Unassigned Team Members Report / Warning Banner */}
+      {unassignedMembers.length > 0 && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-amber-500/20 text-amber-600 flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                {unassignedMembers.length} Member{unassignedMembers.length > 1 ? "s" : ""} Without Team Assignment
+              </div>
+              <div className="text-[11px] text-amber-700 dark:text-amber-400">
+                Employees without an assigned team are invisible to Manager dashboards. Assign them to a team below.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              unassignedMembers.forEach((m) => handleTeamChange(m.id, "General"));
+            }}
+            className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex-shrink-0"
+          >
+            Auto-Assign All to &quot;General&quot;
+          </button>
+        </div>
+      )}
 
       {/* Role Distribution Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -406,7 +469,7 @@ export default function AdminTeamPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Search by name or email..."
+            placeholder="Search by name, email, or team..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 text-xs h-9"
@@ -451,6 +514,7 @@ export default function AdminTeamPage() {
                 <tr>
                   <th className="px-5 py-3.5">Member</th>
                   <th className="px-5 py-3.5">Email</th>
+                  <th className="px-5 py-3.5">Assigned Team / Squad</th>
                   <th className="px-5 py-3.5">Access Role</th>
                   <th className="px-5 py-3.5">Dashboard Route</th>
                   <th className="px-5 py-3.5 text-right">Actions</th>
@@ -479,6 +543,13 @@ export default function AdminTeamPage() {
                     {/* Email */}
                     <td className="px-5 py-3.5 whitespace-nowrap text-slate-500">
                       {member.email || "Workspace User"}
+                    </td>
+
+                    {/* Team Assignment */}
+                    <td className="px-5 py-3.5 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                        {member.teamName || "General"}
+                      </span>
                     </td>
 
                     {/* Role Dropdown */}
@@ -749,6 +820,27 @@ export default function AdminTeamPage() {
                   <div className="text-[10px] text-slate-400 mt-0.5">Full workspace</div>
                 </button>
               </div>
+            </div>
+
+            {/* Team / Squad Assignment */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Assign Team / Squad *
+              </label>
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+                className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-slate-800 dark:text-slate-200 font-medium"
+              >
+                <option value="General">General (Default Org Team)</option>
+                <option value="Engineering">Engineering Squad</option>
+                <option value="Product">Product & Design</option>
+                <option value="Marketing">Growth & Marketing</option>
+                <option value="Leadership">Executive Leadership</option>
+              </select>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                Guarantees this member is visible in the corresponding Manager dashboard.
+              </span>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">

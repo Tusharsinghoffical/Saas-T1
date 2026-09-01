@@ -8,6 +8,7 @@ export interface CreateEmployeeInput {
   email: string;
   password?: string;
   role: "admin" | "manager" | "employee";
+  teamId?: string | null;
 }
 
 export async function createEmployeeUserUseCase(
@@ -45,7 +46,8 @@ export async function createEmployeeUserUseCase(
       input.password,
       cleanName,
       input.role,
-      context.userId
+      context.userId,
+      input.teamId
     );
     return {
       user: result.user,
@@ -55,7 +57,13 @@ export async function createEmployeeUserUseCase(
   }
 
   // 5. Otherwise, dispatch email invitation
-  const inviteResult = await repo.inviteUser(context.orgId, cleanEmail, input.role, context.userId);
+  const inviteResult = await repo.inviteUser(
+    context.orgId,
+    cleanEmail,
+    input.role,
+    context.userId,
+    input.teamId
+  );
   return {
     user: null,
     profile: {

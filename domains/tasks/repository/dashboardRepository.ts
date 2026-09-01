@@ -2,6 +2,7 @@ import { createClient } from "@/infrastructure/supabase/supabaseServer";
 
 export interface IDashboardRepository {
   getAdminDashboardTasks(orgId: string, teamId?: string | null): Promise<any[]>;
+  getManagerDashboardTasks(orgId: string, managerUserId: string, teamId?: string | null): Promise<any[]>;
   getEmployeeTasks(orgId: string, userId: string): Promise<any[]>;
 }
 
@@ -54,6 +55,75 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
     }
 
     const { data: rawTasks, error } = await query;
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return rawTasks || [];
+  }
+
+  async getManagerDashboardTasks(
+    orgId: string,
+    managerUserId: string,
+    teamId?: string | null
+  ): Promise<any[]> {
+    if (!this.hasSupabase()) {
+      return [
+        {
+          id: "mgr-task-1",
+          status: "in_progress",
+          priority: "high",
+          due_date: new Date(Date.now() + 86400000).toISOString(),
+          created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+          updated_at: new Date().toISOString(),
+          team_id: teamId || "team-default",
+        },
+        {
+          id: "mgr-task-2",
+          status: "completed",
+          priority: "medium",
+          due_date: new Date(Date.now() - 86400000).toISOString(),
+          created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
+          updated_at: new Date(Date.now() - 86400000).toISOString(),
+          team_id: teamId || "team-default",
+        },
+      ];
+    }
+
+    const supabase = createClient();
+
+    // 1. Resolve manager's assigned teams
+    const { data: managedTeams } = await (supabase.from("teams") as any)
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("manager_id", managerUserId);
+
+    const { data: memberTeams } = await (supabase.from("team_members") as any)
+      .select("team_id")
+      .eq("user_id", managerUserId);
+
+    const managedIds = new Set<string>();
+    (managedTeams || []).forEach((t: any) => managedIds.add(t.id));
+    (memberTeams || []).forEach((m: any) => managedIds.add(m.team_id));
+
+    const validTeamIds = Array.from(managedIds);
+
+    // If manager is not assigned to any team yet
+    if (validTeamIds.length === 0) {
+      return [];
+    }
+
+    if (teamId && !managedIds.has(teamId)) {
+      throw new Error("Manager cannot access data outside their assigned team scope.");
+    }
+
+    const targetTeamIds = teamId ? [teamId] : validTeamIds;
+
+    let { data: rawTasks, error } = await (supabase.from("tasks") as any)
+      .select("id, status, priority, due_date, created_at, updated_at, team_id")
+      .eq("org_id", orgId)
+      .in("team_id", targetTeamIds);
+
     if (error) {
       throw new Error(error.message);
     }

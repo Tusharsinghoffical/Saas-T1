@@ -13,17 +13,19 @@ export async function getManagerDashboardUseCase(
     throw new ForbiddenError("Only managers and admins can access the team management dashboard.");
   }
 
-  const cacheKey = teamId
-    ? `dashboard:manager:${context.orgId}:user:${context.userId}:team:${teamId}`
-    : `dashboard:manager:${context.orgId}:user:${context.userId}`;
+  const chartCacheKey = teamId
+    ? `dashboard:manager:${context.orgId}:user:${context.userId}:charts:team:${teamId}`
+    : `dashboard:manager:${context.orgId}:user:${context.userId}:charts`;
 
-  // 1. Check Redis Cache (60s TTL)
-  const cachedData = await redisGet(cacheKey);
-  if (cachedData) {
-    return { data: cachedData, source: "cache" };
+  // 1. Fetch live scoped tasks directly (unblocked by cache for instant bottom-up visibility)
+  let tasks: any[] = [];
+  if (context.role === "manager") {
+    tasks = await repo.getManagerDashboardTasks(context.orgId, context.userId, teamId);
+  } else {
+    // Admin has org-wide visibility
+    tasks = await repo.getAdminDashboardTasks(context.orgId, teamId);
   }
 
-  const tasks = await repo.getAdminDashboardTasks(context.orgId, teamId);
   const nowMs = Date.now();
 
   const activeTasks = tasks.filter((t: any) =>
@@ -41,28 +43,37 @@ export async function getManagerDashboardUseCase(
   const totalTasks = tasks.length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  const timeline = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(nowMs - i * 86400000);
-    const dateStr = d.toISOString().slice(0, 10);
+  // 2. Fetch or compute expensive 30-day historical chart data with 60s Redis cache
+  let timeline = await redisGet(chartCacheKey);
+  let chartSource: "cache" | "database" = "cache";
 
-    const completedCount = tasks.filter((t: any) => {
-      if (t.status !== "completed") return false;
-      const updatedDate = (t.updated_at || t.created_at || "").slice(0, 10);
-      return updatedDate === dateStr;
-    }).length;
+  if (!timeline) {
+    chartSource = "database";
+    timeline = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(nowMs - i * 86400000);
+      const dateStr = d.toISOString().slice(0, 10);
 
-    const createdCount = tasks.filter((t: any) => {
-      const createdDate = (t.created_at || "").slice(0, 10);
-      return createdDate === dateStr;
-    }).length;
+      const completedCount = tasks.filter((t: any) => {
+        if (t.status !== "completed") return false;
+        const updatedDate = (t.updated_at || t.created_at || "").slice(0, 10);
+        return updatedDate === dateStr;
+      }).length;
 
-    timeline.push({
-      date: dateStr,
-      label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-      completed: completedCount,
-      created: createdCount,
-    });
+      const createdCount = tasks.filter((t: any) => {
+        const createdDate = (t.created_at || "").slice(0, 10);
+        return createdDate === dateStr;
+      }).length;
+
+      timeline.push({
+        date: dateStr,
+        label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        completed: completedCount,
+        created: createdCount,
+      });
+    }
+
+    await redisSet(chartCacheKey, timeline, 60);
   }
 
   const aggregateData = {
@@ -78,7 +89,5 @@ export async function getManagerDashboardUseCase(
     generatedAt: new Date().toISOString(),
   };
 
-  await redisSet(cacheKey, aggregateData, 10);
-
-  return { data: aggregateData, source: "database" };
+  return { data: aggregateData, source: chartSource };
 }

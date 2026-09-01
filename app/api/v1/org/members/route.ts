@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
       email: body.email,
       password: body.password,
       role: body.role || "employee",
+      teamId: body.teamId || body.team_id,
     });
 
     return NextResponse.json({ success: true, ...result }, { status: 201 });
