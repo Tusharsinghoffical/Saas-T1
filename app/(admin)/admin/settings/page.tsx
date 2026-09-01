@@ -3,14 +3,11 @@
 import React, { useState, useEffect } from "react";
 import {
   Building2,
-  Globe,
   Save,
   Loader2,
   CheckCircle2,
   AlertCircle,
-  Send,
   Sparkles,
-  ExternalLink,
   MessageSquare,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -20,14 +17,11 @@ import { Button } from "@/components/ui/button";
 export default function AdminSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isTestingSlack, setIsTestingSlack] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // Settings state
   const [orgName, setOrgName] = useState("");
   const [timezone, setTimezone] = useState("UTC");
-  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
-  const [slackEnabled, setSlackEnabled] = useState(true);
 
   useEffect(() => {
     fetchSettings();
@@ -41,8 +35,6 @@ export default function AdminSettingsPage() {
       if (json.success && json.data) {
         setOrgName(json.data.name || "");
         setTimezone(json.data.timezone || "UTC");
-        setSlackWebhookUrl(json.data.slack_webhook_url || "");
-        setSlackEnabled(json.data.slack_notifications_enabled ?? true);
       }
     } catch {
       // Fallback
@@ -63,8 +55,6 @@ export default function AdminSettingsPage() {
         body: JSON.stringify({
           name: orgName,
           timezone,
-          slack_webhook_url: slackWebhookUrl.trim(),
-          slack_notifications_enabled: slackEnabled,
         }),
       });
 
@@ -82,42 +72,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleTestSlack = async () => {
-    if (!slackWebhookUrl.trim()) {
-      setToast({ type: "error", message: "Please paste a Slack Webhook URL first." });
-      return;
-    }
-
-    setIsTestingSlack(true);
-    setToast(null);
-
-    try {
-      const res = await fetch("/api/v1/org/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: orgName,
-          slack_webhook_url: slackWebhookUrl.trim(),
-          test: true,
-        }),
-      });
-
-      const json = await res.json();
-      if (json.success) {
-        setToast({
-          type: "success",
-          message: "Test message sent to Slack successfully! Check your channel.",
-        });
-        setTimeout(() => setToast(null), 6000);
-      } else {
-        setToast({ type: "error", message: json.error || "Slack webhook test failed." });
-      }
-    } catch {
-      setToast({ type: "error", message: "Network timeout testing Slack webhook." });
-    } finally {
-      setIsTestingSlack(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -213,89 +167,38 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        {/* Slack Webhook Integration Card */}
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        {/* Slack Integration — Coming Soon */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative">
+          {/* Frosted overlay */}
+          <div className="absolute inset-0 backdrop-blur-[2px] bg-white/60 dark:bg-slate-900/70 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-violet-500/10 border border-primary/20 shadow-sm">
+              <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+              <span className="text-sm font-bold text-primary">Coming Soon</span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center max-w-[260px]">
+              Slack integration is under development. You&apos;ll get real-time task alerts in your channels soon!
+            </p>
+          </div>
+
+          {/* Background (blurred) content */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 opacity-30 select-none pointer-events-none">
             <div className="flex items-center gap-2.5">
               <div className="p-1.5 rounded-lg bg-[#4A154B]/10 text-[#4A154B] dark:text-purple-400">
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>Slack Webhook Integration</span>
-                  {slackWebhookUrl ? (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-semibold">
-                      Connected
-                    </span>
-                  ) : (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold">
-                      Optional
-                    </span>
-                  )}
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Slack Webhook Integration
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-0.5">
                   Post real-time task assignments and overdue alerts to a Slack channel.
                 </p>
               </div>
             </div>
-
-            <a
-              href="https://api.slack.com/messaging/webhooks"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
-            >
-              <span>Slack Guide</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
           </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Incoming Webhook URL
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  type="url"
-                  value={slackWebhookUrl}
-                  onChange={(e) => setSlackWebhookUrl(e.target.value)}
-                  placeholder="https://hooks.slack.com/services/T000/B000/XXXXXX"
-                  className="font-mono text-xs"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleTestSlack}
-                  disabled={isTestingSlack || !slackWebhookUrl.trim()}
-                  className="sm:w-auto w-full flex-shrink-0 flex items-center gap-1.5"
-                >
-                  {isTestingSlack ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Testing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Test Slack</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <label className="flex items-center gap-2.5 cursor-pointer pt-1">
-              <input
-                type="checkbox"
-                checked={slackEnabled}
-                onChange={(e) => setSlackEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary"
-              />
-              <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
-                Post notifications to Slack when tasks are assigned or overdue
-              </span>
-            </label>
+          <div className="mt-4 space-y-3 opacity-20 select-none pointer-events-none">
+            <div className="h-9 rounded-lg bg-slate-200 dark:bg-slate-700 w-full" />
+            <div className="h-4 rounded-md bg-slate-100 dark:bg-slate-800 w-3/4" />
           </div>
         </div>
 
