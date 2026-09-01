@@ -14,13 +14,14 @@ export async function listOrgMembersUseCase(
     const managerTeamId = currentManager?.teamId;
 
     if (!managerTeamId) {
-      // If manager has no specific team assigned, return only themselves
-      return allMembers.filter((m) => m.id === context.userId);
+      // If manager has not been mapped to a custom squad, return all org members in default team or workspace
+      return allMembers;
     }
 
-    return allMembers.filter(
-      (m) => m.id === context.userId || m.teamId === managerTeamId
+    const teamMembers = allMembers.filter(
+      (m) => m.id === context.userId || m.teamId === managerTeamId || !m.teamId
     );
+    return teamMembers.length > 0 ? teamMembers : allMembers;
   }
 
   // Admin and other authorized roles see full organization members

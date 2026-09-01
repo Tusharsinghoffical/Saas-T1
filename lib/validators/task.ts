@@ -32,10 +32,16 @@ export const employeeStatusUpdateSchema = z.object({
 export const taskFilterSchema = z.object({
   status: taskStatusEnum.optional(),
   priority: taskPriorityEnum.optional(),
-  assigneeId: z.string().uuid().optional(),
-  teamId: z.string().uuid().optional(),
+  assigneeId: z
+    .string()
+    .optional()
+    .transform((val) => (val === "all" || !val ? undefined : val)),
+  teamId: z
+    .string()
+    .optional()
+    .transform((val) => (val === "all" || !val ? undefined : val)),
   search: z.string().optional(),
-  limit: z.coerce.number().min(1).max(100).default(50),
+  limit: z.coerce.number().min(1).max(1000).default(50),
   offset: z.coerce.number().min(0).default(0),
 });
 

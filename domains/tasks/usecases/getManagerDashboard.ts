@@ -2,11 +2,13 @@ import { RequestContext } from "@/shared/types/context";
 import { ForbiddenError } from "@/shared/errors/domainErrors";
 import { redisGet, redisSet } from "@/infrastructure/redis/redisClient";
 import { IDashboardRepository, dashboardRepository } from "../repository/dashboardRepository";
+import { IUserRepository, userRepository } from "@/domains/users/repository/userRepository";
 
 export async function getManagerDashboardUseCase(
   context: RequestContext,
   teamId?: string | null,
-  repo: IDashboardRepository = dashboardRepository
+  repo: IDashboardRepository = dashboardRepository,
+  userRepo: IUserRepository = userRepository
 ): Promise<{ data: any; source: "cache" | "database" }> {
   // Enforce manager or admin role
   if (context.role !== "manager" && context.role !== "admin") {
@@ -17,7 +19,35 @@ export async function getManagerDashboardUseCase(
     ? `dashboard:manager:${context.orgId}:user:${context.userId}:charts:team:${teamId}`
     : `dashboard:manager:${context.orgId}:user:${context.userId}:charts`;
 
-  // 1. Fetch live scoped tasks directly (unblocked by cache for instant bottom-up visibility)
+  // 1. Fetch Manager Profile Details
+  let managerProfileData = null;
+  try {
+    const members = await userRepo.listOrgMembers(context.orgId);
+    managerProfileData = members.find((m) => m.id === context.userId);
+  } catch {
+    // Non-blocking fallback
+  }
+
+  if (!managerProfileData) {
+    try {
+      managerProfileData = await userRepo.getProfileById(context.userId);
+    } catch {
+      // Non-blocking fallback
+    }
+  }
+
+  const managerProfile = {
+    id: context.userId,
+    managerCode: `MGR-${(context.userId || "0000").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase()}`,
+    fullName: managerProfileData?.fullName || "Lead Manager",
+    email: managerProfileData?.email || context.email || "manager@workspace.com",
+    role: context.role || "manager",
+    teamId: managerProfileData?.teamId || teamId || null,
+    teamName: managerProfileData?.teamName || "Sprint Lead Squad",
+    avatarUrl: managerProfileData?.avatarUrl || null,
+  };
+
+  // 2. Fetch live scoped tasks directly (unblocked by cache for instant bottom-up visibility)
   let tasks: any[] = [];
   if (context.role === "manager") {
     tasks = await repo.getManagerDashboardTasks(context.orgId, context.userId, teamId);
@@ -43,7 +73,7 @@ export async function getManagerDashboardUseCase(
   const totalTasks = tasks.length;
   const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // 2. Fetch or compute expensive 30-day historical chart data with 60s Redis cache
+  // 3. Fetch or compute expensive 30-day historical chart data with 60s Redis cache
   let timeline = await redisGet(chartCacheKey);
   let chartSource: "cache" | "database" = "cache";
 
@@ -77,6 +107,7 @@ export async function getManagerDashboardUseCase(
   }
 
   const aggregateData = {
+    managerProfile,
     kpis: {
       activeTasks,
       overdueTasks,

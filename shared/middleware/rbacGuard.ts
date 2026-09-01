@@ -198,27 +198,28 @@ export function handleAuthError(error: unknown) {
     throw error;
   }
 
-  if (error instanceof DomainError) {
-    // Business-layer errors: safe to expose message to client
+  const err = error as any;
+  const isDomainError = error instanceof DomainError || err?.name === "DomainError" || err?.name === "ValidationError" || err?.name === "UnauthorizedError" || err?.name === "ForbiddenError" || err?.name === "NotFoundError" || err?.name === "RateLimitError";
+
+  if (isDomainError || (typeof err?.statusCode === "number" && err.statusCode >= 400 && err.statusCode < 500)) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
-        ...(error.details ? { details: error.details } : {}),
+        error: err.message || "Request validation failed.",
+        ...(err.details ? { details: err.details } : {}),
       },
-      { status: error.statusCode }
+      { status: err.statusCode || 400 }
     );
   }
 
   // Infrastructure / runtime errors: log full detail server-side only
   console.error("[handleAuthError] Unhandled internal error:", error);
 
-  const isDev = process.env.NODE_ENV !== "production";
   return NextResponse.json(
     {
       success: false,
-      error: "Internal server error. Please contact support.",
-      ...(isDev ? { _debug: (error as Error)?.message } : {}),
+      error: err?.message || "Internal server error. Please contact support.",
+      _debug: err?.message,
     },
     { status: 500 }
   );
