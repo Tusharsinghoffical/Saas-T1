@@ -186,7 +186,7 @@ export function TaskDetail({
     fetchComments();
     fetchAttachments();
 
-    // Realtime channel for task comments
+    // Realtime channel for task comments & attachments
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
     if (!hasSupabase) return;
@@ -195,7 +195,7 @@ export function TaskDetail({
     try {
       const supabase = createClient();
       channel = supabase
-        .channel(`realtime:comments:${task.id}`)
+        .channel(`realtime:task_room:${task.id}`)
         .on(
           "postgres_changes",
           {
@@ -208,9 +208,21 @@ export function TaskDetail({
             fetchComments();
           }
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "task_attachments",
+            filter: `task_id=eq.${task.id}`,
+          },
+          () => {
+            fetchAttachments();
+          }
+        )
         .subscribe();
     } catch (e) {
-      console.warn("Realtime comments channel error:", e);
+      console.warn("Realtime details channel error:", e);
     }
 
     return () => {
@@ -288,6 +300,7 @@ export function TaskDetail({
       if (json.success && json.data) {
         setComments((prev) => [...prev, json.data]);
         setNewComment("");
+        fetchComments();
       } else {
         alert(json.error || json.message || "Failed to post comment. Please try again.");
       }
@@ -340,37 +353,14 @@ export function TaskDetail({
 
       const json = await res.json();
       if (json.success && json.data) {
-        setAttachments((prev) => [json.data, ...prev]);
         setLinkTitle("");
         setLinkUrl("");
+        await fetchAttachments();
       } else {
-        // Optimistic local add if server had non-blocking issue
-        const fallbackItem: AttachmentItem = {
-          id: `att-local-${Date.now()}`,
-          taskId: task.id,
-          fileName: title,
-          fileUrl: cleanUrl,
-          fileSize: 0,
-          fileType: "link",
-          createdAt: new Date().toISOString(),
-        };
-        setAttachments((prev) => [fallbackItem, ...prev]);
-        setLinkTitle("");
-        setLinkUrl("");
+        setLinkError(json.error || "Failed to save link to workspace database.");
       }
     } catch {
-      const fallbackItem: AttachmentItem = {
-        id: `att-local-${Date.now()}`,
-        taskId: task.id,
-        fileName: title,
-        fileUrl: cleanUrl,
-        fileSize: 0,
-        fileType: "link",
-        createdAt: new Date().toISOString(),
-      };
-      setAttachments((prev) => [fallbackItem, ...prev]);
-      setLinkTitle("");
-      setLinkUrl("");
+      setLinkError("Network error: Could not save link.");
     } finally {
       setIsAddingLink(false);
     }
@@ -389,6 +379,7 @@ export function TaskDetail({
           attachmentId: attId,
         }),
       });
+      fetchAttachments();
     } catch {
       // silent
     }
@@ -628,7 +619,7 @@ export function TaskDetail({
               Attached File URLs & Links ({attachments.length})
             </h4>
             <span className="text-[11px] text-slate-400">
-              Share Google Drive, Figma, GitHub, or Document URLs
+              Shared with Admin, Manager & Squad
             </span>
           </div>
 
