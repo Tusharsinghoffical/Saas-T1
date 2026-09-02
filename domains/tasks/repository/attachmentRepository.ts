@@ -15,10 +15,12 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
 
   private getClient() {
     try {
-      return createClient();
+      const admin = createAdminClient();
+      if (admin) return admin;
     } catch {
-      return createAdminClient();
+      // Fallback to cookie-scoped client if admin key is not present
     }
+    return createClient();
   }
 
   async listAttachments(taskId: string): Promise<Attachment[]> {

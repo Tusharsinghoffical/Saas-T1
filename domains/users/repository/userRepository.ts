@@ -164,7 +164,7 @@ export class SupabaseUserRepository implements IUserRepository {
     } catch {
       // Non-blocking
     }
-    const clientToUse = createClient();
+    const clientToUse = adminClient || createClient();
 
     // Run profiles, auth users, and team memberships ALL IN PARALLEL (eliminates 3-step waterfall)
     const [profilesResult, authUsersResult, teamMembershipsResult] = await Promise.all([

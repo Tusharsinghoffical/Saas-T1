@@ -262,4 +262,54 @@ alter table public.organizations add column if not exists slack_notifications_en
 -- Ensure Realtime deletes emit old values (org_id) so client Kanban sync filters work
 alter table if exists public.tasks replica identity full;
 
+-- 5. WORKSPACE RLS POLICIES FOR TASKS & TEAMS (Ensures visibility without relying on optional JWT hook)
+drop policy if exists "tasks_select_policy" on public.tasks;
+drop policy if exists "Users can view tasks in their org" on public.tasks;
+create policy "Users can view tasks in their org"
+on public.tasks for select
+to authenticated
+using (
+  org_id in (
+    select p.org_id from public.profiles p where p.id = auth.uid() and p.deleted_at is null
+  )
+);
+
+drop policy if exists "teams_select_policy" on public.teams;
+drop policy if exists "Users can view teams in their org" on public.teams;
+create policy "Users can view teams in their org"
+on public.teams for select
+to authenticated
+using (
+  org_id in (
+    select p.org_id from public.profiles p where p.id = auth.uid() and p.deleted_at is null
+  )
+);
+
+drop policy if exists "team_members_select_policy" on public.team_members;
+drop policy if exists "Users can view team members in their org" on public.team_members;
+create policy "Users can view team members in their org"
+on public.team_members for select
+to authenticated
+using (
+  exists (
+    select 1 from public.teams t
+    join public.profiles p on p.org_id = t.org_id and p.id = auth.uid() and p.deleted_at is null
+    where t.id = team_members.team_id
+  )
+);
+
+drop policy if exists "task_assignees_select_policy" on public.task_assignees;
+drop policy if exists "Users can view task assignees in their org" on public.task_assignees;
+create policy "Users can view task assignees in their org"
+on public.task_assignees for select
+to authenticated
+using (
+  exists (
+    select 1 from public.tasks t
+    join public.profiles p on p.org_id = t.org_id and p.id = auth.uid() and p.deleted_at is null
+    where t.id = task_assignees.task_id
+  )
+);
+
+
 
