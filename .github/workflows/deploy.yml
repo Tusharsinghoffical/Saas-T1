@@ -57,6 +57,8 @@ jobs:
             echo "Applying migration: $file"
             PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -f "$file"
           done
+          echo "Granting table privileges to Supabase roles on migrated tables..."
+          PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -c "GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated, anon, service_role; GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon, service_role;"
         env:
           PGPASSWORD: postgrespassword
 

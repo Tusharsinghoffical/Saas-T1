@@ -68,6 +68,12 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
       await pgClient.connect();
 
       // Seed test organizations & tasks as postgres superuser (bypassing RLS for setup)
+      await pgClient.query(`
+        GRANT USAGE ON SCHEMA public TO authenticated, anon, service_role;
+        GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated, anon, service_role;
+        GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon, service_role;
+      `);
+
       await pgClient.query("BEGIN;");
       await pgClient.query(`
         INSERT INTO public.organizations (id, name)
