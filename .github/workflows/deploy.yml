@@ -90,4 +90,3 @@ jobs:
           else
             echo "RENDER_DEPLOY_HOOK_URL is not configured. Skipping deploy hook."
           fi
-
