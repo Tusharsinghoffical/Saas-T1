@@ -152,6 +152,9 @@ export default function ManagerDashboardPage() {
     }
   }, [setTasks]);
 
+  // Initial data load on mount
+  useEffect(() => { fetchAllData(); }, [fetchAllData]);
+
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchAllData);
 
   // 2. Real-Time Dynamic KPI Calculations directly from Store State

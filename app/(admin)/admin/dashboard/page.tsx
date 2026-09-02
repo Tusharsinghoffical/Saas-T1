@@ -190,6 +190,9 @@ export default function AdminDashboardPage() {
     }
   }, [setTasks]);
 
+  // Initial data load on mount
+  useEffect(() => { fetchAllData(); }, [fetchAllData]);
+
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchAllData);
 
   const nowMs = Date.now();

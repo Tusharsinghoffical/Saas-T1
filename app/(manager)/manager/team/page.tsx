@@ -94,13 +94,18 @@ export default function ManagerTeamPage() {
         }));
         // Manager can ONLY see employees
         setMembers(allMembers.filter((m) => m.role === "employee"));
+      } else {
+        showToast(json.error || "Failed to load members. Check server logs.", "error");
       }
-    } catch {
-      showToast("Failed to fetch team members.", "error");
+    } catch (err: any) {
+      showToast("Network error: " + (err?.message || "Could not reach server."), "error");
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  // Initial data load on mount
+  useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchMembers);
 

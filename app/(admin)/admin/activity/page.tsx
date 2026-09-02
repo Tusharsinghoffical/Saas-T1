@@ -102,6 +102,9 @@ export default function ActivityLogPage() {
     [entityFilter, actionFilter]
   );
 
+  // Initial data load on mount
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchLogs);
 
   // Live Realtime Channel for Activity Logs

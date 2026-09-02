@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { RefreshCw } from "lucide-react";
 
 /**
@@ -15,18 +15,6 @@ export function useAutoRefresh(
   const [isRefreshing, setIsRefreshing] = useState(false);
   const callbackRef = useRef(callback);
   callbackRef.current = callback;
-
-  // Initial data load on mount
-  useEffect(() => {
-    let cancelled = false;
-    setIsRefreshing(true);
-    Promise.resolve(callbackRef.current())
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setTimeout(() => setIsRefreshing(false), 500);
-      });
-    return () => { cancelled = true; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const triggerManual = useCallback(async () => {
     setIsRefreshing(true);

@@ -127,6 +127,9 @@ export default function EmployeeDashboardPage() {
     }
   }, []);
 
+  // Initial data load on mount
+  useEffect(() => { fetchMyTasks(); }, [fetchMyTasks]);
+
   // Manual Refresh Hook
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchMyTasks);
 
