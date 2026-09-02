@@ -1,47 +1,136 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  Clock,
-  Calendar,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-  Sparkles,
-  CheckSquare,
-  Lock,
-  Search,
-  Filter,
-  Zap,
-  Radio,
-  Flame,
-  ArrowRight,
-  TrendingUp,
-  ListTodo,
-  Layers,
-  ChevronRight,
-  Smile,
-  Sun,
-  Moon,
-  Sunset,
-  User,
-  Mail,
-  Shield,
-  Building,
-  Copy,
-  Check,
-  Briefcase,
-  CalendarDays,
-  Award,
-  Hash,
+  Clock, Calendar, CheckCircle2, AlertTriangle, CheckSquare,
+  Search, Zap, ChevronRight, Sun, Moon, Sunset, Sparkles,
+  Hash, Copy, Check, Briefcase, Circle, Play, Eye,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
 import { captureEvent } from "@/lib/analytics/posthog";
 import { createClient } from "@/lib/supabase/client";
 import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
+
+const PRIORITY_CONFIG: Record<string, { label: string; dot: string; bg: string; text: string; border: string }> = {
+  urgent: { label: "URGENT", dot: "bg-red-500",    bg: "bg-red-500/10",    text: "text-red-500",    border: "border-red-500/25" },
+  high:   { label: "HIGH",   dot: "bg-orange-400", bg: "bg-orange-400/10", text: "text-orange-400", border: "border-orange-400/25" },
+  medium: { label: "MED",    dot: "bg-amber-400",  bg: "bg-amber-400/10",  text: "text-amber-400",  border: "border-amber-400/25" },
+  low:    { label: "LOW",    dot: "bg-slate-400",  bg: "bg-slate-400/10",  text: "text-slate-400",  border: "border-slate-400/25" },
+};
+
+const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string; bg: string }> = {
+  pending:     { label: "Pending",     icon: Circle,       color: "text-slate-400",   bg: "bg-slate-800" },
+  in_progress: { label: "In Progress", icon: Play,         color: "text-blue-400",    bg: "bg-blue-500/15" },
+  in_review:   { label: "In Review",   icon: Eye,          color: "text-purple-400",  bg: "bg-purple-500/15" },
+  completed:   { label: "Completed",   icon: CheckCircle2, color: "text-emerald-400", bg: "bg-emerald-500/15" },
+};
+
+function ProgressRing({ pct, size = 56 }: { pct: number; size?: number }) {
+  const r = (size - 8) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <svg width={size} height={size} className="-rotate-90">
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="currentColor" strokeWidth={4} className="text-slate-700" />
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="currentColor" strokeWidth={4} strokeLinecap="round"
+        strokeDasharray={`${dash} ${circ}`}
+        className={pct >= 100 ? "text-emerald-400" : pct >= 60 ? "text-blue-400" : "text-amber-400"}
+        style={{ transition: "stroke-dasharray 0.6s ease" }} />
+    </svg>
+  );
+}
+
+interface TaskRowProps {
+  task: KanbanTaskItem;
+  onOpen: () => void;
+  onStatusChange: (s: "pending" | "in_progress" | "in_review" | "completed") => void;
+}
+function TaskRow({ task, onOpen, onStatusChange }: TaskRowProps) {
+  const p = PRIORITY_CONFIG[task.priority] ?? PRIORITY_CONFIG.medium;
+  const s = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.pending;
+  const StatusIcon = s.icon;
+  const raw = task.dueDate || task.due_date;
+  const isOverdue = raw && task.status !== "completed" && new Date(raw).getTime() < Date.now();
+  const isCompleted = task.status === "completed";
+  const subtasks = task.subtasks || [];
+  const doneSubs = subtasks.filter((x: any) => x.completed).length;
+
+  return (
+    <div
+      className={`group relative flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all duration-150 cursor-pointer ${
+        isCompleted ? "bg-slate-900/40 border-slate-800/60 opacity-60 hover:opacity-80"
+                    : "bg-slate-900 border-slate-800 hover:border-slate-600 hover:bg-slate-800/70"}`}
+      onClick={onOpen}
+    >
+      <div className={`absolute left-0 top-3 bottom-3 w-0.5 rounded-full ${p.dot}`} />
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onStatusChange(isCompleted ? "in_progress" : "completed"); }}
+        className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+          isCompleted ? "border-emerald-500 bg-emerald-500" : "border-slate-600 hover:border-emerald-500"}`}
+      >
+        {isCompleted && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+      </button>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md border ${p.bg} ${p.text} ${p.border}`}>{p.label}</span>
+          {isOverdue && <span className="text-[10px] font-black text-red-400 flex items-center gap-0.5"><AlertTriangle className="w-3 h-3" />OVERDUE</span>}
+          {subtasks.length > 0 && <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><CheckSquare className="w-3 h-3" />{doneSubs}/{subtasks.length}</span>}
+          {task.tags?.slice(0, 2).map((t: string) => (
+            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">#{t}</span>
+          ))}
+        </div>
+        <p className={`text-sm font-semibold truncate ${isCompleted ? "line-through text-slate-500" : "text-slate-100"}`}>{task.title}</p>
+        {raw && (
+          <div className="flex items-center gap-1 mt-0.5 text-[11px] text-slate-500">
+            <Clock className="w-3 h-3" />
+            <span className={isOverdue ? "text-red-400 font-semibold" : ""}>
+              {new Date(raw).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold ${s.bg} ${s.color}`}>
+          <StatusIcon className="w-3.5 h-3.5" />{s.label}
+        </div>
+        <select
+          value={task.status}
+          onChange={(e) => onStatusChange(e.target.value as any)}
+          className="text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800 text-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer px-2 py-1"
+        >
+          <option value="pending">Pending</option>
+          <option value="in_progress">In Progress</option>
+          <option value="in_review">In Review</option>
+          <option value="completed">Done</option>
+        </select>
+        <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition" />
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({ icon: Icon, label, count, color }: { icon: any; label: string; count: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <Icon className={`w-4 h-4 ${color}`} />
+      <span className="text-xs font-black uppercase tracking-widest text-slate-400">{label}</span>
+      <span className="text-xs font-black px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">{count}</span>
+      <div className="flex-1 h-px bg-slate-800" />
+    </div>
+  );
+}
+
+function EmptyState({ emoji, title, sub }: { emoji: string; title: string; sub: string }) {
+  return (
+    <div className="py-8 flex flex-col items-center gap-2 text-center border border-dashed border-slate-800 rounded-xl">
+      <span className="text-3xl">{emoji}</span>
+      <p className="text-sm font-bold text-slate-300">{title}</p>
+      <p className="text-xs text-slate-500 max-w-xs">{sub}</p>
+    </div>
+  );
+}
 
 export default function EmployeeDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -50,60 +139,31 @@ export default function EmployeeDashboardPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"all" | "dueToday" | "upcoming" | "completed">("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [copiedId, setCopiedId] = useState(false);
 
-  // Employee Profile Details
-  const [employeeProfile, setEmployeeProfile] = useState<{
-    id: string;
-    employeeCode: string;
-    fullName: string;
-    email: string;
-    role: string;
-    teamId: string | null;
-    teamName: string;
-    avatarUrl: string | null;
-    joinedAt: string;
-  }>({
-    id: "",
-    employeeCode: "EMP-0001",
-    fullName: "Employee",
-    email: "employee@workspace.com",
-    role: "employee",
-    teamId: null,
-    teamName: "General Squad",
-    avatarUrl: null,
-    joinedAt: "",
+  const [employeeProfile, setEmployeeProfile] = useState({
+    id: "", employeeCode: "EMP-0001", fullName: "Employee",
+    email: "employee@workspace.com", role: "employee",
+    teamId: null as string | null, teamName: "General Squad",
+    avatarUrl: null as string | null, joinedAt: "",
   });
 
   const [buckets, setBuckets] = useState<{
-    dueToday: KanbanTaskItem[];
-    upcoming: KanbanTaskItem[];
-    recentlyCompleted: KanbanTaskItem[];
-  }>({
-    dueToday: [],
-    upcoming: [],
-    recentlyCompleted: [],
-  });
+    dueToday: KanbanTaskItem[]; upcoming: KanbanTaskItem[]; recentlyCompleted: KanbanTaskItem[];
+  }>({ dueToday: [], upcoming: [], recentlyCompleted: [] });
 
-  // Client-hydrated greeting based on user's local timezone
-  const [greeting, setGreeting] = useState<{ text: string; icon: any; color: string }>({
-    text: "Welcome",
-    icon: Sparkles,
-    color: "text-amber-500",
-  });
+  const [greeting, setGreeting] = useState<{ text: string; icon: any; color: string }>({ text: "Welcome", icon: Sparkles, color: "text-amber-400" });
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      setGreeting({ text: "Good Morning", icon: Sun, color: "text-amber-500" });
-    } else if (hour < 18) {
-      setGreeting({ text: "Good Afternoon", icon: Sunset, color: "text-orange-500" });
-    } else {
-      setGreeting({ text: "Good Evening", icon: Moon, color: "text-indigo-400" });
-    }
+    const h = new Date().getHours();
+    if (h < 12) setGreeting({ text: "Good Morning", icon: Sun, color: "text-amber-400" });
+    else if (h < 18) setGreeting({ text: "Good Afternoon", icon: Sunset, color: "text-orange-400" });
+    else setGreeting({ text: "Good Evening", icon: Moon, color: "text-indigo-400" });
   }, []);
+
+  const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 5000); };
 
   const fetchMyTasks = useCallback(async () => {
     setIsLoading(true);
@@ -111,748 +171,224 @@ export default function EmployeeDashboardPage() {
       const res = await fetch("/api/v1/dashboard/me");
       const json = await res.json();
       if (json.success && json.data) {
-        if (json.data.profile) {
-          setEmployeeProfile(json.data.profile);
-        }
-        setBuckets({
-          dueToday: json.data.dueToday || [],
-          upcoming: json.data.upcoming || [],
-          recentlyCompleted: json.data.recentlyCompleted || [],
-        });
+        if (json.data.profile) setEmployeeProfile(json.data.profile);
+        setBuckets({ dueToday: json.data.dueToday || [], upcoming: json.data.upcoming || [], recentlyCompleted: json.data.recentlyCompleted || [] });
       }
-    } catch {
-      // Ignore
-    } finally {
-      setIsLoading(false);
-    }
+    } catch { } finally { setIsLoading(false); }
   }, []);
 
-  // Initial data load on mount
   useEffect(() => { fetchMyTasks(); }, [fetchMyTasks]);
-
-  // Manual Refresh Hook
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchMyTasks);
 
-  // Realtime Supabase Channel Subscription for Live Task Updates
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
-
-    if (!hasSupabase) {
-      setIsConnected(true);
-      return;
-    }
-
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    if (!url || url.includes("your-project-ref")) { setIsConnected(true); return; }
     let channel: any = null;
     try {
-      const supabase = createClient();
-      const channelId = `realtime:employee_tasks:${Math.random().toString(36).slice(2, 9)}`;
-      channel = supabase
-        .channel(channelId)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "tasks",
-          },
-          () => {
-            fetchMyTasks();
-          }
-        )
-        .subscribe((status) => {
-          setIsConnected(status === "SUBSCRIBED");
-        });
-    } catch (e) {
-      console.warn("Realtime task subscription notice:", e);
-    }
-
-    return () => {
-      if (channel) {
-        const supabase = createClient();
-        supabase.removeChannel(channel);
-      }
-    };
+      const sb = createClient();
+      channel = sb.channel(`rt:emp:${Math.random().toString(36).slice(2, 8)}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => fetchMyTasks())
+        .subscribe((s: any) => setIsConnected(s === "SUBSCRIBED"));
+    } catch { }
+    return () => { if (channel) createClient().removeChannel(channel); };
   }, [fetchMyTasks]);
 
-  const copyEmployeeId = () => {
-    if (!employeeProfile.employeeCode) return;
-    navigator.clipboard.writeText(employeeProfile.employeeCode);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
-  };
-
-  // Quick Status Update on Card
-  const handleQuickStatusUpdate = async (
-    task: KanbanTaskItem,
-    newStatus: "pending" | "in_progress" | "in_review" | "completed"
-  ) => {
+  const handleStatusChange = async (task: KanbanTaskItem, newStatus: "pending" | "in_progress" | "in_review" | "completed") => {
     if (task.status === newStatus) return;
-
-    // Check dependency blocker
     if (newStatus === "in_progress" || newStatus === "completed") {
-      const depIds = task.dependencyTaskIds || [];
-      const allList = [
-        ...buckets.dueToday,
-        ...buckets.upcoming,
-        ...buckets.recentlyCompleted,
-      ];
-      const blockers = allList.filter(
-        (t) => depIds.includes(t.id) && t.status !== "completed"
-      );
-
-      if (blockers.length > 0) {
-        setToastMessage(
-          `⚠️ Cannot set to ${newStatus.replace("_", " ")}: Prerequisite "${blockers[0]?.title}" is not completed.`
-        );
-        setTimeout(() => setToastMessage(null), 6000);
-        return;
-      }
+      const all = [...buckets.dueToday, ...buckets.upcoming, ...buckets.recentlyCompleted];
+      const blockers = all.filter((t) => (task.dependencyTaskIds || []).includes(t.id) && t.status !== "completed");
+      if (blockers.length > 0) { showToast(`Blocked by: "${blockers[0]?.title}"`); return; }
     }
-
-    const previousStatus = task.status;
-    const updatedTask: KanbanTaskItem = { ...task, status: newStatus };
-
-    // Optimistic re-bucketing
+    const updated = { ...task, status: newStatus };
     setBuckets((prev) => {
-      const filterOut = (list: KanbanTaskItem[]) => list.filter((t) => t.id !== task.id);
-      const dueToday = filterOut(prev.dueToday);
-      const upcoming = filterOut(prev.upcoming);
-      const recentlyCompleted = filterOut(prev.recentlyCompleted);
-
-      if (newStatus === "completed") {
-        return {
-          dueToday,
-          upcoming,
-          recentlyCompleted: [updatedTask, ...recentlyCompleted],
-        };
-      } else {
-        const dueTime = task.dueDate || task.due_date;
-        const isToday =
-          dueTime && new Date(dueTime).toDateString() === new Date().toDateString();
-
-        if (isToday) {
-          return {
-            dueToday: [updatedTask, ...dueToday],
-            upcoming,
-            recentlyCompleted,
-          };
-        } else {
-          return {
-            dueToday,
-            upcoming: [updatedTask, ...upcoming],
-            recentlyCompleted,
-          };
-        }
-      }
+      const out = (list: KanbanTaskItem[]) => list.filter((t) => t.id !== task.id);
+      const dt = out(prev.dueToday), up = out(prev.upcoming), rc = out(prev.recentlyCompleted);
+      if (newStatus === "completed") return { dueToday: dt, upcoming: up, recentlyCompleted: [updated, ...rc] };
+      const due = task.dueDate || task.due_date;
+      const today = due && new Date(due).toDateString() === new Date().toDateString();
+      return today ? { dueToday: [updated, ...dt], upcoming: up, recentlyCompleted: rc }
+                   : { dueToday: dt, upcoming: [updated, ...up], recentlyCompleted: rc };
     });
-
-    captureEvent("task_status_changed", {
-      taskId: task.id,
-      oldStatus: previousStatus,
-      newStatus,
-    });
-
-    if (newStatus === "completed") {
-      captureEvent("task_completed", {
-        taskId: task.id,
-        priority: task.priority,
-      });
-    }
-
+    captureEvent("task_status_changed", { taskId: task.id, oldStatus: task.status, newStatus });
     try {
-      const res = await fetch(`/api/v1/tasks/${task.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const json = await res.json();
-      if (!json.success) {
-        setToastMessage(json.error || "Failed to update status.");
-        fetchMyTasks();
-      }
-    } catch {
-      setToastMessage("Network error: Status update failed.");
-      fetchMyTasks();
-    }
+      const r = await fetch(`/api/v1/tasks/${task.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }) });
+      const j = await r.json();
+      if (!j.success) { showToast(j.error || "Update failed."); fetchMyTasks(); }
+    } catch { showToast("Network error."); fetchMyTasks(); }
   };
 
-  const priorityVariants: Record<string, "default" | "urgent" | "warning"> = {
-    low: "default",
-    medium: "default",
-    high: "warning",
-    urgent: "urgent",
-  };
+  const openTask = (task: KanbanTaskItem) => { setSelectedTask(task); setIsDetailOpen(true); };
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700",
-    in_progress: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
-    in_review: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-    completed: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  };
+  const allTasks = useMemo(() => [...buckets.dueToday, ...buckets.upcoming, ...buckets.recentlyCompleted], [buckets]);
+  const total = allTasks.length;
+  const completed = buckets.recentlyCompleted.length;
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const inProg = allTasks.filter((t) => t.status === "in_progress").length;
+  const inReview = allTasks.filter((t) => t.status === "in_review").length;
+  const overdue = allTasks.filter((t) => { const d = t.dueDate || t.due_date; return d && t.status !== "completed" && new Date(d).getTime() < Date.now(); }).length;
 
-  const allEmployeeTasks = useMemo(() => {
-    return [
-      ...buckets.dueToday,
-      ...buckets.upcoming,
-      ...buckets.recentlyCompleted,
-    ];
-  }, [buckets]);
+  const applyFilters = (list: KanbanTaskItem[]) => list.filter((t) => {
+    const q = searchQuery.toLowerCase();
+    return (!q || t.title.toLowerCase().includes(q) || (t.description || "").toLowerCase().includes(q))
+      && (priorityFilter === "all" || t.priority === priorityFilter)
+      && (statusFilter === "all" || t.status === statusFilter);
+  });
 
-  // Overall Task Completion Stats
-  const totalTasks = allEmployeeTasks.length;
-  const completedCount = buckets.recentlyCompleted.length;
-  const dueTodayCount = buckets.dueToday.length;
-  const upcomingCount = buckets.upcoming.length;
-  const inProgressCount = allEmployeeTasks.filter((t) => t.status === "in_progress").length;
-  const completionPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
-
-  // Filter Helper
-  const filterList = (tasks: KanbanTaskItem[]) => {
-    return tasks.filter((t) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (t.tags && t.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())));
-
-      const matchesPriority = priorityFilter === "all" || t.priority === priorityFilter;
-
-      return matchesSearch && matchesPriority;
-    });
-  };
-
-  const filteredDueToday = filterList(buckets.dueToday);
-  const filteredUpcoming = filterList(buckets.upcoming);
-  const filteredCompleted = filterList(buckets.recentlyCompleted);
+  const filteredDueToday = applyFilters(buckets.dueToday);
+  const filteredUpcoming = applyFilters(buckets.upcoming);
+  const filteredCompleted = applyFilters(buckets.recentlyCompleted);
 
   const GreetingIcon = greeting.icon;
-
-  const initials = employeeProfile.fullName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "EM";
-
-  const formattedJoinDate = employeeProfile.joinedAt
-    ? new Date(employeeProfile.joinedAt).toLocaleDateString(undefined, {
-        month: "short",
-        year: "numeric",
-      })
-    : "Active Member";
+  const initials = (employeeProfile.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2) || "EM").toUpperCase();
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-14">
-      {/* Toast Alert */}
+    <div className="max-w-5xl mx-auto px-4 py-6 space-y-5 pb-16">
       {toastMessage && (
-        <div className="p-3.5 rounded-xl bg-urgent/10 border border-urgent/20 text-xs text-urgent font-medium flex items-center justify-between animate-fade-in shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
           <span>{toastMessage}</span>
-          <button
-            onClick={() => setToastMessage(null)}
-            className="text-urgent font-bold hover:underline ml-2"
-          >
-            Dismiss
-          </button>
+          <button onClick={() => setToastMessage(null)} className="ml-4 font-bold">✕</button>
         </div>
       )}
 
-      {/* ── Modern Sleek Profile Header Bar ── */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          {/* Identity Info */}
-          <div className="flex items-center gap-4">
-            <div className="relative flex-shrink-0">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-md shadow-primary/20">
-                {initials}
-              </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3.5">
+          <div className="relative">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white font-black text-base shadow-lg shadow-blue-600/20">
+              {initials}
             </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-950" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <GreetingIcon className={`w-3.5 h-3.5 ${greeting.color}`} />
+              <span className="text-xs text-slate-400 dark:text-slate-500">{greeting.text}</span>
+            </div>
+            <div className="text-base font-black text-slate-900 dark:text-white">{employeeProfile.fullName}</div>
+            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+              <Briefcase className="w-3 h-3 text-amber-500" />
+              <span>{employeeProfile.teamName}</span>
+              <span className="text-slate-300 dark:text-slate-700">·</span>
+              <span>{employeeProfile.email}</span>
+            </div>
+          </div>
+        </div>
 
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg border ${
+            isConnected ? "text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/8"
+                        : "text-slate-400 border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-emerald-400 animate-pulse" : "bg-slate-400"}`} />
+            {isConnected ? "Live" : "Offline"}
+          </span>
+          <button
+            onClick={() => { navigator.clipboard.writeText(employeeProfile.employeeCode); setCopiedId(true); setTimeout(() => setCopiedId(false), 2000); }}
+            className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition"
+          >
+            <Hash className="w-3 h-3 text-blue-500" />
+            {employeeProfile.employeeCode}
+            {copiedId ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+          </button>
+          <AutoRefreshBadge isRefreshing={isRefreshing || isLoading} triggerManual={triggerManual} />
+        </div>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="col-span-2 sm:col-span-1 flex items-center gap-4 px-4 py-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="relative flex-shrink-0">
+            <ProgressRing pct={pct} size={56} />
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-black text-slate-900 dark:text-white">{pct}%</span>
+          </div>
+          <div>
+            <div className="text-xs text-slate-400 font-semibold">Progress</div>
+            <div className="text-lg font-black text-slate-900 dark:text-white">{completed}<span className="text-slate-400 text-sm font-bold">/{total}</span></div>
+            <div className="text-[10px] text-slate-400">Tasks done</div>
+          </div>
+        </div>
+        {[
+          { label: "In Progress", value: inProg,   icon: Zap,           color: "text-blue-500   dark:text-blue-400",   bg: "bg-blue-50   dark:bg-blue-500/10",   border: "border-blue-100   dark:border-blue-500/15"   },
+          { label: "In Review",   value: inReview, icon: Eye,           color: "text-purple-500 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-500/10", border: "border-purple-100 dark:border-purple-500/15" },
+          { label: "Overdue",     value: overdue,  icon: AlertTriangle, color: overdue > 0 ? "text-red-500 dark:text-red-400" : "text-slate-400", bg: overdue > 0 ? "bg-red-50 dark:bg-red-500/10" : "bg-slate-50 dark:bg-slate-800/60", border: overdue > 0 ? "border-red-100 dark:border-red-500/20" : "border-slate-200 dark:border-slate-800" },
+        ].map((s) => (
+          <div key={s.label} className={`flex items-center gap-3 px-4 py-4 rounded-2xl border ${s.bg} ${s.border}`}>
+            <s.icon className={`w-5 h-5 ${s.color} flex-shrink-0`} />
             <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                  <GreetingIcon className={`w-3.5 h-3.5 ${greeting.color}`} />
-                  <span>{greeting.text},</span>
-                </span>
-                <span className="text-base font-extrabold text-slate-900 dark:text-white">
-                  {employeeProfile.fullName}
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 uppercase tracking-wider">
-                  {employeeProfile.role}
-                </span>
-              </div>
-
-              {/* Identity details row */}
-              <div className="flex items-center gap-2.5 flex-wrap mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <button
-                  type="button"
-                  onClick={copyEmployeeId}
-                  title="Click to copy ID"
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-mono text-[10px] font-bold text-slate-700 dark:text-slate-300 transition"
-                >
-                  <Hash className="w-3 h-3 text-primary" />
-                  <span>{employeeProfile.employeeCode || "ID: EMP-0001"}</span>
-                  {copiedId ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-slate-400" />}
-                </button>
-
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-300">
-                  <Briefcase className="w-3 h-3 text-amber-500" />
-                  <span>{employeeProfile.teamName || "General Squad"}</span>
-                </span>
-
-                <span className="text-slate-300 dark:text-slate-600">•</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">{employeeProfile.email}</span>
-              </div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white">{s.value}</div>
+              <div className={`text-[10px] font-semibold ${s.color}`}>{s.label}</div>
             </div>
           </div>
-
-          {/* Right Action Area: Refresh & Sprint Progress */}
-          <div className="flex items-center gap-3 self-start md:self-center flex-wrap">
-            {/* Manual Refresh */}
-            <AutoRefreshBadge
-              isRefreshing={isRefreshing || isLoading}
-              triggerManual={triggerManual}
-            />
-
-            {/* Productivity Pill */}
-            <div className="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-2.5">
-              <div className="text-right">
-                <div className="text-[10px] uppercase font-bold text-slate-400">Sprint Progress</div>
-                <div className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                  {completedCount}/{totalTasks} Done ({completionPercentage}%)
-                </div>
-              </div>
-              <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center font-bold text-[11px] text-emerald-600 dark:text-emerald-400">
-                {completionPercentage}%
-              </div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* ── Metric Snapshot Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Due Today */}
-        <div
-          onClick={() => setActiveTab(activeTab === "dueToday" ? "all" : "dueToday")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
-            activeTab === "dueToday"
-              ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40 ring-2 ring-rose-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
-              Due Today
-            </span>
-            <Clock className="w-4 h-4 text-rose-500" />
-          </div>
-          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{dueTodayCount}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Immediate priority tasks</div>
+      {/* Filter Bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <input type="text" placeholder="Search tasks…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 transition" />
         </div>
-
-        {/* Card 2: In Progress */}
-        <div
-          onClick={() => setActiveTab("all")}
-          className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs hover:shadow-md transition-all cursor-pointer"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
-              In Progress
-            </span>
-            <Zap className="w-4 h-4 text-indigo-500" />
-          </div>
-          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{inProgressCount}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Currently in flight</div>
-        </div>
-
-        {/* Card 3: Upcoming (7D) */}
-        <div
-          onClick={() => setActiveTab(activeTab === "upcoming" ? "all" : "upcoming")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
-            activeTab === "upcoming"
-              ? "bg-indigo-50/80 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-500/40 ring-2 ring-indigo-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
-              Upcoming (7D)
-            </span>
-            <Calendar className="w-4 h-4 text-indigo-500" />
-          </div>
-          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{upcomingCount}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Scheduled for next 7 days</div>
-        </div>
-
-        {/* Card 4: Completed */}
-        <div
-          onClick={() => setActiveTab(activeTab === "completed" ? "all" : "completed")}
-          className={`p-4 rounded-2xl border transition-all cursor-pointer shadow-xs hover:shadow-md ${
-            activeTab === "completed"
-              ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/40 ring-2 ring-emerald-500/20"
-              : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-              Completed
-            </span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          </div>
-          <div className="mt-2 text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{completedCount}</div>
-          <div className="text-[11px] text-emerald-600/70 dark:text-emerald-500 mt-1">Cleared this sprint</div>
-        </div>
-      </div>
-
-      {/* ── Filter Bar & Tabs ── */}
-      <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Tab pills */}
-        <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab("all")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === "all"
-                ? "bg-primary text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            }`}
-          >
-            All Tasks ({totalTasks})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("dueToday")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === "dueToday"
-                ? "bg-rose-500 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            }`}
-          >
-            Due Today ({dueTodayCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("upcoming")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === "upcoming"
-                ? "bg-indigo-600 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            }`}
-          >
-            Upcoming ({upcomingCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("completed")}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap ${
-              activeTab === "completed"
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            }`}
-          >
-            Completed ({completedCount})
-          </button>
-        </div>
-
-        {/* Search & Priority Filter */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-56">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search tasks…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="text-xs px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium cursor-pointer"
-          >
-            <option value="all">All Priorities</option>
-            <option value="urgent">Urgent</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-      </div>
-
-      {/* ── Section 1: Due Today / Priority Action ── */}
-      {(activeTab === "all" || activeTab === "dueToday") && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              <Clock className="w-4 h-4 text-rose-500" />
-              <span>Due Today / Priority Action</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                {filteredDueToday.length}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2.5">
-            {filteredDueToday.map((task) => (
-              <TaskListItem
-                key={task.id}
-                task={task}
-                onCardClick={() => {
-                  setSelectedTask(task);
-                  setIsDetailOpen(true);
-                }}
-                onStatusChange={(status) => handleQuickStatusUpdate(task, status)}
-                priorityVariants={priorityVariants}
-                statusColors={statusColors}
-              />
-            ))}
-
-            {filteredDueToday.length === 0 && (
-              <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/40 text-center space-y-1.5">
-                <div className="text-2xl">🎉</div>
-                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">All clear for today!</div>
-                <div className="text-[11px] text-slate-400">You have no pending tasks due today. Great job keeping your workspace clean!</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Section 2: Upcoming Queue (Next 7 Days) ── */}
-      {(activeTab === "all" || activeTab === "upcoming") && (
-        <div className="space-y-3 pt-3">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              <Calendar className="w-4 h-4 text-indigo-500" />
-              <span>Upcoming Queue (Next 7 Days)</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                {filteredUpcoming.length}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2.5">
-            {filteredUpcoming.map((task) => (
-              <TaskListItem
-                key={task.id}
-                task={task}
-                onCardClick={() => {
-                  setSelectedTask(task);
-                  setIsDetailOpen(true);
-                }}
-                onStatusChange={(status) => handleQuickStatusUpdate(task, status)}
-                priorityVariants={priorityVariants}
-                statusColors={statusColors}
-              />
-            ))}
-
-            {filteredUpcoming.length === 0 && (
-              <div className="p-6 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/30 text-center text-xs text-slate-400">
-                No upcoming scheduled tasks found.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Section 3: Recently Completed ── */}
-      {(activeTab === "all" || activeTab === "completed") && (
-        <div className="space-y-3 pt-3">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-200/80 dark:border-slate-800">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              <span>Recently Completed</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                {filteredCompleted.length}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            {filteredCompleted.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => {
-                  setSelectedTask(task);
-                  setIsDetailOpen(true);
-                }}
-                className="p-3.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-3 text-xs opacity-80 hover:opacity-100 transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center">
-                    <CheckCircle2 className="w-3.5 h-3.5 fill-current" />
-                  </div>
-                  <span className="line-through text-slate-400 dark:text-slate-500 font-medium group-hover:text-slate-600 dark:group-hover:text-slate-300 transition">
-                    {task.title}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    Completed ✓
-                  </span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition" />
-                </div>
-              </div>
-            ))}
-
-            {filteredCompleted.length === 0 && (
-              <div className="p-4 rounded-xl text-center text-xs text-slate-400">
-                No tasks completed yet this sprint.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Task Detail Modal */}
-      <TaskDetail
-        isOpen={isDetailOpen}
-        onClose={() => {
-          setIsDetailOpen(false);
-          setSelectedTask(null);
-        }}
-        task={selectedTask}
-        allTasks={allEmployeeTasks}
-      />
-    </div>
-  );
-}
-
-interface TaskListItemProps {
-  task: KanbanTaskItem;
-  onCardClick: () => void;
-  onStatusChange: (status: "pending" | "in_progress" | "in_review" | "completed") => void;
-  priorityVariants: Record<string, "default" | "urgent" | "warning">;
-  statusColors: Record<string, string>;
-}
-
-function TaskListItem({
-  task,
-  onCardClick,
-  onStatusChange,
-  priorityVariants,
-  statusColors,
-}: TaskListItemProps) {
-  const rawDueDate = task.dueDate || task.due_date;
-  const isOverdue =
-    rawDueDate &&
-    task.status !== "completed" &&
-    new Date(rawDueDate).getTime() < Date.now();
-
-  const isCompleted = task.status === "completed";
-
-  // Subtask progress
-  const subtasks = task.subtasks || [];
-  const completedSubtasks = subtasks.filter((s: any) => s.completed).length;
-
-  return (
-    <div className="p-4 rounded-xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-xs hover:shadow-md hover:border-primary/40 transition-all duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
-      {/* 1-Click Quick Complete Circle Button */}
-      <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onStatusChange(isCompleted ? "in_progress" : "completed");
-          }}
-          title={isCompleted ? "Mark as in progress" : "Mark as completed"}
-          className={`mt-0.5 sm:mt-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-150 flex-shrink-0 active:scale-90 ${
-            isCompleted
-              ? "bg-emerald-500 border-emerald-500 text-white"
-              : "border-slate-300 dark:border-slate-600 hover:border-emerald-500 text-transparent hover:text-emerald-500/40"
-          }`}
-        >
-          <CheckCircle2 className="w-4 h-4 fill-current" />
-        </button>
-
-        {/* Task Info (Clickable for detail modal) */}
-        <div
-          onClick={onCardClick}
-          className="flex-1 cursor-pointer space-y-1.5 select-none min-w-0"
-        >
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant={priorityVariants[task.priority] || "default"}>
-              {task.priority.toUpperCase()}
-            </Badge>
-
-            {isOverdue && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
-                <AlertTriangle className="w-3 h-3" />
-                OVERDUE
-              </span>
-            )}
-
-            {/* Subtask count */}
-            {subtasks.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-full">
-                <CheckSquare className="w-3 h-3 text-primary" />
-                {completedSubtasks}/{subtasks.length} subtasks
-              </span>
-            )}
-
-            {task.tags?.map((t) => (
-              <span
-                key={t}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 font-medium"
-              >
-                #{t}
-              </span>
-            ))}
-          </div>
-
-          <h4
-            className={`text-sm font-bold truncate transition-colors duration-150 ${
-              isCompleted
-                ? "line-through text-slate-400 dark:text-slate-500"
-                : "text-slate-900 dark:text-white group-hover:text-primary"
-            }`}
-          >
-            {task.title}
-          </h4>
-
-          {rawDueDate && (
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-              <Clock className="w-3 h-3 text-slate-400" />
-              <span>
-                Due:{" "}
-                {new Date(rawDueDate).toLocaleDateString(undefined, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Quick Status Dropdown Action */}
-      <div
-        className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-700/60 pl-9 sm:pl-0"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <select
-          value={task.status}
-          onChange={(e) =>
-            onStatusChange(
-              e.target.value as "pending" | "in_progress" | "in_review" | "completed"
-            )
-          }
-          className={`text-xs font-bold px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer ${
-            statusColors[task.status] || "bg-slate-100 text-slate-700"
-          }`}
-        >
+        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}
+          className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 focus:outline-none cursor-pointer font-medium">
+          <option value="all">All Priority</option>
+          <option value="urgent">Urgent</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+          className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 focus:outline-none cursor-pointer font-medium">
+          <option value="all">All Status</option>
           <option value="pending">Pending</option>
           <option value="in_progress">In Progress</option>
           <option value="in_review">In Review</option>
-          <option value="completed">Completed ✓</option>
+          <option value="completed">Completed</option>
         </select>
+        <div className="ml-auto text-[11px] text-slate-400 font-medium">{total} tasks</div>
       </div>
+
+      {/* Loading Skeleton */}
+      {isLoading && (
+        <div className="space-y-2.5 animate-pulse">
+          {[...Array(5)].map((_, i) => <div key={i} className="h-[68px] rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800" />)}
+        </div>
+      )}
+
+      {!isLoading && (
+        <>
+          <div>
+            <SectionHeader icon={Clock} label="Due Today" count={filteredDueToday.length} color="text-red-500 dark:text-red-400" />
+            <div className="space-y-2">
+              {filteredDueToday.map((task) => <TaskRow key={task.id} task={task} onOpen={() => openTask(task)} onStatusChange={(s) => handleStatusChange(task, s)} />)}
+              {filteredDueToday.length === 0 && <EmptyState emoji="🎉" title="All clear for today!" sub="No tasks due today. Keep up the great work!" />}
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader icon={Calendar} label="Upcoming — Next 7 Days" count={filteredUpcoming.length} color="text-blue-500 dark:text-blue-400" />
+            <div className="space-y-2">
+              {filteredUpcoming.map((task) => <TaskRow key={task.id} task={task} onOpen={() => openTask(task)} onStatusChange={(s) => handleStatusChange(task, s)} />)}
+              {filteredUpcoming.length === 0 && <EmptyState emoji="📅" title="No upcoming tasks" sub="Your next 7 days are clear." />}
+            </div>
+          </div>
+
+          <div>
+            <SectionHeader icon={CheckCircle2} label="Completed" count={filteredCompleted.length} color="text-emerald-500 dark:text-emerald-400" />
+            <div className="space-y-2">
+              {filteredCompleted.map((task) => <TaskRow key={task.id} task={task} onOpen={() => openTask(task)} onStatusChange={(s) => handleStatusChange(task, s)} />)}
+              {filteredCompleted.length === 0 && <EmptyState emoji="⚡" title="No completed tasks yet" sub="Mark tasks as done to see them here." />}
+            </div>
+          </div>
+        </>
+      )}
+
+      <TaskDetail
+        isOpen={isDetailOpen}
+        onClose={() => { setIsDetailOpen(false); setSelectedTask(null); }}
+        task={selectedTask}
+        allTasks={allTasks}
+      />
     </div>
   );
 }
