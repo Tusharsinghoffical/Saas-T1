@@ -81,10 +81,13 @@ jobs:
         run: docker build -t tasq-one:latest .
 
       - name: Trigger Render Deploy Hook (Optional)
-        if: ${{ secrets['RENDER_DEPLOY_HOOK_URL'] != '' }}
         env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets['RENDER_DEPLOY_HOOK_URL'] }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
-          echo "Triggering Render automatic deployment..."
-          curl -f -X POST "$RENDER_DEPLOY_HOOK_URL"
+          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Triggering Render automatic deployment..."
+            curl -f -X POST "$RENDER_DEPLOY_HOOK_URL"
+          else
+            echo "RENDER_DEPLOY_HOOK_URL is not configured. Skipping deploy hook."
+          fi
 
