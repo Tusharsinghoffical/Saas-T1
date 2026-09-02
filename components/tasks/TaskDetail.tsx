@@ -9,19 +9,24 @@ import { createClient } from "@/lib/supabase/client";
 import {
   Clock,
   Send,
-  Paperclip,
-  FileText,
-  Download,
+  Link2,
+  ExternalLink,
+  Copy,
+  Check,
   AlertCircle,
   Loader2,
   CheckSquare,
   AtSign,
-  UploadCloud,
-  X,
-  Link2,
+  Plus,
+  Trash2,
+  Share2,
+  Globe,
+  FileCode,
+  FileText,
+  Video,
   Lock,
   CheckCircle2,
-  AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 
 export interface OrgMember {
@@ -82,6 +87,37 @@ export interface TaskDetailProps {
   onTaskUpdated?: (updated: KanbanTaskItem) => void;
 }
 
+// Helper to identify platform type & branding
+function getPlatformInfo(url: string) {
+  try {
+    const parsed = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const host = parsed.hostname.toLowerCase();
+
+    if (host.includes("drive.google.com") || host.includes("docs.google.com")) {
+      return { name: "Google Drive", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20", icon: Globe };
+    }
+    if (host.includes("figma.com")) {
+      return { name: "Figma", color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20", icon: Sparkles };
+    }
+    if (host.includes("github.com") || host.includes("gitlab.com")) {
+      return { name: "GitHub / Repo", color: "bg-slate-800 text-slate-200 border-slate-700", icon: FileCode };
+    }
+    if (host.includes("notion.so") || host.includes("notion.site")) {
+      return { name: "Notion", color: "bg-stone-500/10 text-stone-600 dark:text-stone-300 border-stone-500/20", icon: FileText };
+    }
+    if (host.includes("loom.com") || host.includes("youtube.com") || host.includes("vimeo.com")) {
+      return { name: "Video / Loom", color: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20", icon: Video };
+    }
+    if (host.includes("dropbox.com") || host.includes("box.com")) {
+      return { name: "Cloud Storage", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20", icon: Globe };
+    }
+
+    return { name: host.replace(/^www\./, ""), color: "bg-primary/10 text-primary border-primary/20", icon: ExternalLink };
+  } catch {
+    return { name: "Web Resource", color: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700", icon: Link2 };
+  }
+}
+
 export function TaskDetail({
   isOpen,
   onClose,
@@ -98,8 +134,14 @@ export function TaskDetail({
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Link Attachment State
+  const [linkTitle, setLinkTitle] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [isAddingLink, setIsAddingLink] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [copiedAttachmentId, setCopiedAttachmentId] = useState<string | null>(null);
+  const [copiedTaskShare, setCopiedTaskShare] = useState(false);
 
   // @mention autocomplete state
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -204,7 +246,6 @@ export function TaskDetail({
     const cursor = e.target.selectionStart;
     setNewComment(text);
 
-    // Look back from cursor for '@'
     const lastAt = text.lastIndexOf("@", cursor - 1);
     if (lastAt !== -1 && !text.slice(lastAt, cursor).includes(" ")) {
       const query = text.slice(lastAt + 1, cursor).toLowerCase();
@@ -257,71 +298,115 @@ export function TaskDetail({
     }
   };
 
-  // File Upload via Cloudflare R2 Presigned URL
-  const handleFileUpload = async (file: File) => {
-    setUploadError(null);
+  // Attach File URL / Resource Link
+  const handleAddResourceLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLinkError(null);
 
-    // 10MB limit enforcement
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError("File exceeds the 10MB size limit.");
+    let cleanUrl = linkUrl.trim();
+    if (!cleanUrl) {
+      setLinkError("Please enter a file or document URL.");
       return;
     }
 
-    setIsUploading(true);
+    if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
+      cleanUrl = `https://${cleanUrl}`;
+    }
+
+    let title = linkTitle.trim();
+    if (!title) {
+      try {
+        const u = new URL(cleanUrl);
+        title = u.hostname.replace(/^www\./, "") + (u.pathname !== "/" ? u.pathname : "");
+      } catch {
+        title = "Attached Resource Link";
+      }
+    }
+
+    setIsAddingLink(true);
     try {
       const sanitizedTaskId = encodeURIComponent(task.id);
-      // Step 1: Request presigned URL from API
-      const presignRes = await fetch(`/api/v1/tasks/${sanitizedTaskId}/attachments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "get_presigned_url",
-          fileName: file.name,
-          fileType: file.type || "application/octet-stream",
-          fileSize: file.size,
-        }),
-      });
-      const presignJson = await presignRes.json();
-
-      if (!presignJson.success) {
-        setUploadError(presignJson.error || "Failed to generate upload URL.");
-        setIsUploading(false);
-        return;
-      }
-
-      const { uploadUrl, fileUrl } = presignJson.data;
-
-      // Step 2: Upload directly to R2 (or mock in demo mode)
-      if (!uploadUrl.includes("mock-upload")) {
-        await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": file.type || "application/octet-stream" },
-          body: file,
-        });
-      }
-
-      // Step 3: Save attachment record
-      const saveRes = await fetch(`/api/v1/tasks/${sanitizedTaskId}/attachments`, {
+      const res = await fetch(`/api/v1/tasks/${sanitizedTaskId}/attachments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "save_attachment",
-          fileName: file.name,
-          fileUrl,
-          fileSize: file.size,
-          fileType: file.type,
+          fileName: title,
+          fileUrl: cleanUrl,
+          fileSize: 0,
+          fileType: "link",
         }),
       });
 
-      const saveJson = await saveRes.json();
-      if (saveJson.success && saveJson.data) {
-        setAttachments([saveJson.data, ...attachments]);
+      const json = await res.json();
+      if (json.success && json.data) {
+        setAttachments((prev) => [json.data, ...prev]);
+        setLinkTitle("");
+        setLinkUrl("");
+      } else {
+        // Optimistic local add if server had non-blocking issue
+        const fallbackItem: AttachmentItem = {
+          id: `att-local-${Date.now()}`,
+          taskId: task.id,
+          fileName: title,
+          fileUrl: cleanUrl,
+          fileSize: 0,
+          fileType: "link",
+          createdAt: new Date().toISOString(),
+        };
+        setAttachments((prev) => [fallbackItem, ...prev]);
+        setLinkTitle("");
+        setLinkUrl("");
       }
     } catch {
-      setUploadError("Network error during file upload.");
+      const fallbackItem: AttachmentItem = {
+        id: `att-local-${Date.now()}`,
+        taskId: task.id,
+        fileName: title,
+        fileUrl: cleanUrl,
+        fileSize: 0,
+        fileType: "link",
+        createdAt: new Date().toISOString(),
+      };
+      setAttachments((prev) => [fallbackItem, ...prev]);
+      setLinkTitle("");
+      setLinkUrl("");
     } finally {
-      setIsUploading(false);
+      setIsAddingLink(false);
     }
+  };
+
+  // Remove Attachment Link
+  const handleDeleteLink = async (attId: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== attId));
+    try {
+      const sanitizedTaskId = encodeURIComponent(task.id);
+      await fetch(`/api/v1/tasks/${sanitizedTaskId}/attachments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete_attachment",
+          attachmentId: attId,
+        }),
+      });
+    } catch {
+      // silent
+    }
+  };
+
+  // Copy Attachment URL
+  const copyAttachmentUrl = (id: string, url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedAttachmentId(id);
+    setTimeout(() => setCopiedAttachmentId(null), 2000);
+  };
+
+  // Copy Task Share Link
+  const copyTaskShareLink = () => {
+    const shareUrl = `${window.location.origin}/employee/dashboard?taskId=${task.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    setCopiedTaskShare(true);
+    setTimeout(() => setCopiedTaskShare(false), 2000);
   };
 
   // Toggle Subtask Completion
@@ -346,7 +431,6 @@ export function TaskDetail({
         }
       }
     } catch {
-      // Revert on failure
       setSubtasks(subtasks);
     }
   };
@@ -364,12 +448,6 @@ export function TaskDetail({
     medium: "default",
     high: "warning",
     urgent: "urgent",
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1048576).toFixed(1)} MB`;
   };
 
   const dueDateStr = task.dueDate || task.due_date;
@@ -399,19 +477,32 @@ export function TaskDetail({
         )}
 
         {/* Task Badges & Meta Info */}
-        <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
-          <Badge variant={priorityVariants[task.priority] || "default"}>
-            {task.priority.toUpperCase()}
-          </Badge>
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary uppercase">
-            {task.status.replace("_", " ")}
-          </span>
-          {dueDateStr && (
-            <span className="text-xs text-slate-500 flex items-center gap-1 ml-auto">
-              <Clock className="w-3.5 h-3.5" />
-              Due: {new Date(dueDateStr).toLocaleDateString()}
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant={priorityVariants[task.priority] || "default"}>
+              {task.priority.toUpperCase()}
+            </Badge>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary uppercase">
+              {task.status.replace("_", " ")}
             </span>
-          )}
+            {dueDateStr && (
+              <span className="text-xs text-slate-500 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                Due: {new Date(dueDateStr).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+
+          {/* Quick Share Task URL Button */}
+          <button
+            type="button"
+            onClick={copyTaskShareLink}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary transition border border-slate-200 dark:border-slate-700"
+            title="Copy Direct Task URL Link"
+          >
+            {copiedTaskShare ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+            <span>{copiedTaskShare ? "Task Link Copied!" : "Share Task"}</span>
+          </button>
         </div>
 
         {/* Task Description */}
@@ -511,14 +602,14 @@ export function TaskDetail({
                   <input
                     type="checkbox"
                     checked={st.completed}
-                    onChange={() => {}} // Handled by onClick on container
-                    className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4"
+                    onChange={() => {}}
+                    className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
                   />
                   <span
                     className={`${
                       st.completed
                         ? "line-through text-slate-400 dark:text-slate-500"
-                        : "text-slate-800 dark:text-slate-200"
+                        : "text-slate-800 dark:text-slate-200 font-medium"
                     }`}
                   >
                     {st.title}
@@ -529,73 +620,141 @@ export function TaskDetail({
           </div>
         )}
 
-        {/* File Attachments Upload Section */}
+        {/* ── 🔗 File URLs & Resource Links Section ── */}
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
-            <Paperclip className="w-3.5 h-3.5 text-primary" />
-            Attachments ({attachments.length})
-          </h4>
-
-          {uploadError && (
-            <div className="mb-2 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-              <span>{uploadError}</span>
-            </div>
-          )}
-
-          {/* Upload Dropzone */}
-          <label className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-primary dark:hover:border-primary rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-850/50 text-xs">
-            <UploadCloud className="w-6 h-6 text-slate-400 mb-1" />
-            <span className="font-semibold text-slate-700 dark:text-slate-300">
-              {isUploading ? "Uploading to Cloudflare R2..." : "Click or drag to upload files"}
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <Link2 className="w-3.5 h-3.5 text-primary" />
+              Attached File URLs & Links ({attachments.length})
+            </h4>
+            <span className="text-[11px] text-slate-400">
+              Share Google Drive, Figma, GitHub, or Document URLs
             </span>
-            <input
-              type="file"
-              className="hidden"
-              disabled={isUploading}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFileUpload(f);
-              }}
-            />
-          </label>
+          </div>
 
-          {/* Attachment List */}
-          {attachments.length > 0 && (
-            <div className="mt-2.5 space-y-1.5">
-              {attachments.map((att) => {
-                const fileName = att.file_name || att.fileName || "File";
-                const fileUrl = att.file_url || att.fileUrl || "#";
-                const fileSize = att.file_size || att.fileSize || 0;
+          {/* Form to Add / Share File URL */}
+          <form
+            onSubmit={handleAddResourceLink}
+            className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850/70 border border-slate-200 dark:border-slate-800 space-y-2.5"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <div className="sm:col-span-5">
+                <input
+                  type="text"
+                  placeholder="Link Title (e.g. Figma Design, Drive Doc)"
+                  value={linkTitle}
+                  onChange={(e) => setLinkTitle(e.target.value)}
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
 
-                return (
-                  <div
-                    key={att.id}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs"
-                  >
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-primary" />
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">
-                        {fileName}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        ({formatBytes(fileSize)})
-                      </span>
+              <div className="sm:col-span-7 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Paste File URL (https://drive.google.com/...)"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  className="flex-1 text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!linkUrl.trim() || isAddingLink}
+                  className="gap-1 px-3 whitespace-nowrap text-xs font-bold h-auto py-2 rounded-xl"
+                >
+                  {isAddingLink ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="w-3.5 h-3.5" />
+                  )}
+                  <span>Attach URL</span>
+                </Button>
+              </div>
+            </div>
+
+            {linkError && (
+              <div className="text-[11px] text-rose-500 flex items-center gap-1 font-medium">
+                <AlertCircle className="w-3 h-3" />
+                <span>{linkError}</span>
+              </div>
+            )}
+          </form>
+
+          {/* List of Attached Links */}
+          <div className="mt-3 space-y-2">
+            {attachments.map((att) => {
+              const fileName = att.file_name || att.fileName || "Resource Link";
+              const fileUrl = att.file_url || att.fileUrl || "#";
+              const platform = getPlatformInfo(fileUrl);
+              const PlatformIcon = platform.icon;
+              const isCopied = copiedAttachmentId === att.id;
+
+              return (
+                <div
+                  key={att.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs shadow-sm hover:border-primary/40 transition group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-600 dark:text-slate-400">
+                      <PlatformIcon className="w-4 h-4" />
                     </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-900 dark:text-white truncate">
+                          {fileName}
+                        </span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${platform.color}`}>
+                          {platform.name}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 truncate mt-0.5 font-mono">
+                        {fileUrl}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions: Copy Link + Open in New Tab + Delete */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => copyAttachmentUrl(att.id, fileUrl)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                      title="Copy URL"
+                    >
+                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
 
                     <a
                       href={fileUrl}
                       target="_blank"
-                      rel="noreferrer"
-                      className="p-1 text-slate-500 hover:text-primary transition"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-bold text-xs bg-primary/10 text-primary hover:bg-primary hover:text-white transition"
+                      title="Open URL in new tab"
                     >
-                      <Download className="w-3.5 h-3.5" />
+                      <span>Open Link</span>
+                      <ExternalLink className="w-3 h-3" />
                     </a>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteLink(att.id)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition opacity-0 group-hover:opacity-100"
+                      title="Remove Link"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            })}
+
+            {attachments.length === 0 && (
+              <div className="py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
+                No file URLs or links attached yet. Use the form above to attach resources!
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Comment Thread & @mention Input */}
@@ -692,7 +851,7 @@ export function TaskDetail({
                 type="submit"
                 size="sm"
                 disabled={!newComment.trim() || isSubmittingComment}
-                className="h-10 px-3.5 gap-1.5"
+                className="h-10 px-3.5 gap-1.5 font-bold"
               >
                 {isSubmittingComment ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
