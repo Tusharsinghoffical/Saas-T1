@@ -259,3 +259,7 @@ using (
 alter table public.organizations add column if not exists slack_webhook_url text;
 alter table public.organizations add column if not exists slack_notifications_enabled boolean default true;
 
+-- Ensure Realtime deletes emit old values (org_id) so client Kanban sync filters work
+alter table if exists public.tasks replica identity full;
+
+
