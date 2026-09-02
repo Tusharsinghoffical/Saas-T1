@@ -172,9 +172,10 @@ export class SupabaseUserRepository implements IUserRepository {
         ? adminClient.auth.admin.listUsers({ perPage: 200 }).catch(() => ({ data: { users: [] } }))
         : Promise.resolve({ data: { users: [] } }),
       // 3. Team memberships
-      (clientToUse.from("team_members") as any)
-        .select(`user_id, team_id, teams:team_id (id, name)`)
-        .catch(() => ({ data: [] })),
+      Promise.resolve(
+        (clientToUse.from("team_members") as any)
+          .select(`user_id, team_id, teams:team_id (id, name)`)
+      ).catch(() => ({ data: [] })),
     ]);
 
     let finalProfiles: any[] = profilesResult.data || [];
