@@ -40,13 +40,31 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
     try {
       const client = this.getClient();
       const { data: attachments, error } = await (client.from("task_attachments") as any)
-        .select("id, task_id, file_name, file_url, uploaded_by, created_at")
+        .select("id, task_id, file_name, file_url, created_at")
         .eq("task_id", taskId)
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("[listAttachments Error]", error.message);
-        return [];
+        console.warn("[listAttachments Error, trying select *]", error.message);
+        const { data: fallbackAtts, error: fallbackErr } = await (client.from("task_attachments") as any)
+          .select("*")
+          .eq("task_id", taskId)
+          .order("created_at", { ascending: false });
+
+        if (fallbackErr) {
+          console.error("[listAttachments Fallback Error]", fallbackErr.message);
+          return [];
+        }
+        return (fallbackAtts || []).map((a: any) => ({
+          id: a.id,
+          taskId: a.task_id,
+          fileName: a.file_name || "Attachment Link",
+          fileUrl: a.file_url,
+          fileSize: 0,
+          fileType: "link",
+          uploadedBy: a.uploaded_by || null,
+          createdAt: a.created_at,
+        }));
       }
 
       return (attachments || []).map((a: any) => ({
@@ -56,7 +74,7 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
         fileUrl: a.file_url,
         fileSize: 0,
         fileType: "link",
-        uploadedBy: a.uploaded_by,
+        uploadedBy: a.uploaded_by || null,
         createdAt: a.created_at,
       }));
     } catch (err) {
@@ -81,19 +99,32 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
 
     try {
       const client = this.getClient();
-      const { data: attachment, error } = await (client.from("task_attachments") as any)
-        .insert({
-          task_id: taskId,
-          file_name: data.fileName,
-          file_url: data.fileUrl,
-          uploaded_by: userId,
-        })
-        .select("id, task_id, file_name, file_url, uploaded_by, created_at")
+
+      // Insert without uploaded_by column to support tables where uploaded_by column is omitted
+      const insertPayload: Record<string, any> = {
+        task_id: taskId,
+        file_name: data.fileName,
+        file_url: data.fileUrl,
+      };
+
+      let { data: attachment, error } = await (client.from("task_attachments") as any)
+        .insert(insertPayload)
+        .select("id, task_id, file_name, file_url, created_at")
         .single();
 
-      if (error || !attachment) {
-        console.error("[saveAttachment DB Error]", error?.message);
-        throw new Error(error?.message || "Failed to save attachment link in database");
+      // If select failed or insert needed fallback, try select *
+      if (error) {
+        console.warn("[saveAttachment error with explicit select, retrying with select *]:", error.message);
+        const retry = await (client.from("task_attachments") as any)
+          .insert(insertPayload)
+          .select()
+          .single();
+
+        if (retry.error || !retry.data) {
+          console.error("[saveAttachment Retry Failed]", retry.error?.message);
+          throw new Error(retry.error?.message || "Failed to save attachment link in database");
+        }
+        attachment = retry.data;
       }
 
       return {
@@ -103,7 +134,7 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
         fileUrl: attachment.file_url || data.fileUrl,
         fileSize: 0,
         fileType: "link",
-        uploadedBy: attachment.uploaded_by,
+        uploadedBy: userId,
         createdAt: attachment.created_at,
       };
     } catch (err: any) {

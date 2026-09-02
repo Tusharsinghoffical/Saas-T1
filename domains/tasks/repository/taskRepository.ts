@@ -197,7 +197,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
           profiles:user_id (id, full_name, avatar_url)
         ),
         task_attachments (
-          id, file_url, file_name, uploaded_by, created_at
+          id, file_url, file_name, created_at
         )
       `
       )
@@ -220,7 +220,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
             profiles:user_id (id, full_name, avatar_url)
           ),
           task_attachments (
-            id, file_url, file_name, uploaded_by, created_at
+            id, file_url, file_name, created_at
           )
         `
         )
