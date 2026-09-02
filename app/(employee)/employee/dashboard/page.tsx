@@ -127,14 +127,8 @@ export default function EmployeeDashboardPage() {
     }
   }, []);
 
-  // 10-Second Auto-Refresh Hook
-  const {
-    isEnabled: isAutoRefreshEnabled,
-    toggle: toggleAutoRefresh,
-    secondsRemaining,
-    isRefreshing,
-    triggerManual,
-  } = useAutoRefresh(fetchMyTasks, 10, true);
+  // Manual Refresh Hook
+  const { isRefreshing, triggerManual } = useAutoRefresh(fetchMyTasks);
 
   // Realtime Supabase Channel Subscription for Live Task Updates
   useEffect(() => {
@@ -410,13 +404,10 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
 
-          {/* Right Action Area: Auto-Refresh & Sprint Progress */}
+          {/* Right Action Area: Refresh & Sprint Progress */}
           <div className="flex items-center gap-3 self-start md:self-center flex-wrap">
-            {/* 10-Second Auto-Refresh Control */}
+            {/* Manual Refresh */}
             <AutoRefreshBadge
-              isEnabled={isAutoRefreshEnabled}
-              toggle={toggleAutoRefresh}
-              secondsRemaining={secondsRemaining}
               isRefreshing={isRefreshing || isLoading}
               triggerManual={triggerManual}
             />

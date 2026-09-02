@@ -102,13 +102,7 @@ export default function ManagerTeamPage() {
     }
   }, []);
 
-  const {
-    isEnabled: isAutoRefreshEnabled,
-    toggle: toggleAutoRefresh,
-    secondsRemaining,
-    isRefreshing,
-    triggerManual,
-  } = useAutoRefresh(fetchMembers, 10, true);
+  const { isRefreshing, triggerManual } = useAutoRefresh(fetchMembers);
 
   // Realtime subscription
   useEffect(() => {
@@ -268,11 +262,8 @@ export default function ManagerTeamPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* 10-Second Auto-Refresh Control */}
+          {/* Manual Refresh */}
           <AutoRefreshBadge
-            isEnabled={isAutoRefreshEnabled}
-            toggle={toggleAutoRefresh}
-            secondsRemaining={secondsRemaining}
             isRefreshing={isRefreshing || isLoading}
             triggerManual={triggerManual}
           />

@@ -190,13 +190,7 @@ export default function AdminDashboardPage() {
     }
   }, [setTasks]);
 
-  const {
-    isEnabled: isAutoRefreshEnabled,
-    toggle: toggleAutoRefresh,
-    secondsRemaining,
-    isRefreshing,
-    triggerManual,
-  } = useAutoRefresh(fetchAllData, 10, true);
+  const { isRefreshing, triggerManual } = useAutoRefresh(fetchAllData);
 
   const nowMs = Date.now();
   const liveKpis = useMemo(() => {
@@ -314,11 +308,8 @@ export default function AdminDashboardPage() {
             })}
           </div>
 
-          {/* 10-Second Auto-Refresh Control */}
+          {/* Manual Refresh */}
           <AutoRefreshBadge
-            isEnabled={isAutoRefreshEnabled}
-            toggle={toggleAutoRefresh}
-            secondsRemaining={secondsRemaining}
             isRefreshing={isRefreshing || isLoading}
             triggerManual={triggerManual}
           />

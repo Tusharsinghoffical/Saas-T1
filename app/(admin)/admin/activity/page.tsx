@@ -102,13 +102,7 @@ export default function ActivityLogPage() {
     [entityFilter, actionFilter]
   );
 
-  const {
-    isEnabled: isAutoRefreshEnabled,
-    toggle: toggleAutoRefresh,
-    secondsRemaining,
-    isRefreshing,
-    triggerManual,
-  } = useAutoRefresh(fetchLogs, 10, true);
+  const { isRefreshing, triggerManual } = useAutoRefresh(fetchLogs);
 
   // Live Realtime Channel for Activity Logs
   useEffect(() => {
@@ -491,11 +485,8 @@ export default function ActivityLogPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* 10-Second Auto-Refresh Control */}
+          {/* Manual Refresh */}
           <AutoRefreshBadge
-            isEnabled={isAutoRefreshEnabled}
-            toggle={toggleAutoRefresh}
-            secondsRemaining={secondsRemaining}
             isRefreshing={isRefreshing || isLoading}
             triggerManual={triggerManual}
           />

@@ -108,13 +108,7 @@ export default function AdminTeamPage() {
     }
   }, []);
 
-  const {
-    isEnabled: isAutoRefreshEnabled,
-    toggle: toggleAutoRefresh,
-    secondsRemaining,
-    isRefreshing,
-    triggerManual,
-  } = useAutoRefresh(fetchMembers, 10, true);
+  const { isRefreshing, triggerManual } = useAutoRefresh(fetchMembers);
 
   // Realtime Supabase Channel Subscription for Team Profiles
   useEffect(() => {
@@ -375,11 +369,8 @@ export default function AdminTeamPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* 10-Second Auto-Refresh Control */}
+          {/* Manual Refresh */}
           <AutoRefreshBadge
-            isEnabled={isAutoRefreshEnabled}
-            toggle={toggleAutoRefresh}
-            secondsRemaining={secondsRemaining}
             isRefreshing={isRefreshing || isLoading}
             triggerManual={triggerManual}
           />

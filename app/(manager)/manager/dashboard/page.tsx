@@ -152,13 +152,7 @@ export default function ManagerDashboardPage() {
     }
   }, [setTasks]);
 
-  const {
-    isEnabled: isAutoRefreshEnabled,
-    toggle: toggleAutoRefresh,
-    secondsRemaining,
-    isRefreshing,
-    triggerManual,
-  } = useAutoRefresh(fetchAllData, 10, true);
+  const { isRefreshing, triggerManual } = useAutoRefresh(fetchAllData);
 
   // 2. Real-Time Dynamic KPI Calculations directly from Store State
   const nowMs = Date.now();
@@ -314,11 +308,8 @@ export default function ManagerDashboardPage() {
           {/* Right Column: Actions & View Switcher */}
           <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-3 flex-shrink-0">
             <div className="flex items-center gap-2 flex-wrap">
-              {/* 10-Second Auto-Refresh Control */}
+              {/* Manual Refresh */}
               <AutoRefreshBadge
-                isEnabled={isAutoRefreshEnabled}
-                toggle={toggleAutoRefresh}
-                secondsRemaining={secondsRemaining}
                 isRefreshing={isRefreshing || isLoading}
                 triggerManual={triggerManual}
               />
