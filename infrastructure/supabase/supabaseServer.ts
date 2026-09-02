@@ -6,29 +6,26 @@ import { Database } from "./database.types";
 /**
  * Creates a typed Supabase client for Server Components, Server Actions,
  * and Route Handlers with automatic cookie management.
+ * Next.js 15 compatible: cookies() is awaited inside async getAll/setAll methods.
  */
 export function createClient() {
-  const cookieStore = cookies();
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
   const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
 
   return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+      async getAll() {
+        const cookieStore = await cookies();
+        return cookieStore.getAll();
       },
-      set(name: string, value: string, options: CookieOptions) {
+      async setAll(cookiesToSet) {
         try {
-          cookieStore.set({ name, value, ...options });
+          const cookieStore = await cookies();
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
         } catch {
-          // Ignore if called in Server Component
-        }
-      },
-      remove(name: string, options: CookieOptions) {
-        try {
-          cookieStore.set({ name, value: "", ...options });
-        } catch {
-          // Ignore if called in Server Component
+          // Ignored if called in Server Component where cookies cannot be written
         }
       },
     },

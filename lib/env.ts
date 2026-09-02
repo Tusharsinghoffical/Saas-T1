@@ -2,6 +2,15 @@ import { z } from "zod";
 
 // Schema for client-side environment variables (exposed to browser via NEXT_PUBLIC_)
 const clientEnvSchema = z.object({
+  NEXT_PUBLIC_APP_URL: z
+    .string()
+    .url("NEXT_PUBLIC_APP_URL must be a valid URL")
+    .optional()
+    .default("http://localhost:3000"),
+  NEXT_PUBLIC_ENABLE_BILLING: z
+    .string()
+    .optional()
+    .default("false"),
   NEXT_PUBLIC_SUPABASE_URL: z
     .string()
     .url("NEXT_PUBLIC_SUPABASE_URL must be a valid URL")
@@ -53,6 +62,18 @@ const serverEnvSchema = z.object({
   RESEND_API_KEY: z
     .string()
     .min(1, "RESEND_API_KEY is required for transactional emails"),
+  CRON_SECRET: z
+    .string()
+    .min(1, "CRON_SECRET is required for scheduled tasks & cron endpoints"),
+  STRIPE_WEBHOOK_SECRET: z
+    .string()
+    .optional(),
+  STRIPE_PRICE_ID_PRO: z
+    .string()
+    .optional(),
+  STRIPE_PRICE_ID_ENTERPRISE: z
+    .string()
+    .optional(),
 });
 
 // Combined schema
@@ -84,6 +105,8 @@ export function validateEnv(): Env {
   if (!isServer) {
     // Client-only validation
     const clientResult = clientEnvSchema.safeParse({
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      NEXT_PUBLIC_ENABLE_BILLING: process.env.NEXT_PUBLIC_ENABLE_BILLING,
       NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
@@ -102,6 +125,8 @@ export function validateEnv(): Env {
   // Server-side validation (all variables)
   const serverResult = mergedEnvSchema.safeParse({
     NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_ENABLE_BILLING: process.env.NEXT_PUBLIC_ENABLE_BILLING,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
@@ -115,6 +140,10 @@ export function validateEnv(): Env {
     CLOUDFLARE_R2_BUCKET: process.env.CLOUDFLARE_R2_BUCKET,
     CLOUDFLARE_R2_ENDPOINT: process.env.CLOUDFLARE_R2_ENDPOINT,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    CRON_SECRET: process.env.CRON_SECRET,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_PRICE_ID_PRO: process.env.STRIPE_PRICE_ID_PRO,
+    STRIPE_PRICE_ID_ENTERPRISE: process.env.STRIPE_PRICE_ID_ENTERPRISE,
   });
 
   if (!serverResult.success) {

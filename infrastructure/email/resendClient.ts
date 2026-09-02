@@ -2,6 +2,8 @@
  * Resend Transactional Email Dispatcher (Zero AWS SDK)
  * Directly calls Resend REST API via standard fetch.
  */
+import sanitizeHtml from "sanitize-html";
+import { logger } from "@/infrastructure/logger/logger";
 
 export interface SendEmailOptions {
   to: string;
@@ -19,7 +21,7 @@ export async function sendEmail({
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey || apiKey.includes("placeholder") || !apiKey.startsWith("re_")) {
-    console.log(`[Resend Email Mock] Sent to: ${to} | Subject: "${subject}"`);
+    logger.info({ event: "email_mock_sent", to, subject });
     return { success: true, id: `mock-email-${Date.now()}` };
   }
 
@@ -41,11 +43,13 @@ export async function sendEmail({
 
     const json = await res.json();
     if (!res.ok) {
+      logger.error({ event: "resend_api_error", to, subject, error: json.message });
       return { success: false, error: json.message || "Resend API error" };
     }
 
     return { success: true, id: json.id };
   } catch (err: any) {
+    logger.error({ event: "email_dispatch_failed", to, subject, error: err.message });
     return { success: false, error: err.message || "Failed to dispatch email" };
   }
 }
@@ -53,6 +57,49 @@ export async function sendEmail({
 /**
  * Formats responsive HTML email template for notification events.
  */
+function escapeHtml(str: string): string {
+  return (str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function sanitizeMessage(msg: string): string {
+  if (!msg) return "";
+  // If plain text (no HTML tags), escape entities and convert newlines
+  if (!/<[a-z][\s\S]*>/i.test(msg)) {
+    return escapeHtml(msg).replace(/\n/g, "<br/>");
+  }
+  // If rich HTML: use sanitize-html with explicit allowlist.
+  // SECURITY: Only these tags/attributes are allowed — everything else (script,
+  // iframe, object, event handlers, javascript: URLs) is stripped by default.
+  return sanitizeHtml(msg, {
+    allowedTags: ["b", "i", "em", "strong", "u", "s", "p", "br", "ul", "ol", "li", "a", "span"],
+    allowedAttributes: {
+      a: ["href", "title"],
+      span: ["style"],
+    },
+    allowedStyles: {
+      span: {
+        // Allow only safe CSS color property
+        color: [/^#[0-9a-fA-F]{3,6}$/, /^rgb\(\d+,\s*\d+,\s*\d+\)$/],
+      },
+    },
+    // Force all links to use https — strips javascript: links automatically
+    transformTags: {
+      a: (tagName, attribs) => ({
+        tagName,
+        attribs: {
+          ...attribs,
+          href: /^https?:\/\//i.test(attribs.href || "") ? attribs.href : "#",
+        },
+      }),
+    },
+  });
+}
+
 export function buildNotificationEmailHtml({
   title,
   message,
@@ -64,6 +111,11 @@ export function buildNotificationEmailHtml({
   actionUrl?: string;
   actionText?: string;
 }) {
+  const safeTitle = escapeHtml(title);
+  const safeMessage = sanitizeMessage(message);
+  const safeActionText = escapeHtml(actionText);
+  const safeActionUrl = actionUrl && /^https?:\/\//i.test(actionUrl) ? actionUrl : null;
+
   return `
 <!DOCTYPE html>
 <html>
@@ -81,11 +133,11 @@ export function buildNotificationEmailHtml({
 <body>
   <div class="card">
     <div class="header">TASQ-ONE</div>
-    <h2 style="font-size: 16px; margin-top: 0;">${title}</h2>
-    <div class="content">${message}</div>
+    <h2 style="font-size: 16px; margin-top: 0;">${safeTitle}</h2>
+    <div class="content">${safeMessage}</div>
     ${
-      actionUrl
-        ? `<a href="${actionUrl}" class="btn" style="color: #ffffff;">${actionText}</a>`
+      safeActionUrl
+        ? `<a href="${safeActionUrl}" class="btn" style="color: #ffffff;">${safeActionText}</a>`
         : ""
     }
     <div class="footer">

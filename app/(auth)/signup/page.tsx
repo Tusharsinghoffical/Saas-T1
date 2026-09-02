@@ -235,7 +235,7 @@ export default function SignupPage() {
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
         {/* Organization Name */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+          <label htmlFor="signup-orgName" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
             Organization Name
           </label>
           <div className="relative">
@@ -243,6 +243,7 @@ export default function SignupPage() {
               <Building2 className="w-4 h-4" />
             </div>
             <input
+              id="signup-orgName"
               type="text"
               name="orgName"
               disabled={lockoutRemaining > 0 || isLoading}
@@ -263,7 +264,7 @@ export default function SignupPage() {
 
         {/* Admin Full Name */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+          <label htmlFor="signup-fullName" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
             Your Full Name
           </label>
           <div className="relative">
@@ -271,6 +272,7 @@ export default function SignupPage() {
               <User className="w-4 h-4" />
             </div>
             <input
+              id="signup-fullName"
               type="text"
               name="fullName"
               disabled={lockoutRemaining > 0 || isLoading}
@@ -291,7 +293,7 @@ export default function SignupPage() {
 
         {/* Work Email */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+          <label htmlFor="signup-email" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
             Work Email
           </label>
           <div className="relative">
@@ -299,6 +301,7 @@ export default function SignupPage() {
               <Mail className="w-4 h-4" />
             </div>
             <input
+              id="signup-email"
               type="email"
               name="email"
               disabled={lockoutRemaining > 0 || isLoading}
@@ -319,7 +322,7 @@ export default function SignupPage() {
 
         {/* Password + Show/Hide Toggle */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+          <label htmlFor="signup-password" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
             Password
           </label>
           <div className="relative">
@@ -327,6 +330,7 @@ export default function SignupPage() {
               <Lock className="w-4 h-4" />
             </div>
             <input
+              id="signup-password"
               type={showPassword ? "text" : "password"}
               name="password"
               disabled={lockoutRemaining > 0 || isLoading}
@@ -341,7 +345,6 @@ export default function SignupPage() {
             />
             <button
               type="button"
-              tabIndex={-1}
               onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none transition cursor-pointer"
               aria-label={showPassword ? "Hide password" : "Show password"}

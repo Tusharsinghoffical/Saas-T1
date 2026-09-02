@@ -15,10 +15,9 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
 
   private getClient() {
     try {
-      const adminClient = createAdminClient();
-      return adminClient || createClient();
-    } catch {
       return createClient();
+    } catch {
+      return createAdminClient();
     }
   }
 

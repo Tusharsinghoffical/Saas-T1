@@ -37,13 +37,7 @@ export async function requireAuth(): Promise<RequestContext> {
     Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
 
   if (!hasSupabase) {
-    // Local demo / mock user context
-    return {
-      userId: "22222222-2222-2222-2222-222222222222",
-      orgId: "11111111-1111-1111-1111-111111111111",
-      role: "admin",
-      email: "admin@tasqone.local",
-    };
+    throw new UnauthorizedError("Authentication required: Supabase configuration missing.");
   }
 
   const supabase = createClient();
@@ -91,7 +85,9 @@ export async function requireAuth(): Promise<RequestContext> {
     }
   }
 
-  // 3. Fallback to Admin Client (bypasses RLS) and self-heal missing organization
+  // 3. Fallback to Admin Client (bypasses RLS) for edge-case lookup only
+  // SECURITY: This block ONLY reads — it never creates orgs or assigns roles.
+  // Auto-creating orgs was removed: it was a silent privilege escalation vector.
   if (!orgId) {
     try {
       const adminClient = createAdminClient();
@@ -104,69 +100,24 @@ export async function requireAuth(): Promise<RequestContext> {
       if (prof?.org_id) {
         orgId = prof.org_id;
         if (prof.role) role = prof.role as UserRole;
-      } else {
-        // Check if user created an organization in organizations table
-        const { data: orgData } = await (adminClient.from("organizations") as any)
-          .select("id")
-          .eq("created_by", user.id)
-          .maybeSingle();
-
-        if (orgData?.id) {
-          orgId = orgData.id;
-          role = "admin";
-          // Self-heal profile
-          await (adminClient.from("profiles") as any).upsert({
-            id: user.id,
-            org_id: orgId,
-            role: "admin",
-            full_name: user.user_metadata?.full_name || "Admin User",
-          });
-        } else {
-          // Auto-create workspace for founding user
-          const orgName = (user.user_metadata?.org_name as string) || "My Workspace";
-          const { data: newOrg } = await (adminClient.from("organizations") as any)
-            .insert({
-              name: orgName,
-              slug: `org-${Date.now()}`,
-              tier: "free",
-            })
-            .select("id")
-            .single();
-
-          if (newOrg?.id) {
-            orgId = newOrg.id;
-            role = "admin";
-            await (adminClient.from("profiles") as any).upsert({
-              id: user.id,
-              org_id: orgId,
-              role: "admin",
-              full_name: user.user_metadata?.full_name || "Admin User",
-            });
-            await (adminClient.from("organizations") as any)
-              .update({ created_by: user.id })
-              .eq("id", orgId);
-          }
-        }
       }
-
-      // Sync metadata so subsequent requests are fast
-      if (orgId) {
-        adminClient.auth.admin.updateUserById(user.id, {
-          app_metadata: { role: role || "admin", org_id: orgId },
-          user_metadata: { role: role || "admin", org_id: orgId },
-        }).catch(() => {});
-      }
+      // If still no org, we fall through to the ForbiddenError below.
+      // Users with no org must contact their administrator or re-onboard.
     } catch (adminErr) {
       console.error("[requireAuth] Admin fallback lookup failed:", adminErr);
     }
   }
 
   if (!role) {
-    role = "admin";
+    throw new ForbiddenError(
+      "Forbidden: User profile is unassigned or role could not be verified."
+    );
   }
 
   if (!orgId) {
-    orgId = user.id;
+    throw new ForbiddenError(
+      "Forbidden: Organization membership could not be verified. Please contact your administrator."
+    );
   }
 
   const context: RequestContext = {
@@ -237,11 +188,15 @@ export function handleAuthError(error: unknown) {
   // Infrastructure / runtime errors: log full detail server-side only
   console.error("[handleAuthError] Unhandled internal error:", error);
 
+  const isProd = process.env.NODE_ENV === "production";
+
   return NextResponse.json(
     {
       success: false,
-      error: err?.message || "Internal server error. Please contact support.",
-      _debug: err?.message,
+      error: isProd
+        ? "Internal server error. Please contact support."
+        : err?.message || "Internal server error. Please contact support.",
+      ...(isProd ? {} : { _debug: err?.message }),
     },
     { status: 500 }
   );

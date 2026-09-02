@@ -13,8 +13,11 @@ export class SupabaseCommentRepository implements ICommentRepository {
   }
 
   private getClient() {
-    const adminClient = createAdminClient();
-    return adminClient || createClient();
+    try {
+      return createClient();
+    } catch {
+      return createAdminClient();
+    }
   }
 
   async listComments(taskId: string): Promise<Comment[]> {

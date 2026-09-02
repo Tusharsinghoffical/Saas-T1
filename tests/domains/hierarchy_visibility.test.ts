@@ -56,6 +56,11 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
       return [];
     },
     getEmployeeTasks: async () => [],
+    getStatusCounts: async (orgId?: string, teamId?: string | null): Promise<Record<string, number>> => {
+      if (teamId === "team-eng") return { in_progress: 1, completed: 1 };
+      if (teamId === "team-mkt") return { pending: 1 };
+      return { in_progress: 1, completed: 1, pending: 1 };
+    },
   };
 
   // Mock User Repository with Team Membership

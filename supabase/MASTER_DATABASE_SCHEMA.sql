@@ -19,6 +19,8 @@ create table public.organizations (
   name text not null,
   logo_url text,
   timezone text default 'Asia/Kolkata',
+  slack_webhook_url text,
+  slack_notifications_enabled boolean default true,
   created_by uuid,
   created_at timestamptz default now()
 );

@@ -29,8 +29,12 @@ export async function getPresignedUploadUrlUseCase(
     throw new NotFoundError("Task not found in your organization.");
   }
 
+  if (data.fileSize === undefined || data.fileSize === null || data.fileSize <= 0) {
+    throw new ValidationError("File size must be greater than 0 bytes.");
+  }
+
   if (data.fileSize > MAX_FILE_SIZE_BYTES) {
-    throw new ValidationError("File exceeds 10MB limit.");
+    throw new ValidationError("File exceeds 25MB limit.");
   }
 
   // Sanitize filename: only safe chars allowed in object key
@@ -48,7 +52,7 @@ export async function getPresignedUploadUrlUseCase(
     secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || "",
     key,
     contentType: data.fileType,
-    expiresInSeconds: 300, // 5-minute short-lived URL
+    expiresInSeconds: 180, // 3-minute short-lived URL (default chosen, confirm or change)
   });
 
   return { uploadUrl, fileUrl, key };

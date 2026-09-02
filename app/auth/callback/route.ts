@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/infrastructure/supabase/supabaseServer";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -34,10 +34,23 @@ export async function GET(request: Request) {
       }
 
       let targetPath = next;
-      if (next === "/admin/dashboard" || !next) {
-        if (role === "employee") targetPath = "/employee/dashboard";
+      // Prevent open redirect: path must start with exactly one '/' (not '//' or '\') and must be relative
+      if (
+        !targetPath ||
+        !targetPath.startsWith("/") ||
+        targetPath.startsWith("//") ||
+        targetPath.startsWith("\\") ||
+        targetPath.includes("://") ||
+        /^\/[\\\/]/.test(targetPath)
+      ) {
+        targetPath = "/employee/dashboard";
+      }
+
+      if (targetPath === "/admin/dashboard") {
+        if (role === "admin") targetPath = "/admin/dashboard";
         else if (role === "manager") targetPath = "/manager/dashboard";
-        else targetPath = "/admin/dashboard";
+        // Principle of least privilege: unknown/null role → employee (middleware handles re-routing)
+        else targetPath = "/employee/dashboard";
       }
 
       return NextResponse.redirect(`${origin}${targetPath}`);

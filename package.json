@@ -6,36 +6,47 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest run",
     "format": "prettier --write ."
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.109.0",
+    "@types/sanitize-html": "^2.16.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.453.0",
-    "next": "^14.2.15",
+    "next": "15.5.25",
     "posthog-js": "^1.422.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "sanitize-html": "2.17.7",
     "sharp": "^0.35.4",
+    "stripe": "^22.6.1",
     "tailwind-merge": "^2.5.4",
     "zod": "^3.23.8",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.15",
-    "postcss": "^8.4.47",
+    "eslint-config-next": "15.5.25",
+    "pg": "^8.23.0",
+    "postcss": "^8.5.26",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.8",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.6.3",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "postcss": "^8.5.26"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

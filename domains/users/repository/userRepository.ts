@@ -46,11 +46,18 @@ export class SupabaseUserRepository implements IUserRepository {
 
   async getProfileById(userId: string): Promise<UserProfile | null> {
     if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new ValidationError(
+          "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      // DEMO MODE (development only): returns a stub profile for local UI testing.
+      // Never reached in production due to guard above.
       return {
         id: userId,
         orgId: "11111111-1111-1111-1111-111111111111",
         fullName: "Demo User",
-        role: "admin",
+        role: "employee", // Least privilege for demo stubs
         avatarUrl: null,
         email: "demo@tasq-one.com",
         deletedAt: null,
@@ -157,7 +164,7 @@ export class SupabaseUserRepository implements IUserRepository {
     } catch {
       // Non-blocking
     }
-    const clientToUse = adminClient || createClient();
+    const clientToUse = createClient();
 
     // Run profiles, auth users, and team memberships ALL IN PARALLEL (eliminates 3-step waterfall)
     const [profilesResult, authUsersResult, teamMembershipsResult] = await Promise.all([

@@ -264,7 +264,7 @@ export default function LoginPage() {
         <form className="space-y-4 animate-fade-in" onSubmit={handlePasswordSubmit} noValidate>
           {/* Work Email */}
           <div>
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+            <label htmlFor="login-email" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
               Work Email
             </label>
             <div className="relative">
@@ -272,6 +272,8 @@ export default function LoginPage() {
                 <Mail className="w-4 h-4" />
               </div>
               <input
+                id="login-email"
+                name="email"
                 type="email"
                 disabled={lockoutRemaining > 0 || isLoading}
                 value={formData.email}
@@ -295,7 +297,7 @@ export default function LoginPage() {
           {/* Password + Show/Hide Toggle */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+              <label htmlFor="login-password" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
                 Password
               </label>
               <button
@@ -311,6 +313,8 @@ export default function LoginPage() {
                 <Lock className="w-4 h-4" />
               </div>
               <input
+                id="login-password"
+                name="password"
                 type={showPassword ? "text" : "password"}
                 disabled={lockoutRemaining > 0 || isLoading}
                 value={formData.password}
@@ -327,7 +331,6 @@ export default function LoginPage() {
               />
               <button
                 type="button"
-                tabIndex={-1}
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none transition cursor-pointer"
                 aria-label={showPassword ? "Hide password" : "Show password"}
@@ -405,7 +408,7 @@ export default function LoginPage() {
               </p>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+                <label htmlFor="magic-email" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
                   Work Email
                 </label>
                 <div className="relative">
@@ -413,6 +416,8 @@ export default function LoginPage() {
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
+                    id="magic-email"
+                    name="magicEmail"
                     type="email"
                     disabled={isLoading}
                     value={magicLinkEmail}

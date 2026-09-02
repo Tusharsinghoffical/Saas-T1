@@ -13,6 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgrespassword
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -32,12 +47,35 @@ jobs:
       - name: Run TypeScript Typecheck
         run: npx tsc --noEmit
 
-      - name: Run Multi-Tenant RLS Test Suite
-        run: npm test
+      - name: Apply Database Migrations to Real Postgres
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          echo "Bootstrapping Supabase auth schema and extensions..."
+          PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -f "supabase/ci_bootstrap_supabase.sql"
+          for file in $(ls supabase/migrations/*.sql | sort); do
+            echo "Applying migration: $file"
+            PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -f "$file"
+          done
+        env:
+          PGPASSWORD: postgrespassword
 
+      - name: Run Real PostgreSQL Multi-Tenant RLS & Security Regression Test Suite
+        run: npm test
+        env:
+          CI: "true"
+          DATABASE_URL: postgres://postgres:postgrespassword@localhost:5432/postgres
+          CRON_SECRET: ci_test_cron_secret_32_chars_long
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      # NEXT_PUBLIC_SUPABASE_* and SUPABASE_SERVICE_ROLE_KEY fallbacks below are
+      # intentional: they allow PR builds and fork checks to compile static routes
+      # without failing when repository secrets are masked/inaccessible. For production
+      # CD deployments, real secrets configured in GitHub Settings -> Secrets must be used.
       - name: Run Next.js Production Build
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://demo.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'demo-anon-key' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'demo-service-key' }}
+          CRON_SECRET: ci_test_cron_secret_32_chars_long
+          NEXT_PUBLIC_APP_URL: http://localhost:3000

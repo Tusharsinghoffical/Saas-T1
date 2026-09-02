@@ -1,7 +1,9 @@
-import { requireAuth } from "@/shared/middleware/rbacGuard";
+import { requireAuth, requireRole } from "@/shared/middleware/rbacGuard";
 import { listNotificationsUseCase } from "../usecases/listNotifications";
 import { markNotificationsAsReadUseCase } from "../usecases/markNotificationsAsRead";
 import { dispatchEmailNotificationUseCase } from "../usecases/dispatchEmailNotification";
+import { userRepository } from "@/domains/users/repository/userRepository";
+import { ValidationError, ForbiddenError } from "@/shared/errors/domainErrors";
 
 export class NotificationController {
   async listNotifications() {
@@ -16,7 +18,17 @@ export class NotificationController {
   }
 
   async dispatchEmail(body: any) {
-    await requireAuth();
+    const auth = await requireRole(["admin", "manager"]);
+    const recipientUserId = body?.recipientUserId;
+    if (!recipientUserId) {
+      throw new ValidationError("recipientUserId is required.");
+    }
+
+    const recipientProfile = await userRepository.getProfileById(recipientUserId);
+    if (!recipientProfile || recipientProfile.orgId !== auth.orgId) {
+      throw new ForbiddenError("Recipient does not belong to your organization.");
+    }
+
     return await dispatchEmailNotificationUseCase(body);
   }
 }

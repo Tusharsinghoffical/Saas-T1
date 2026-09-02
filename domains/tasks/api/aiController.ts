@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { requireAuth } from "@/shared/middleware/rbacGuard";
 import { enhanceTaskWithAIUseCase } from "../usecases/enhanceTaskWithAI";
 import { suggestAssigneeUseCase } from "../usecases/suggestAssignee";
@@ -17,24 +18,19 @@ export class AIController {
     return await suggestAssigneeUseCase(auth, taskTitle);
   }
 
-  async weeklySummary(authHeader?: string | null, isVercelCron?: boolean) {
+  async weeklySummary(authHeader?: string | null) {
     const cronSecret = process.env.CRON_SECRET;
-
-    // ── SECURITY FIX (FAIL 7.8): Hard-abort on invalid/missing cron token.
-    // Previously the function warned and continued executing, allowing
-    // unauthenticated callers to exhaust Groq LLM and Resend quotas.
-    // Now: if CRON_SECRET is configured (non-placeholder), the request MUST
-    // present a valid Bearer token OR be a verified Vercel Cron invocation.
-    // Any other case throws UnauthorizedError immediately — no LLM/email call.
-    if (cronSecret && cronSecret !== "placeholder") {
-      const isValidBearer = authHeader === `Bearer ${cronSecret}`;
-      if (!isValidBearer && !isVercelCron) {
-        throw new UnauthorizedError(
-          "Unauthorized cron invocation: Invalid or missing CRON_SECRET"
-        );
-      }
+    if (!cronSecret) {
+      throw new UnauthorizedError("CRON_SECRET is not configured on server.");
     }
-
+    const expectedHeader = `Bearer ${cronSecret}`;
+    const providedHeader = authHeader || "";
+    if (
+      providedHeader.length !== expectedHeader.length ||
+      !crypto.timingSafeEqual(Buffer.from(providedHeader), Buffer.from(expectedHeader))
+    ) {
+      throw new UnauthorizedError("Unauthorized cron invocation: Invalid or missing token.");
+    }
     return await generateWeeklySummaryUseCase();
   }
 }

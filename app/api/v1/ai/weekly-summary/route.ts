@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
 async function handleWeeklySummary(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
-    const isVercelCron = request.headers.get("x-vercel-cron") === "1";
-    const result = await aiController.weeklySummary(authHeader, isVercelCron);
+    const result = await aiController.weeklySummary(authHeader);
     return NextResponse.json(result);
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const status = error?.statusCode || (error?.name === "UnauthorizedError" ? 401 : 500);
+    return NextResponse.json({ success: false, error: error.message }, { status });
   }
 }

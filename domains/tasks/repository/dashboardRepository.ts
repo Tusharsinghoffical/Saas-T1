@@ -4,6 +4,7 @@ export interface IDashboardRepository {
   getAdminDashboardTasks(orgId: string, teamId?: string | null): Promise<any[]>;
   getManagerDashboardTasks(orgId: string, managerUserId: string, teamId?: string | null): Promise<any[]>;
   getEmployeeTasks(orgId: string, userId: string): Promise<any[]>;
+  getStatusCounts(orgId: string, teamId?: string | null): Promise<Record<string, number>>;
 }
 
 export class SupabaseDashboardRepository implements IDashboardRepository {
@@ -14,9 +15,9 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
 
   private getClient() {
     try {
-      return createAdminClient();
-    } catch {
       return createClient();
+    } catch {
+      return createAdminClient();
     }
   }
 
@@ -261,6 +262,31 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
     }
 
     return rawTasks;
+  }
+
+  async getStatusCounts(orgId: string, teamId?: string | null): Promise<Record<string, number>> {
+    if (!this.hasSupabase()) {
+      return { completed: 2, in_progress: 2, pending: 3 };
+    }
+
+    const client = this.getClient();
+    let query = (client.from("tasks") as any)
+      .select("status")
+      .eq("org_id", orgId);
+
+    if (teamId) {
+      query = query.eq("team_id", teamId);
+    }
+
+    const { data, error } = await query;
+    if (error || !data) {
+      return {};
+    }
+
+    return (data as Array<{ status: string }>).reduce((acc: Record<string, number>, row) => {
+      acc[row.status] = (acc[row.status] || 0) + 1;
+      return acc;
+    }, {});
   }
 }
 

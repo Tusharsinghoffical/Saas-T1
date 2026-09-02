@@ -25,6 +25,15 @@ export default function FeaturesPage() {
   const [aiPrompt, setAiPrompt] = useState("Launch UPI Auto-Pay integration for recurring B2B subscriptions");
   const [aiGenerating, setAiGenerating] = useState(false);
 
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hash = window.location.hash.replace("#", "");
+      if (["kanban", "ai", "employee", "broadcast"].includes(hash)) {
+        setActiveTab(hash as "kanban" | "ai" | "employee" | "broadcast");
+      }
+    }
+  }, []);
+
   const [aiResult, setAiResult] = useState<{
     key: string;
     title: string;

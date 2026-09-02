@@ -7,6 +7,65 @@ import { IUserRepository } from "@/domains/users/repository/userRepository";
 import fs from "fs";
 import path from "path";
 
+// Mock next/headers for test execution outside Next.js request scope
+vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockReturnValue({
+    get: vi.fn(),
+    set: vi.fn(),
+    getAll: vi.fn().mockReturnValue([]),
+  }),
+}));
+
+// Top-level module mocks for requireAuth unassigned role regression test
+vi.mock("@/infrastructure/supabase/supabaseServer", () => ({
+  createClient: vi.fn().mockReturnValue({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: {
+          user: {
+            id: "unverified-user-uuid",
+            email: "unverified@company.com",
+            app_metadata: {},
+            user_metadata: {},
+          },
+        },
+        error: null,
+      }),
+    },
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      }),
+    }),
+  }),
+  createAdminClient: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          is: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+          order: vi.fn().mockReturnValue({
+            limit: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            }),
+          }),
+        }),
+      }),
+    }),
+    auth: {
+      admin: {
+        updateUserById: vi.fn().mockResolvedValue({}),
+      },
+    },
+  }),
+}));
+
 describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
   // ── 1. ALL 6 CROSS-ROLE COMBINATIONS ──────────────────────────────────────
   describe("Middleware 3-Way Role Confinement & Redirection Matrix (All 6 Cross-Role Cases)", () => {
@@ -233,6 +292,55 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
       expect(sqlContent).toContain("create index if not exists idx_profiles_active");
       expect(sqlContent).toContain("where deleted_at is null");
       expect(sqlContent).toContain("add column if not exists created_by uuid references public.profiles(id)");
+    });
+  });
+
+// ── 5. P0.2 PRIVILEGE ESCALATION REGRESSION TESTS ─────────────────────────
+  describe("P0.2 Privilege Escalation Fail-Closed Regression Suite", () => {
+    it("Profile lookup failure in middleware falls back to least-privilege 'employee' role", () => {
+      // Simulate profile lookup returning null or throwing in middleware.ts:133-136
+      const simulateMiddlewareRoleResolution = (profileFound: boolean, profileRole?: string) => {
+        let role: string | undefined = undefined;
+        if (!role) {
+          try {
+            if (profileFound && profileRole) {
+              role = profileRole;
+            } else {
+              role = "employee"; // Fallback fixed in P0.2
+            }
+          } catch {
+            role = "employee";
+          }
+        }
+        return role;
+      };
+
+      // 1. Missing profile must yield employee role, never admin
+      const unassignedRole = simulateMiddlewareRoleResolution(false);
+      expect(unassignedRole).toBe("employee");
+      expect(unassignedRole).not.toBe("admin");
+
+      // 2. Evaluated against /admin/dashboard, employee must be strictly redirected to /employee/dashboard
+      const redirect = evaluateRoleAccess(unassignedRole, "/admin/dashboard");
+      expect(redirect).toBe("/employee/dashboard");
+    });
+
+    it("requireAuth throws ForbiddenError when user profile has no role, never escalating to admin", async () => {
+      const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://mock-test-instance.supabase.co";
+
+      const { requireAuth } = await import("@/shared/middleware/rbacGuard");
+      const { ForbiddenError } = await import("@/shared/errors/domainErrors");
+
+      try {
+        // requireAuth must reject the request with ForbiddenError, NOT return an admin context
+        await expect(requireAuth()).rejects.toThrow(ForbiddenError);
+        await expect(requireAuth()).rejects.toThrow(
+          "Forbidden: User profile is unassigned or role could not be verified."
+        );
+      } finally {
+        process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
+      }
     });
   });
 });

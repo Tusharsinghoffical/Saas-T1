@@ -7,7 +7,8 @@ import { listAttachmentsUseCase } from "../usecases/listAttachments";
 import { getPresignedUploadUrlUseCase } from "../usecases/getPresignedUploadUrl";
 import { saveAttachmentUseCase } from "../usecases/saveAttachment";
 import { attachmentRepository } from "../repository/attachmentRepository";
-import { ValidationError } from "@/shared/errors/domainErrors";
+import { taskRepository } from "../repository/taskRepository";
+import { ValidationError, NotFoundError } from "@/shared/errors/domainErrors";
 
 export class AttachmentController {
   async listAttachments(taskId: string) {
@@ -36,6 +37,10 @@ export class AttachmentController {
     }
 
     if (action === "delete_attachment" && body?.attachmentId) {
+      const task = await taskRepository.getTaskById(taskId, auth.orgId);
+      if (!task) {
+        throw new NotFoundError("Task not found in your organization.");
+      }
       const success = await attachmentRepository.deleteAttachment?.(body.attachmentId, taskId);
       return { success };
     }

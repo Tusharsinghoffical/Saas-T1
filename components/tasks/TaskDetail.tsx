@@ -5,7 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/infrastructure/supabase/supabaseClient";
 import {
   Clock,
   Send,

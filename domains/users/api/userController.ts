@@ -1,4 +1,4 @@
-import { requireAuth } from "@/shared/middleware/rbacGuard";
+import { requireAuth, requireRole } from "@/shared/middleware/rbacGuard";
 import { listOrgMembersUseCase } from "../usecases/listOrgMembers";
 import { getUserProfileUseCase } from "../usecases/getUserProfile";
 import { inviteUserUseCase, InviteUserInput } from "../usecases/inviteUser";
@@ -7,7 +7,7 @@ import { updateUserRoleUseCase, UpdateUserRoleInput } from "../usecases/updateUs
 import { acceptInviteUseCase } from "../usecases/acceptInvite";
 import { removeUserUseCase } from "../usecases/removeUser";
 import { checkRateLimit } from "@/infrastructure/redis/redisClient";
-import { RateLimitError } from "@/shared/errors/domainErrors";
+import { RateLimitError, NotFoundError } from "@/shared/errors/domainErrors";
 import { headers as nextHeaders } from "next/headers";
 
 async function getClientIp(): Promise<string> {
@@ -30,8 +30,14 @@ export class UserController {
   }
 
   async getProfile(userId: string) {
-    await requireAuth();
-    return await getUserProfileUseCase(userId);
+    const auth = await requireAuth();
+    const { userRepository } = await import("../repository/userRepository");
+    const profile = await getUserProfileUseCase(userId);
+    // SECURITY: Verify the requested profile belongs to the caller's org
+    if (!profile || (profile as any).orgId !== auth.orgId) {
+      throw new NotFoundError("Member not found in your organization.");
+    }
+    return profile;
   }
 
   async createMember(input: CreateEmployeeInput) {
@@ -59,15 +65,18 @@ export class UserController {
     userId: string,
     updates: { role?: "admin" | "manager" | "employee"; teamId?: string; teamName?: string }
   ) {
-    const auth = await requireAuth();
+    const auth = await requireRole(["admin", "manager"]);
+    const { userRepository } = await import("../repository/userRepository");
+
+    const targetUser = await userRepository.getProfileById(userId);
+    if (!targetUser || targetUser.orgId !== auth.orgId) {
+      throw new NotFoundError("Member not found in your organization.");
+    }
 
     // 1. Role update
     if (updates.role) {
       await updateUserRoleUseCase(auth, { userId, role: updates.role });
     }
-
-    // 2. Team assignment — resolve teamName → teamId if needed
-    const { userRepository } = await import("../repository/userRepository");
 
     let resolvedTeamId = updates.teamId;
 

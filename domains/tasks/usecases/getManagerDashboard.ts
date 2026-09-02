@@ -106,13 +106,24 @@ export async function getManagerDashboardUseCase(
     await redisSet(chartCacheKey, timeline, 60);
   }
 
+  const completedTaskItems = tasks.filter((t: any) => t.status === "completed" && t.created_at && t.updated_at);
+  const totalCompletionDurationDays = completedTaskItems.reduce((acc: number, t: any) => {
+    const created = new Date(t.created_at).getTime();
+    const updated = new Date(t.updated_at).getTime();
+    const diffDays = Math.max(0, (updated - created) / (1000 * 60 * 60 * 24));
+    return acc + diffDays;
+  }, 0);
+  const teamVelocityDays = completedTaskItems.length > 0
+    ? Math.round((totalCompletionDurationDays / completedTaskItems.length) * 10) / 10
+    : 0;
+
   const aggregateData = {
     managerProfile,
     kpis: {
       activeTasks,
       overdueTasks,
       completionRate,
-      teamVelocityDays: completedTasks > 0 ? 2.8 : 0,
+      teamVelocityDays,
       totalTasks,
       completedTasks,
     },

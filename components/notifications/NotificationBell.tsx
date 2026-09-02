@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/infrastructure/supabase/supabaseClient";
 import { captureEvent } from "@/lib/analytics/posthog";
 
 export interface NotificationItem {

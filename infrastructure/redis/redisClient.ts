@@ -3,6 +3,8 @@
  * Ensures zero request blocking (maximum 600ms timeout with instant fallback to in-memory cache).
  */
 
+import { logger } from "@/infrastructure/logger/logger";
+
 // L1 In-memory cache for sub-millisecond local responses
 const memoryCache = new Map<string, { value: any; expiresAt: number }>();
 const memoryRateLimit = new Map<string, { count: number; expiresAt: number }>();
@@ -92,7 +94,10 @@ export async function redisSet(
   const serialized = typeof value === "string" ? value : JSON.stringify(value);
 
   try {
-    // Non-blocking background sync to Upstash
+    // Non-blocking background sync to Upstash.
+    // STALE-CACHE POLICY: if this write fails, L1 memory cache still serves
+    // fresh data for up to exSeconds. Stale cache on write failure is acceptable
+    // for dashboard/notification data. Not acceptable for auth tokens (don't cache those here).
     fetch(
       `${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(serialized)}?EX=${exSeconds}`,
       {
@@ -100,10 +105,13 @@ export async function redisSet(
         cache: "no-store",
         signal: AbortSignal.timeout(800),
       }
-    ).catch(() => {});
+    ).catch((err: unknown) => {
+      logger.warn({ event: "redis_write_failed", key, error: (err as Error)?.message ?? String(err) });
+    });
 
     return true;
-  } catch {
+  } catch (err: unknown) {
+    logger.warn({ event: "redis_write_failed", key, error: (err as Error)?.message ?? String(err) });
     return true;
   }
 }
@@ -122,9 +130,12 @@ export async function redisDel(key: string): Promise<boolean> {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
       signal: AbortSignal.timeout(600),
-    }).catch(() => {});
+    }).catch((err: unknown) => {
+      logger.warn({ event: "redis_del_failed", key, error: (err as Error)?.message ?? String(err) });
+    });
     return true;
-  } catch {
+  } catch (err: unknown) {
+    logger.warn({ event: "redis_del_failed", key, error: (err as Error)?.message ?? String(err) });
     return false;
   }
 }
@@ -166,13 +177,73 @@ export async function invalidateOrgDashboardCache(orgId: string, teamId?: string
 }
 
 /**
- * Ultra-fast Rate Limiter with 400ms timeout and in-memory fallback.
+ * Ultra-fast Rate Limiter contacting Upstash Redis REST pipeline (INCR + EXPIRE NX + TTL)
+ * with 600ms timeout and resilient in-memory fallback.
  */
 export async function checkRateLimit(
   key: string,
   limit: number = 100,
   windowSeconds: number = 60
 ): Promise<{ success: boolean; remaining: number; resetInSeconds: number }> {
+  const { url, token, isValid } = getRedisConfig();
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (isProduction && !isValid) {
+    logger.error({
+      event: "rate_limiter_unavailable",
+      message: "UPSTASH_REDIS_REST_URL or TOKEN is missing in production.",
+    });
+    throw new Error("Rate limiting service unavailable.");
+  }
+
+  if (isValid) {
+    try {
+      const pipelineRes = await fetch(`${url}/pipeline`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+          ["INCR", key],
+          ["EXPIRE", key, windowSeconds, "NX"],
+          ["TTL", key],
+        ]),
+        cache: "no-store",
+        signal: AbortSignal.timeout(600),
+      });
+
+      if (pipelineRes.ok) {
+        const results = await pipelineRes.json();
+        const count = results[0]?.result ?? 1;
+        const ttl = results[2]?.result ?? windowSeconds;
+        const resetInSeconds = ttl > 0 ? ttl : windowSeconds;
+        const remaining = Math.max(0, limit - count);
+
+        return {
+          success: count <= limit,
+          remaining,
+          resetInSeconds,
+        };
+      }
+    } catch (err: any) {
+      logger.error({
+        event: "redis_pipeline_rate_limit_failed",
+        key,
+        error: err?.message,
+      });
+      if (isProduction) {
+        throw new Error("Rate limiting service temporarily unavailable.");
+      }
+    }
+  }
+
+  // Resilient in-memory fallback ONLY for development and automated tests
+  logger.warn({
+    event: "rate_limit_memory_fallback",
+    key,
+    message: "In multi-replica deployments, limits multiply per pod.",
+  });
   const now = Date.now();
   const entry = memoryRateLimit.get(key);
 

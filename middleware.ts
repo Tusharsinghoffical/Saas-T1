@@ -129,11 +129,11 @@ export async function middleware(request: NextRequest) {
         if (profile?.role) {
           role = profile.role as string;
         } else {
-          // If accessing admin routes or newly signed up, treat as admin
-          role = isAdminRoute ? "admin" : "employee";
+          // Principle of least privilege: default to employee, never escalate
+          role = "employee";
         }
       } catch {
-        role = isAdminRoute ? "admin" : "employee";
+        role = "employee";
       }
     }
 

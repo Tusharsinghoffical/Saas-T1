@@ -10,7 +10,7 @@ export interface PresignedUrlOptions {
   expiresInSeconds?: number;
 }
 
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB limit
+export const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25MB default chosen, confirm or change
 
 /**
  * Pure Node.js HMAC-SHA256 helper for Cloudflare R2 / SigV4 URL signing.
@@ -34,21 +34,21 @@ export async function getR2PresignedPutUrl({
   accessKeyId,
   secretAccessKey,
   contentType = "application/octet-stream",
-  expiresInSeconds = 900, // 15 minutes
+  expiresInSeconds = 180, // 3 minutes default chosen (confirm or change)
 }: PresignedUrlOptions): Promise<{ uploadUrl: string; fileUrl: string }> {
-  // If credentials are placeholders or missing, return a mock endpoint
+  // If credentials are placeholders or missing, throw a clear configuration error
   if (
     !accessKeyId ||
     !secretAccessKey ||
     accessKeyId.includes("placeholder") ||
+    accessKeyId.includes("dummy") ||
     !endpoint ||
-    endpoint.includes("your-account-id")
+    endpoint.includes("your-account-id") ||
+    endpoint.includes("dummy-account")
   ) {
-    const mockFileUrl = `https://r2-mock.tasq-one.internal/${bucket}/${encodeURIComponent(key)}`;
-    return {
-      uploadUrl: `/api/v1/mock-upload?key=${encodeURIComponent(key)}`,
-      fileUrl: mockFileUrl,
-    };
+    throw new Error(
+      "Cloudflare R2 storage credentials are not configured. Please set CLOUDFLARE_R2_ACCESS_KEY_ID, CLOUDFLARE_R2_SECRET_ACCESS_KEY, and CLOUDFLARE_R2_ENDPOINT in environment variables."
+    );
   }
 
   // Parse endpoint URL

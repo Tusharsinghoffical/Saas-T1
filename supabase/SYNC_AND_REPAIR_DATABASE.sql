@@ -254,3 +254,8 @@ using (
     select p.org_id from public.profiles p where p.id = auth.uid() and p.role = 'admin' and p.deleted_at is null
   )
 );
+
+-- Ensure Slack integration columns exist
+alter table public.organizations add column if not exists slack_webhook_url text;
+alter table public.organizations add column if not exists slack_notifications_enabled boolean default true;
+

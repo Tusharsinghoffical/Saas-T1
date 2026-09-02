@@ -10,12 +10,29 @@ import { invalidateOrgDashboardCache } from "@/infrastructure/redis/redisClient"
 import { recordActivityLogUseCase } from "@/domains/activity";
 import { ForbiddenError, ValidationError } from "@/shared/errors/domainErrors";
 
+import { IUserRepository, userRepository } from "@/domains/users/repository/userRepository";
+
 export async function updateTaskUseCase(
   context: RequestContext,
   taskId: string,
   updates: UpdateTaskDTO,
-  repo: ITaskRepository = taskRepository
+  repo: ITaskRepository = taskRepository,
+  userRepo: IUserRepository = userRepository
 ): Promise<Task> {
+  // Validate that newly assigned users are not deactivated
+  if (updates.assigneeIds && updates.assigneeIds.length > 0) {
+    const profiles = await Promise.all(
+      updates.assigneeIds.map((id) => userRepo.getProfileById(id).catch(() => null))
+    );
+    for (const p of profiles) {
+      if (p?.deletedAt) {
+        throw new ValidationError(
+          `Cannot assign task to deactivated user: ${p.fullName || p.id}`
+        );
+      }
+    }
+  }
+
   const isManagerOrAdmin = context.role === "admin" || context.role === "manager";
 
   // 1. Employee access rule: employees may only update status on tasks they are assigned to

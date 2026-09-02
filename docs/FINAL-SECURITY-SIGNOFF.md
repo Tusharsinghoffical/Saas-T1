@@ -154,8 +154,9 @@ Every fix originally deployed in Prompt 35 was re-inspected line-by-line against
   - `employee` (restricted): Status updates only (`TaskController.updateTask`), checklist interactions, own notifications.
 
 ### 3. Multi-Tenancy & Row-Level Security (RLS)
-- Full RLS test suite executed (`tests/rls/multi_tenant_isolation.test.ts` and `tests/rls/cross_role_routing.test.ts`).
-- 100% of queries filter by `org_id = (auth.jwt() ->> 'org_id')::uuid`. Zero cross-tenant data leakage possible.
+- **Status**: ⚠️ **RE-VERIFICATION PENDING** (Database-level PostgreSQL RLS requires live `DATABASE_URL` in CI / preview environment).
+- **Application-Layer Isolation**: **PASS** (Enforced across all controllers and use cases; verified in `tests/rls/multi_tenant_isolation.test.ts` IDOR section).
+- **Database-Layer RLS**: Unit tests with real Postgres client exist in `tests/rls/multi_tenant_isolation.test.ts` (`describe.skipIf(!databaseUrl)`), currently skipped during local/offline runs. Must be executed in CI with active Postgres instance before final launch.
 
 ### 4. Rate Limiting on Auth & Sensitive Endpoints
 - Password Login: 5 requests / 5 minutes per IP:Email (`domains/auth/api/authController.ts`)
@@ -170,35 +171,35 @@ Every fix originally deployed in Prompt 35 was re-inspected line-by-line against
 ```
  RUN  v4.1.11 C:/Users/Acer/Music/TASQ-ONE
 
- ✓ tests/integration/services.test.ts (4 tests)
- ✓ tests/rls/multi_tenant_isolation.test.ts (6 tests)
- ✓ tests/rls/cross_role_routing.test.ts (16 tests)
+ ✓ tests/integration/services.test.ts (6 tests)
+ ✓ tests/rls/cross_role_routing.test.ts (18 tests)
  ✓ tests/domains/task_business_rules.test.ts (4 tests)
+ ✓ tests/domains/hierarchy_visibility.test.ts (6 tests)
+ ✓ tests/rls/multi_tenant_isolation.test.ts (7 tests | 2 skipped)
 
- Test Files  4 passed (4)
-      Tests  30 passed (30)
-   Duration  1.64s
+ Test Files  5 passed (5)
+      Tests  39 passed | 2 skipped (41)
 ```
 
-- **TypeScript Compilation (`npx tsc --noEmit`)**: **0 errors, 0 warnings**.
-- **Security Test Suite**: **30 / 30 Passed (100%)**.
+- **TypeScript Compilation & Next.js 15 Build**: **36/36 static/dynamic routes compiled cleanly with 0 errors**.
+- **Security & Domain Test Suite**: **39 Passed / 2 Skipped (pending live DB for Postgres RLS)**.
 
 ---
 
-## 🏆 PART D — Final Verdict
+## 🏆 PART D — Verdict & Launch Clearance
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║             ✅ GO — CLEARED FOR PRODUCTION LAUNCH                            ║
+║   ⚠️  CONDITIONAL GO — APPLICATION HARDENED; DB RLS CI VERIFICATION PENDING  ║
 ║                                                                              ║
-║  Zero Critical, High, or Medium security vulnerabilities remain.            ║
-║  All 10 Prompt 35 remediations verified intact.                              ║
-║  All Prompt 38 Auth Redesign & 3-way RBAC isolation invariants verified.     ║
-║  Full automated test suite (30/30) passing with 0 TypeScript errors.         ║
+║  Application-layer 3-way RBAC, IDOR guards, and sanitization verified.      ║
+║  Next.js 15.x upgrade complete with async params migration.                  ║
+║  Real PostgreSQL RLS tests must be verified against live Supabase/Postgres.  ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
+
 
 **Next Step**: **Proceed to Zero-Cost Production Deployment & Go-Live Checklist.**
 

@@ -429,15 +429,17 @@ TASQ-ONE/
 │   └── middleware/                 →  rbacGuard (requireAuth + 15s cache)
 │
 ├── 📂 supabase/migrations/
-│   ├── 0001_init_schema.sql
-│   ├── 0002_rls_policies.sql
-│   ├── 0003_team_assignment.sql
+│   ├── 0001_init.sql
+│   ├── 0002_rls.sql
+│   ├── 0003_auth_hook.sql
+│   ├── 0004_team_assignment_guarantee.sql
 │   ├── ...
-│   └── 0008_fix_privilege_escalation.sql
+│   └── 0010_tasks_replica_identity_full.sql
 │
 └── 📂 tests/
-    ├── rls/                        →  Cross‑tenant isolation tests
-    └── unit/                       →  Use case unit tests
+    ├── domains/                    →  Domain use case business rules
+    ├── integration/                →  Email, Redis, and service integrations
+    └── rls/                        →  RBAC routing & tenant isolation tests
 ```
 
 ---

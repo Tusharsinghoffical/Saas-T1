@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/infrastructure/supabase/supabaseClient";
 import { useTaskStore } from "@/store/useTaskStore";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
 

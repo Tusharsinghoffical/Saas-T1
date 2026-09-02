@@ -27,9 +27,9 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
   private getClient() {
     try {
-      return createAdminClient();
-    } catch {
       return createClient();
+    } catch {
+      return createAdminClient();
     }
   }
 
