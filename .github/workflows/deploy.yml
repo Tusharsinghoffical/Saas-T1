@@ -48,15 +48,11 @@ jobs:
       - name: Run TypeScript Typecheck
         run: npx tsc --noEmit
 
-      - name: Apply Database Migrations to Real Postgres
+      - name: Apply Master Database Schema to Real Postgres
         run: |
           sudo apt-get update && sudo apt-get install -y postgresql-client
-          echo "Bootstrapping Supabase auth schema and extensions..."
-          PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -f "supabase/ci_bootstrap_supabase.sql"
-          for file in $(ls supabase/migrations/*.sql | sort); do
-            echo "Applying migration: $file"
-            PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -f "$file"
-          done
+          echo "Applying single master database schema..."
+          PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -f "supabase/database.sql"
           echo "Granting table privileges to Supabase roles on migrated tables..."
           PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -c "GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated, anon, service_role; GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon, service_role;"
         env:

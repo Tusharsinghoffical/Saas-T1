@@ -282,7 +282,7 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
       const migrationPath = path.join(
         process.cwd(),
         "supabase",
-        "SYNC_AND_REPAIR_DATABASE.sql"
+        "database.sql"
       );
       expect(fs.existsSync(migrationPath)).toBe(true);
 
