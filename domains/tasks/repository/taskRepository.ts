@@ -127,6 +127,33 @@ export class SupabaseTaskRepository implements ITaskRepository {
       rawTasks = data || [];
     }
 
+    // Auto-seed starter workspace tasks if organization has zero tasks on initial load
+    if (
+      (!rawTasks || rawTasks.length === 0) &&
+      !filters.status &&
+      !filters.priority &&
+      !filters.teamId &&
+      !filters.search &&
+      !filters.assigneeId
+    ) {
+      try {
+        const { seedWorkspaceDataUseCase } = await import("../usecases/seedWorkspaceData");
+        const seedResult = await seedWorkspaceDataUseCase(orgId);
+        if (seedResult.success && seedResult.tasksCount > 0) {
+          const { data: seededTasks } = await (supabase as any)
+            .from("tasks")
+            .select("id, org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at")
+            .eq("org_id", orgId)
+            .order("created_at", { ascending: false });
+          if (seededTasks && seededTasks.length > 0) {
+            rawTasks = seededTasks;
+          }
+        }
+      } catch (seedErr) {
+        console.warn("[listTasks auto-seed notice]", seedErr);
+      }
+    }
+
     let filtered = rawTasks || [];
     if (filters.assigneeId) {
       filtered = filtered.filter((t: any) =>

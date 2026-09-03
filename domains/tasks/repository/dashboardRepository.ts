@@ -66,6 +66,22 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       return [];
     }
 
+    if ((!rawTasks || rawTasks.length === 0) && !teamId) {
+      try {
+        const { seedWorkspaceDataUseCase } = await import("../usecases/seedWorkspaceData");
+        const seedResult = await seedWorkspaceDataUseCase(orgId);
+        if (seedResult.success && seedResult.tasksCount > 0) {
+          const { data: seeded } = await (client.from("tasks") as any)
+            .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+            .eq("org_id", orgId)
+            .order("created_at", { ascending: false });
+          if (seeded && seeded.length > 0) return seeded;
+        }
+      } catch (seedErr) {
+        console.warn("[getAdminDashboardTasks auto-seed notice]", seedErr);
+      }
+    }
+
     return rawTasks || [];
   }
 
@@ -254,6 +270,24 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
         if (assignedTasks) {
           rawTasks = [...rawTasks, ...assignedTasks];
         }
+      }
+    }
+
+    if (rawTasks.length === 0) {
+      // Fallback: Show organization-wide tasks so employee dashboard is never a blank screen
+      const { data: orgTasks } = await (client.from("tasks") as any)
+        .select(`
+          *,
+          task_assignees (
+            user_id,
+            profiles:user_id (id, full_name, avatar_url)
+          )
+        `)
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (orgTasks && orgTasks.length > 0) {
+        return orgTasks;
       }
     }
 
