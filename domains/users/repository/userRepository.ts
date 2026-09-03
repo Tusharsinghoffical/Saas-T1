@@ -198,7 +198,7 @@ export class SupabaseUserRepository implements IUserRepository {
             }));
           }
         }
-      } catch {}
+      } catch { }
       return [];
     }
 
@@ -415,7 +415,7 @@ export class SupabaseUserRepository implements IUserRepository {
               app_metadata: { role, org_id: orgId },
               user_metadata: { full_name: fullName, role, org_id: orgId },
             });
-          } catch {}
+          } catch { }
         }
       } else if (signUpError) {
         const errMsg = signUpError.message.toLowerCase();
