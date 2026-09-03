@@ -121,12 +121,24 @@ export function KanbanBoard({
   // Client-side Filtered Tasks
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
-      // Search
+      // Search across Title, Description, and Assignee Name / ID
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesTitle = task.title.toLowerCase().includes(q);
         const matchesDesc = task.description?.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesDesc) return false;
+        const matchesAssignee =
+          task.assignees?.some(
+            (a: any) =>
+              (a.fullName && a.fullName.toLowerCase().includes(q)) ||
+              (a.full_name && a.full_name.toLowerCase().includes(q)) ||
+              (a.id && a.id.toLowerCase().includes(q))
+          ) ||
+          task.task_assignees?.some(
+            (a: any) =>
+              (a.profiles?.full_name && a.profiles.full_name.toLowerCase().includes(q)) ||
+              (a.user_id && a.user_id.toLowerCase().includes(q))
+          );
+        if (!matchesTitle && !matchesDesc && !matchesAssignee) return false;
       }
 
       // Priority

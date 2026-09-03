@@ -29,6 +29,8 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
 import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
+import { MemberIdBadge } from "@/components/ui/MemberIdBadge";
+import { matchesMemberSearch, formatMemberCode } from "@/lib/memberId";
 
 interface TeamMember {
   id: string;
@@ -62,6 +64,7 @@ export default function AdminTeamPage() {
 
   // Success Credential State
   const [createdCredentials, setCreatedCredentials] = useState<{
+    id?: string;
     fullName: string;
     email: string;
     password?: string;
@@ -162,12 +165,10 @@ export default function AdminTeamPage() {
     };
   }, [fetchMembers]);
 
-  // Filtered members list
+  // Filtered members list with ID, Member Code, Name, Email, and Team search support
   const filteredMembers = useMemo(() => {
     return members.filter((member) => {
-      const matchesSearch =
-        member.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (member.email && member.email.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesSearch = matchesMemberSearch(member, searchQuery);
       const matchesRole = roleFilter === "all" || member.role === roleFilter;
       return matchesSearch && matchesRole;
     });
@@ -229,6 +230,7 @@ export default function AdminTeamPage() {
 
       if (creationMode === "direct") {
         setCreatedCredentials({
+          id: data.profile?.id || data.user?.id,
           fullName: fullName.trim(),
           email: email.trim().toLowerCase(),
           password,
@@ -324,7 +326,8 @@ export default function AdminTeamPage() {
 
   const copyCredentialsText = () => {
     if (!createdCredentials) return;
-    const text = `🎉 You've been added to TASQ-ONE Work OS!\n\nLogin URL: ${window.location.origin}/login\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nRole: ${createdCredentials.role.toUpperCase()}\nTeam: ${createdCredentials.teamName || "General"}`;
+    const memberCode = formatMemberCode(createdCredentials.id, createdCredentials.role);
+    const text = `🎉 You've been added to TASQ-ONE Work OS!\n\nMember ID: ${memberCode} (${createdCredentials.id || "N/A"})\nLogin URL: ${window.location.origin}/login\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nRole: ${createdCredentials.role.toUpperCase()}\nTeam: ${createdCredentials.teamName || "General"}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -475,11 +478,20 @@ export default function AdminTeamPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <Input
-            placeholder="Search by name, email, or team..."
+            placeholder="Search by name, email, team, or Member ID (e.g. EMP-XXXXXX, MGR-XXXXXX, UUID)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-xs h-9"
+            className="pl-9 pr-14 text-xs h-9"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700"
+            >
+              Clear
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -518,7 +530,7 @@ export default function AdminTeamPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
                 <tr>
-                  <th className="px-5 py-3.5">Member</th>
+                  <th className="px-5 py-3.5">Member / ID</th>
                   <th className="px-5 py-3.5">Email</th>
                   <th className="px-5 py-3.5">Assigned Team / Squad</th>
                   <th className="px-5 py-3.5">Access Role</th>
@@ -529,10 +541,10 @@ export default function AdminTeamPage() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-750">
                 {filteredMembers.map((member) => (
                   <tr key={member.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition">
-                    {/* Name & Avatar */}
+                    {/* Name, Avatar & MemberIdBadge */}
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs">
+                        <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
                           {member.fullName
                             .split(" ")
                             .map((n) => n[0])
@@ -540,8 +552,13 @@ export default function AdminTeamPage() {
                             .slice(0, 2)
                             .toUpperCase()}
                         </div>
-                        <div className="font-semibold text-slate-900 dark:text-white">
-                          {member.fullName}
+                        <div className="min-w-0">
+                          <div className="font-semibold text-slate-900 dark:text-white">
+                            {member.fullName}
+                          </div>
+                          <div className="mt-1">
+                            <MemberIdBadge id={member.id} role={member.role} />
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -643,6 +660,12 @@ export default function AdminTeamPage() {
               </div>
 
               <div className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+                {createdCredentials.id && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-500">Member ID:</span>
+                    <MemberIdBadge id={createdCredentials.id} role={createdCredentials.role} size="md" />
+                  </div>
+                )}
                 <div>
                   <span className="font-semibold text-slate-500">Name:</span>{" "}
                   {createdCredentials.fullName}

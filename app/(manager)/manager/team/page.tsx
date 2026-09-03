@@ -28,6 +28,8 @@ import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
 import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
+import { MemberIdBadge } from "@/components/ui/MemberIdBadge";
+import { matchesMemberSearch, formatMemberCode } from "@/lib/memberId";
 
 interface EmployeeMember {
   id: string;
@@ -58,6 +60,7 @@ export default function ManagerTeamPage() {
 
   // Credentials after creation
   const [createdCredentials, setCreatedCredentials] = useState<{
+    id?: string;
     fullName: string;
     email: string;
     password?: string;
@@ -128,12 +131,9 @@ export default function ManagerTeamPage() {
     return () => { if (channel) createClient().removeChannel(channel); };
   }, [fetchMembers]);
 
-  // Filtered list
+  // Filtered list with ID, Member Code, Name, and Email search support
   const filteredMembers = useMemo(() =>
-    members.filter((m) => {
-      const q = searchQuery.toLowerCase();
-      return m.fullName.toLowerCase().includes(q) || (m.email && m.email.toLowerCase().includes(q));
-    }),
+    members.filter((m) => matchesMemberSearch(m, searchQuery)),
     [members, searchQuery]
   );
 
@@ -168,7 +168,12 @@ export default function ManagerTeamPage() {
       if (!res.ok || !data.success) throw new Error(data.error || data.message || "Failed to add employee.");
 
       if (creationMode === "direct") {
-        setCreatedCredentials({ fullName: fullName.trim(), email: email.trim().toLowerCase(), password });
+        setCreatedCredentials({
+          id: data.profile?.id || data.user?.id,
+          fullName: fullName.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        });
       } else {
         setIsAddModalOpen(false);
         showToast(`Invite sent to ${email}`);
@@ -219,7 +224,8 @@ export default function ManagerTeamPage() {
 
   const copyCredentialsText = () => {
     if (!createdCredentials) return;
-    const text = `🎉 You've been added to TASQ-ONE Work OS!\n\nLogin URL: ${window.location.origin}/login\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}`;
+    const memberCode = formatMemberCode(createdCredentials.id, "employee");
+    const text = `🎉 You've been added to TASQ-ONE Work OS!\n\nEmployee ID: ${memberCode} (${createdCredentials.id || "N/A"})\nLogin URL: ${window.location.origin}/login\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -330,23 +336,32 @@ export default function ManagerTeamPage() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search by Name, Email, or Employee ID */}
       <div className="relative">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
           type="text"
-          placeholder="Search employee by name or email…"
+          placeholder="Search employee by name, email, or ID (e.g. EMP-XXXXXX, UUID)…"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition shadow-sm"
+          className="w-full pl-10 pr-24 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition shadow-sm"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {/* Employee Table */}
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         {/* Table Header */}
         <div className="px-6 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/30 grid grid-cols-[2fr_2fr_1.5fr_1fr_auto] gap-4 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          <span>Member</span>
+          <span>Member / ID</span>
           <span>Email</span>
           <span>Assigned Team</span>
           <span>Route</span>
@@ -375,7 +390,7 @@ export default function ManagerTeamPage() {
                 key={member.id}
                 className="group px-6 py-4 grid grid-cols-[2fr_2fr_1.5fr_1fr_auto] gap-4 items-center hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition text-sm"
               >
-                {/* Name + Avatar */}
+                {/* Name + Avatar + MemberIdBadge */}
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/20 to-violet-500/20 text-primary font-extrabold flex items-center justify-center text-xs flex-shrink-0 border border-primary/15">
                     {initials(member.fullName)}
@@ -384,9 +399,8 @@ export default function ManagerTeamPage() {
                     <div className="font-bold text-slate-900 dark:text-white truncate text-[13px]">
                       {member.fullName}
                     </div>
-                    <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <Hash className="w-2.5 h-2.5" />
-                      {member.id?.slice(0, 8)}
+                    <div className="mt-1">
+                      <MemberIdBadge id={member.id} role={member.role} />
                     </div>
                   </div>
                 </div>
@@ -468,6 +482,12 @@ export default function ManagerTeamPage() {
                 <CheckCircle2 className="w-4 h-4" /> Account Created Successfully!
               </div>
               <div className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
+                {createdCredentials.id && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-500">Employee ID: </span>
+                    <MemberIdBadge id={createdCredentials.id} role="employee" size="md" />
+                  </div>
+                )}
                 <div><span className="font-semibold text-slate-500">Name: </span>{createdCredentials.fullName}</div>
                 <div>
                   <span className="font-semibold text-slate-500">Email: </span>

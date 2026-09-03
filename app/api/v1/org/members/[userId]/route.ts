@@ -5,6 +5,23 @@ import { handleAuthError } from "@/shared/middleware/rbacGuard";
 export const runtime = "nodejs";
 
 /**
+ * GET /api/v1/org/members/[userId]
+ * Fetches single member profile by ID.
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
+  try {
+    const { userId } = await params;
+    const profile = await userController.getProfile(userId);
+    return NextResponse.json({ success: true, data: profile });
+  } catch (error) {
+    return handleAuthError(error);
+  }
+}
+
+/**
  * PATCH /api/v1/org/members/[userId]
  * Updates member role, team assignment, or both.
  * Accepts: { role?, teamId?, team_id?, teamName? }
