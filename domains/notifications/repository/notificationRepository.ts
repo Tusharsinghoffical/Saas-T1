@@ -67,6 +67,24 @@ export class SupabaseNotificationRepository implements INotificationRepository {
 
     if (error) {
       console.warn("Notifications lookup notice:", error.message);
+      try {
+        const adminClient = createAdminClient();
+        const { data: adminNotifs } = await (adminClient.from("notifications") as any)
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (adminNotifs && adminNotifs.length > 0) {
+          return adminNotifs.map((n: any) => ({
+            id: n.id,
+            userId: n.user_id,
+            type: n.type,
+            payload: n.payload,
+            readAt: n.read_at,
+            createdAt: n.created_at,
+          }));
+        }
+      } catch {}
       return [];
     }
 
