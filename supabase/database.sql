@@ -142,6 +142,9 @@ create table if not exists public.teams (
   updated_at timestamptz default now()
 );
 
+-- Ensure all columns exist on pre-existing teams table
+alter table public.teams add column if not exists manager_id uuid references public.profiles(id) on delete set null;
+
 -- 2.4 Team Members
 create table if not exists public.team_members (
   team_id uuid references public.teams(id) on delete cascade,
@@ -163,6 +166,13 @@ create table if not exists public.tasks (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Ensure all columns exist on pre-existing tasks table
+alter table public.tasks add column if not exists team_id uuid references public.teams(id) on delete set null;
+alter table public.tasks add column if not exists priority text default 'medium';
+alter table public.tasks add column if not exists due_date timestamptz;
+alter table public.tasks add column if not exists created_by uuid references public.profiles(id) on delete set null;
+alter table public.tasks add column if not exists updated_at timestamptz default now();
 
 -- 2.6 Task Assignees (Many-to-Many)
 create table if not exists public.task_assignees (
@@ -215,6 +225,9 @@ create table if not exists public.notifications (
   read_at timestamptz,
   created_at timestamptz default now()
 );
+
+-- Ensure read_at exists on pre-existing notifications table
+alter table public.notifications add column if not exists read_at timestamptz;
 
 -- 2.12 Activity / Audit Logs
 create table if not exists public.activity_logs (
