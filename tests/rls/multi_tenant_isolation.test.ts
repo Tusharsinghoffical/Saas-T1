@@ -427,7 +427,108 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
       expect(memberIds).not.toContain("user-b-1");
       expect(memberIds).not.toContain("user-b-2");
     });
+
+    it("P1 GDPR: exportOrgData strictly isolates data to requesting admin org and blocks non-admins", async () => {
+      const { exportOrgDataUseCase } = await import("@/domains/organization/usecases/exportOrgData");
+
+      // 1. Non-admin attempt -> 403 ForbiddenError
+      const employeeContext: RequestContext = {
+        userId: "emp-1",
+        orgId: "org-a",
+        role: "employee",
+        email: "emp@org-a.com",
+      };
+
+      await expect(exportOrgDataUseCase(employeeContext)).rejects.toThrow(
+        "Only organization admins can export organization data."
+      );
+
+      // 2. Org A admin export -> strictly returns Org A records
+      const adminContext: RequestContext = {
+        userId: "admin-1",
+        orgId: "org-a",
+        role: "admin",
+        email: "admin@org-a.com",
+      };
+
+      const mockClient = {
+        from: vi.fn().mockImplementation((table: string) => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockImplementation((col: string, val: string) => {
+            if (col === "id" && val === "org-a") {
+              return { maybeSingle: vi.fn().mockResolvedValue({ data: { id: "org-a", name: "Org Alpha" } }) };
+            }
+            if (col === "org_id") {
+              if (table === "profiles") return { data: [{ id: "u-a1", full_name: "Alice" }] };
+              if (table === "tasks") return { data: [{ id: "t-a1", title: "Alpha Task" }] };
+              if (table === "teams") return { data: [{ id: "team-a1", name: "Alpha Core" }] };
+              if (table === "activity_logs") {
+                return { order: vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [] }) }) };
+              }
+            }
+            return { data: [] };
+          }),
+          in: vi.fn().mockResolvedValue({ data: [] }),
+        })),
+      };
+
+      const result = await exportOrgDataUseCase(adminContext, mockClient);
+      expect(result.organization.id).toBe("org-a");
+      expect(result.organization.name).toBe("Org Alpha");
+      expect(result.members.length).toBe(1);
+      expect(result.tasks.length).toBe(1);
+      expect(result.tasks[0].title).toBe("Alpha Task");
+    });
+
+    it("P1 GDPR: requestOrgDeletion validates admin role and name confirmation", async () => {
+      const { requestOrgDeletionUseCase } = await import(
+        "@/domains/organization/usecases/requestOrgDeletion"
+      );
+
+      const managerContext: RequestContext = {
+        userId: "mgr-1",
+        orgId: "org-a",
+        role: "manager",
+        email: "mgr@org-a.com",
+      };
+
+      // Non-admin blocked
+      await expect(
+        requestOrgDeletionUseCase(managerContext, "Org Alpha")
+      ).rejects.toThrow("Only organization admins can request organization deletion.");
+
+      const adminContext: RequestContext = {
+        userId: "admin-1",
+        orgId: "org-a",
+        role: "admin",
+        email: "admin@org-a.com",
+      };
+
+      const mockClient = {
+        from: vi.fn().mockImplementation((table: string) => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockImplementation((col: string, val: string) => ({
+            maybeSingle: vi.fn().mockResolvedValue({ data: { id: "org-a", name: "Org Alpha" }, error: null }),
+          })),
+          update: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        })),
+      };
+
+      // Mismatched confirmation name -> rejected
+      await expect(
+        requestOrgDeletionUseCase(adminContext, "Wrong Name", undefined, mockClient)
+      ).rejects.toThrow("Organization name confirmation mismatch");
+
+      // Valid confirmation name -> succeeds with 30 day purge window
+      const deletionResult = await requestOrgDeletionUseCase(adminContext, "Org Alpha", "Closing down", mockClient);
+      expect(deletionResult.success).toBe(true);
+      expect(deletionResult.orgId).toBe("org-a");
+      expect(deletionResult.scheduledPurgeDate).toBeDefined();
+    });
   });
 });
+
 
 
