@@ -202,8 +202,11 @@ export class SupabaseAuthRepository implements IAuthRepository {
         msg.includes("ECONNREFUSED") ||
         msg.includes("ENOTFOUND")
       ) {
+        console.error(
+          "[authRepository] Database connection failure: Could not reach Supabase. Verify NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY in your hosting environment."
+        );
         throw new Error(
-          "Database connection error: Could not reach Supabase. Please verify that NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY are set correctly on your Render Environment dashboard."
+          "Authentication service is temporarily unavailable. Please try again shortly."
         );
       }
       throw err;
