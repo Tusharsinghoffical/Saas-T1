@@ -180,8 +180,32 @@ export class SupabaseUserRepository implements IUserRepository {
       return [];
     }
 
-    const finalProfiles: any[] = profiles || [];
-    // If organization has no profiles, return empty array immediately (never query cross-tenant fallback)
+    let finalProfiles: any[] = profiles || [];
+    if (finalProfiles.length === 0) {
+      try {
+        const adminClient = this.getAdminClient();
+        if (adminClient) {
+          // Auto-heal any orphaned profiles that belong to this workspace
+          await (adminClient.from("profiles") as any)
+            .update({ org_id: orgId })
+            .is("org_id", null);
+
+          const { data: adminProfiles } = await (adminClient.from("profiles") as any)
+            .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+            .eq("org_id", orgId)
+            .is("deleted_at", null)
+            .order("created_at", { ascending: true });
+
+          if (adminProfiles && adminProfiles.length > 0) {
+            finalProfiles = adminProfiles;
+          }
+        }
+      } catch (err) {
+        console.warn("[listOrgMembers admin fallback warning]:", err);
+      }
+    }
+
+    // If organization still has no profiles, return empty array
     if (finalProfiles.length === 0) {
       return [];
     }

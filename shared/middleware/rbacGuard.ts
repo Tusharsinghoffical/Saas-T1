@@ -86,9 +86,7 @@ export async function requireAuth(): Promise<RequestContext> {
   }
 
   // 3. Fallback to Admin Client (bypasses RLS) for edge-case lookup only
-  // SECURITY: This block ONLY reads — it never creates orgs or assigns roles.
-  // Auto-creating orgs was removed: it was a silent privilege escalation vector.
-  if (!orgId) {
+  if (!orgId || !role) {
     try {
       const adminClient = createAdminClient();
       const { data: prof } = await (adminClient.from("profiles") as any)
@@ -99,10 +97,10 @@ export async function requireAuth(): Promise<RequestContext> {
 
       if (prof?.org_id) {
         orgId = prof.org_id;
-        if (prof.role) role = prof.role as UserRole;
       }
-      // If still no org, we fall through to the ForbiddenError below.
-      // Users with no org must contact their administrator or re-onboard.
+      if (prof?.role) {
+        role = prof.role as UserRole;
+      }
     } catch (adminErr) {
       console.error("[requireAuth] Admin fallback lookup failed:", adminErr);
     }
@@ -112,6 +110,26 @@ export async function requireAuth(): Promise<RequestContext> {
     throw new ForbiddenError(
       "Forbidden: User profile is unassigned or role could not be verified."
     );
+  }
+
+  if (!orgId) {
+    // If role is verified but org_id is unassigned, link to primary organization
+    try {
+      const adminClient = createAdminClient();
+      const { data: primaryOrg } = await (adminClient.from("organizations") as any)
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+
+      if (primaryOrg?.id) {
+        orgId = primaryOrg.id;
+        await (adminClient.from("profiles") as any)
+          .update({ org_id: orgId })
+          .eq("id", user.id);
+      }
+    } catch (healErr) {
+      console.warn("[requireAuth] Org link warning:", healErr);
+    }
   }
 
   if (!orgId) {

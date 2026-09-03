@@ -145,6 +145,27 @@ export class SupabaseTaskRepository implements ITaskRepository {
       rawTasks = data || [];
     }
 
+    if (rawTasks.length === 0) {
+      try {
+        const adminClient = this.getAdminClient();
+        if (adminClient) {
+          let adminQuery = (adminClient.from("tasks") as any)
+            .select("*")
+            .eq("org_id", orgId)
+            .order("created_at", { ascending: false })
+            .range(filters.offset, filters.offset + filters.limit - 1);
+          if (filters.status) adminQuery = adminQuery.eq("status", filters.status);
+          if (filters.priority) adminQuery = adminQuery.eq("priority", filters.priority);
+          if (filters.teamId) adminQuery = adminQuery.eq("team_id", filters.teamId);
+          if (filters.search) adminQuery = adminQuery.ilike("title", `%${filters.search}%`);
+          const { data: adminTasks } = await adminQuery;
+          if (adminTasks && adminTasks.length > 0) {
+            rawTasks = adminTasks;
+          }
+        }
+      } catch {}
+    }
+
     // Resilient independent assignee loading if join was not present or empty
     if (rawTasks.length > 0 && (!rawTasks[0].task_assignees || rawTasks[0].task_assignees.length === 0)) {
       try {

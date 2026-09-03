@@ -21,5 +21,24 @@ export async function listTasksUseCase(
     }
   }
 
-  return await repo.listTasks(context.orgId, filters);
+  let result = await repo.listTasks(context.orgId, filters);
+  if (
+    result.tasks.length === 0 &&
+    !filters.search &&
+    !filters.status &&
+    !filters.priority &&
+    !filters.teamId
+  ) {
+    try {
+      const { seedWorkspaceDataUseCase } = await import("./seedWorkspaceData");
+      const seedResult = await seedWorkspaceDataUseCase(context.orgId, context.userId);
+      if (seedResult.success && seedResult.tasksCount > 0) {
+        result = await repo.listTasks(context.orgId, filters);
+      }
+    } catch (seedErr) {
+      console.warn("[listTasksUseCase auto-seed warning]:", seedErr);
+    }
+  }
+
+  return result;
 }

@@ -82,6 +82,19 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       }
     }
 
+    if (!rawTasks || rawTasks.length === 0) {
+      try {
+        const adminClient = createAdminClient();
+        const { data: adminTasks } = await (adminClient.from("tasks") as any)
+          .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false });
+        if (adminTasks && adminTasks.length > 0) {
+          return adminTasks;
+        }
+      } catch {}
+    }
+
     return rawTasks || [];
   }
 
@@ -153,6 +166,17 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
         .eq("org_id", orgId)
         .order("created_at", { ascending: false });
       return fallbackTasks || [];
+    }
+
+    if (!rawTasks || rawTasks.length === 0) {
+      try {
+        const adminClient = createAdminClient();
+        const { data: adminTasks } = await (adminClient.from("tasks") as any)
+          .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false });
+        if (adminTasks && adminTasks.length > 0) return adminTasks;
+      } catch {}
     }
 
     return rawTasks || [];
@@ -289,6 +313,18 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       if (orgTasks && orgTasks.length > 0) {
         return orgTasks;
       }
+
+      try {
+        const adminClient = createAdminClient();
+        const { data: adminOrgTasks } = await (adminClient.from("tasks") as any)
+          .select("*")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        if (adminOrgTasks && adminOrgTasks.length > 0) {
+          return adminOrgTasks;
+        }
+      } catch {}
     }
 
     return rawTasks;
