@@ -56,12 +56,17 @@ export class SupabaseActivityRepository implements IActivityRepository {
       const { error } = await (client.from("activity_logs") as any).insert(payload);
 
       if (error) {
-        if (error.message?.includes("diff") && payload.diff !== undefined) {
-          const { diff, ...fallbackPayload } = payload;
-          const { error: retryErr } = await (client.from("activity_logs") as any).insert(fallbackPayload);
-          if (!retryErr) return true;
+        if (error.message?.includes("column") || error.message?.includes("schema cache")) {
+          const minimalPayload: any = {
+            org_id: input.orgId,
+            action: input.action,
+          };
+          if (isActorUuid) minimalPayload.actor_id = input.actorId;
+          try {
+            const { error: retryErr } = await (client.from("activity_logs") as any).insert(minimalPayload);
+            if (!retryErr) return true;
+          } catch {}
         }
-        console.warn("[Audit Log Insert Notice]", error.message);
         return false;
       }
       return true;
@@ -349,7 +354,15 @@ export class SupabaseActivityRepository implements IActivityRepository {
       const { data: rawLogs, count, error } = await query.range(from, to);
 
       if (error) {
-        console.error("[listLogs Error]", error.message);
+        try {
+          const backfilled = await this.backfillFromWorkspace(client, orgId);
+          if (backfilled.length > 0) {
+            const fromIdx = (filters.page - 1) * filters.limit;
+            const paginated = backfilled.slice(fromIdx, fromIdx + filters.limit);
+            return { logs: paginated, total: backfilled.length };
+          }
+        } catch {}
+        return { logs: [], total: 0 };
       }
 
       let logsList = rawLogs || [];
