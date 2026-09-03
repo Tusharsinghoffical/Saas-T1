@@ -44,7 +44,73 @@ export function evaluateRoleAccess(role: UserRole | string, pathname: string): s
   return null;
 }
 
+/**
+ * Evaluates whether an incoming request requires canonical hostname or HTTPS 308 redirection.
+ * Preserves query strings and paths, while ignoring local development hosts.
+ */
+export function evaluateCanonicalRedirect(
+  url: URL,
+  headers: Headers,
+  canonicalAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL
+): string | null {
+  const host = headers.get("x-forwarded-host") || headers.get("host") || url.host;
+  const proto = headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
+
+  // Skip local development
+  if (
+    !host ||
+    host.includes("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("0.0.0.0") ||
+    host.includes("192.168.")
+  ) {
+    return null;
+  }
+
+  let canonicalHost = "";
+  if (canonicalAppUrl) {
+    try {
+      const parsed = new URL(canonicalAppUrl);
+      if (!parsed.host.includes("localhost")) {
+        canonicalHost = parsed.host;
+      }
+    } catch {}
+  }
+
+  let targetHost = host;
+  let shouldRedirect = false;
+
+  // Check canonical host mismatch (e.g. www vs apex)
+  if (canonicalHost && host.toLowerCase() !== canonicalHost.toLowerCase()) {
+    const cleanHost = host.toLowerCase().replace(/^www\./, "");
+    const cleanCanonical = canonicalHost.toLowerCase().replace(/^www\./, "");
+    if (cleanHost === cleanCanonical) {
+      targetHost = canonicalHost;
+      shouldRedirect = true;
+    }
+  }
+
+  // Check HTTP -> HTTPS
+  if (proto.toLowerCase() === "http") {
+    shouldRedirect = true;
+  }
+
+  if (shouldRedirect) {
+    const search = url.search;
+    const pathname = url.pathname;
+    return `https://${targetHost}${pathname}${search}`;
+  }
+
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
+  // 1. Enforce canonical hostname & HTTPS permanent redirect (308) in production
+  const canonicalRedirectUrl = evaluateCanonicalRedirect(request.nextUrl, request.headers);
+  if (canonicalRedirectUrl) {
+    return NextResponse.redirect(new URL(canonicalRedirectUrl), 308);
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,

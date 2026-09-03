@@ -359,6 +359,47 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
       }
     });
+
+    it("P1: evaluateCanonicalRedirect enforces HTTPS and canonical apex/www redirect while preserving query parameters", async () => {
+      const { evaluateCanonicalRedirect } = await import("@/middleware");
+
+      // 1. HTTP to HTTPS on apex
+      const url1 = new URL("http://tasqone.com/tasks?priority=high&sort=asc");
+      const headers1 = new Headers({
+        host: "tasqone.com",
+        "x-forwarded-proto": "http",
+      });
+      const redirect1 = evaluateCanonicalRedirect(url1, headers1, "https://tasqone.com");
+      expect(redirect1).toBe("https://tasqone.com/tasks?priority=high&sort=asc");
+
+      // 2. WWW to Apex canonical
+      const url2 = new URL("https://www.tasqone.com/login?redirect=/admin");
+      const headers2 = new Headers({
+        host: "www.tasqone.com",
+        "x-forwarded-proto": "https",
+      });
+      const redirect2 = evaluateCanonicalRedirect(url2, headers2, "https://tasqone.com");
+      expect(redirect2).toBe("https://tasqone.com/login?redirect=/admin");
+
+      // 3. Localhost bypass
+      const urlLocal = new URL("http://localhost:3000/tasks?query=test");
+      const headersLocal = new Headers({
+        host: "localhost:3000",
+        "x-forwarded-proto": "http",
+      });
+      const redirectLocal = evaluateCanonicalRedirect(urlLocal, headersLocal, "https://tasqone.com");
+      expect(redirectLocal).toBeNull();
+
+      // 4. Already canonical HTTPS
+      const urlCanonical = new URL("https://tasqone.com/features");
+      const headersCanonical = new Headers({
+        host: "tasqone.com",
+        "x-forwarded-proto": "https",
+      });
+      const redirectCanonical = evaluateCanonicalRedirect(urlCanonical, headersCanonical, "https://tasqone.com");
+      expect(redirectCanonical).toBeNull();
+    });
   });
 });
+
 
