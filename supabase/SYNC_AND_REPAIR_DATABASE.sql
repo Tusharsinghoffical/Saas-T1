@@ -312,4 +312,150 @@ using (
 );
 
 
+-- ==============================================================================
+-- 6. SAMPLE WORKSPACE DATA SEED (Instantly populates realistic tasks & teams)
+-- ==============================================================================
+do $$
+declare
+  r_org record;
+  v_user_id uuid;
+  v_team_id uuid;
+  v_task_id uuid;
+  v_now timestamptz := now();
+begin
+  for r_org in (select id from public.organizations) loop
+    -- 1. Get first profile in this org
+    select id into v_user_id from public.profiles where org_id = r_org.id order by created_at asc limit 1;
 
+    -- 2. Ensure Team exists
+    select id into v_team_id from public.teams where org_id = r_org.id limit 1;
+    if v_team_id is null then
+      insert into public.teams (org_id, name)
+      values (r_org.id, 'Engineering & Product')
+      returning id into v_team_id;
+
+      insert into public.teams (org_id, name)
+      values (r_org.id, 'Operations & Growth');
+    end if;
+
+    -- 3. Delete old/corrupted tasks if count is 0
+    if not exists (select 1 from public.tasks where org_id = r_org.id) then
+      -- Task 1: Completed
+      insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
+      values (
+        r_org.id,
+        v_team_id,
+        'Initialize TASQ-ONE Work OS workspace',
+        'Successfully configured organization profile, database schemas, and administrator credentials.',
+        'completed',
+        'low',
+        v_now - interval '1 day',
+        v_user_id,
+        v_now - interval '4 days',
+        v_now - interval '1 day'
+      ) returning id into v_task_id;
+      if v_user_id is not null then
+        insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
+      end if;
+
+      -- Task 2: In Progress (Urgent)
+      insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
+      values (
+        r_org.id,
+        v_team_id,
+        'Connect repository URLs & project resources',
+        'Attach GitHub repository links, Figma files, and documentation URLs directly to tasks.',
+        'in_progress',
+        'urgent',
+        v_now + interval '1 day',
+        v_user_id,
+        v_now - interval '2 days',
+        v_now
+      ) returning id into v_task_id;
+      if v_user_id is not null then
+        insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
+      end if;
+
+      -- Task 3: In Progress (High)
+      insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
+      values (
+        r_org.id,
+        v_team_id,
+        'Review sprint milestones & workload delegation',
+        'Organize pending backlog items, estimate delivery velocity, and review sprint roadmap.',
+        'in_progress',
+        'high',
+        v_now + interval '2 days',
+        v_user_id,
+        v_now - interval '1 day',
+        v_now
+      ) returning id into v_task_id;
+      if v_user_id is not null then
+        insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
+      end if;
+
+      -- Task 4: In Review (Medium)
+      insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
+      values (
+        r_org.id,
+        v_team_id,
+        'Verify workspace security & notification settings',
+        'Audit multi-tenant row-level access controls and configure Slack notification channels.',
+        'in_review',
+        'medium',
+        v_now + interval '3 days',
+        v_user_id,
+        v_now - interval '3 days',
+        v_now
+      ) returning id into v_task_id;
+      if v_user_id is not null then
+        insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
+      end if;
+
+      -- Task 5: Pending (High)
+      insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
+      values (
+        r_org.id,
+        v_team_id,
+        'Invite team members & assign role permissions',
+        'Send email invites or magic links to team leads and employees for sprint collaboration.',
+        'pending',
+        'high',
+        v_now + interval '5 days',
+        v_user_id,
+        v_now,
+        v_now
+      ) returning id into v_task_id;
+      if v_user_id is not null then
+        insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
+      end if;
+
+      -- Task 6: Pending (Medium)
+      insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
+      values (
+        r_org.id,
+        v_team_id,
+        'Explore AI workload suggestions & task optimizer',
+        'Test Groq Llama 3 AI suggestions for subtask generation and workload rebalancing.',
+        'pending',
+        'medium',
+        v_now + interval '7 days',
+        v_user_id,
+        v_now,
+        v_now
+      ) returning id into v_task_id;
+      if v_user_id is not null then
+        insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
+      end if;
+
+      -- Add a sample comment
+      insert into public.task_comments (task_id, user_id, body)
+      values (v_task_id, v_user_id, 'Welcome to TASQ-ONE! Feel free to edit or drag this task across Kanban columns.');
+
+      -- Add activity log
+      insert into public.activity_logs (org_id, actor_id, action, entity, entity_id, diff)
+      values (r_org.id, v_user_id, 'workspace.seeded', 'tasks', v_task_id, '{"message": "Workspace initialized with 6 sample tasks."}'::jsonb);
+    end if;
+  end loop;
+end;
+$$;
