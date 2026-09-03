@@ -41,24 +41,22 @@ const serverEnvSchema = z.object({
     .min(1, "GROQ_API_KEY is required for AI features"),
   UPSTASH_REDIS_REST_URL: z
     .string()
-    .url("UPSTASH_REDIS_REST_URL must be a valid URL")
-    .min(1, "UPSTASH_REDIS_REST_URL is required for rate limiting & cache"),
+    .optional(),
   UPSTASH_REDIS_REST_TOKEN: z
     .string()
-    .min(1, "UPSTASH_REDIS_REST_TOKEN is required"),
+    .optional(),
   CLOUDFLARE_R2_ACCESS_KEY_ID: z
     .string()
-    .min(1, "CLOUDFLARE_R2_ACCESS_KEY_ID is required for attachments"),
+    .optional(),
   CLOUDFLARE_R2_SECRET_ACCESS_KEY: z
     .string()
-    .min(1, "CLOUDFLARE_R2_SECRET_ACCESS_KEY is required"),
+    .optional(),
   CLOUDFLARE_R2_BUCKET: z
     .string()
-    .min(1, "CLOUDFLARE_R2_BUCKET is required"),
+    .optional(),
   CLOUDFLARE_R2_ENDPOINT: z
     .string()
-    .url("CLOUDFLARE_R2_ENDPOINT must be a valid URL")
-    .min(1, "CLOUDFLARE_R2_ENDPOINT is required"),
+    .optional(),
   RESEND_API_KEY: z
     .string()
     .min(1, "RESEND_API_KEY is required for transactional emails"),

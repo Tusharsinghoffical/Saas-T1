@@ -32,14 +32,6 @@ services:
         sync: false
       - key: UPSTASH_REDIS_REST_TOKEN
         sync: false
-      - key: CLOUDFLARE_R2_ACCESS_KEY_ID
-        sync: false
-      - key: CLOUDFLARE_R2_SECRET_ACCESS_KEY
-        sync: false
-      - key: CLOUDFLARE_R2_BUCKET
-        sync: false
-      - key: CLOUDFLARE_R2_ENDPOINT
-        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
@@ -56,4 +48,3 @@ services:
         sync: false
       - key: NEXT_PUBLIC_ENABLE_BILLING
         value: "false"
-
