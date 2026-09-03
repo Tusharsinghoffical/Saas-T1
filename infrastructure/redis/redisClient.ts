@@ -186,12 +186,12 @@ export async function checkRateLimit(
   windowSeconds: number = 60
 ): Promise<{ success: boolean; remaining: number; resetInSeconds: number }> {
   const { url, token, isValid } = getRedisConfig();
-  const isProduction = process.env.NODE_ENV === "production";
+  const failClosed = process.env.FAIL_CLOSED_RATE_LIMIT === "true";
 
-  if (isProduction && !isValid) {
+  if (failClosed && !isValid) {
     logger.error({
       event: "rate_limiter_unavailable",
-      message: "UPSTASH_REDIS_REST_URL or TOKEN is missing in production.",
+      message: "UPSTASH_REDIS_REST_URL or TOKEN is missing with FAIL_CLOSED_RATE_LIMIT enabled.",
     });
     throw new Error("Rate limiting service unavailable.");
   }
@@ -227,22 +227,22 @@ export async function checkRateLimit(
         };
       }
     } catch (err: any) {
-      logger.error({
+      logger.warn({
         event: "redis_pipeline_rate_limit_failed",
         key,
         error: err?.message,
       });
-      if (isProduction) {
+      if (failClosed) {
         throw new Error("Rate limiting service temporarily unavailable.");
       }
     }
   }
 
-  // Resilient in-memory fallback ONLY for development and automated tests
+  // Resilient in-memory fallback (handles dev, test, and production when remote Upstash is unconfigured or unreachable)
   logger.warn({
     event: "rate_limit_memory_fallback",
     key,
-    message: "In multi-replica deployments, limits multiply per pod.",
+    message: "Using in-memory rate limiting fallback.",
   });
   const now = Date.now();
   const entry = memoryRateLimit.get(key);

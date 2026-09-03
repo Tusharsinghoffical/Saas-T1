@@ -104,5 +104,20 @@ describe("P2.5: Organization Settings Ownership Check (Cross-Org IDOR)", () => {
     // Ensure database layer was never touched
     expect(mockRepo.updateOrg).not.toHaveBeenCalled();
   });
+
+  it("AUDIT-INT-REDIS-CRASH: checkRateLimit falls back to in-memory limiter in production when Upstash is unconfigured", async () => {
+    const { checkRateLimit } = await import("@/infrastructure/redis/redisClient");
+    const originalEnv = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = "production";
+      const result = await checkRateLimit("unit-test-rate-key", 5, 60);
+      expect(result.success).toBe(true);
+      expect(result.remaining).toBe(4);
+      expect(result.resetInSeconds).toBeGreaterThan(0);
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+    }
+  });
 });
+
 
