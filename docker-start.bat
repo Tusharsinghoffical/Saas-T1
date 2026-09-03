@@ -21,8 +21,8 @@ if %ERRORLEVEL% EQU 0 (
     echo.
     echo ======================================================================
     echo [OK] TASQ-ONE is running inside Docker!
-    echo [*] App URL: http://localhost:3000
-    echo [*] Health:  http://localhost:3000/api/v1/health
+    echo [*] App URL: https://tasq-one.onrender.com
+    echo [*] Health:  https://tasq-one.onrender.com/api/v1/health
     echo.
     echo [*] To view live logs, run:
     echo     docker compose logs -f

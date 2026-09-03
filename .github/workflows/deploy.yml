@@ -64,12 +64,12 @@ jobs:
           CI: "true"
           DATABASE_URL: postgres://postgres:postgrespassword@localhost:5432/postgres
           CRON_SECRET: ci_test_cron_secret_32_chars_long
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: https://tasq-one.onrender.com
 
       - name: Run Next.js Production Build
         run: npm run build
         env:
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_URL: https://tasq-one.onrender.com
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://demo.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'demo-anon-key' }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'demo-service-key' }}
