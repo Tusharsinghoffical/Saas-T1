@@ -455,6 +455,7 @@ exception
 end $$;
 
 grant anon, authenticated, service_role to admin, manager, employee;
+grant admin, manager, employee to authenticator;
 grant all on all tables in schema public to admin, manager, employee;
 grant all on all sequences in schema public to admin, manager, employee;
 grant all on all routines in schema public to admin, manager, employee;

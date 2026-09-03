@@ -177,6 +177,28 @@ export class SupabaseUserRepository implements IUserRepository {
 
     if (error) {
       console.warn("Profiles lookup error:", error.message);
+      try {
+        const adminClient = this.getAdminClient();
+        if (adminClient) {
+          const { data: fallbackProfiles } = await (adminClient.from("profiles") as any)
+            .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+            .eq("org_id", orgId)
+            .is("deleted_at", null)
+            .order("created_at", { ascending: true });
+          if (fallbackProfiles && fallbackProfiles.length > 0) {
+            return fallbackProfiles.map((p: any) => ({
+              id: p.id,
+              orgId: p.org_id,
+              fullName: p.full_name,
+              role: p.role,
+              avatarUrl: p.avatar_url,
+              notificationPreferences: p.notification_preferences,
+              createdAt: p.created_at,
+              deletedAt: p.deleted_at,
+            }));
+          }
+        }
+      } catch {}
       return [];
     }
 

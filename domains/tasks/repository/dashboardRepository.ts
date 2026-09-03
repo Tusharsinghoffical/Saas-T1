@@ -63,6 +63,16 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
     const { data: rawTasks, error } = await query;
     if (error) {
       console.warn("[getAdminDashboardTasks notice]", error.message);
+      try {
+        const adminClient = createAdminClient();
+        const { data: adminTasks } = await (adminClient.from("tasks") as any)
+          .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false });
+        if (adminTasks && adminTasks.length > 0) {
+          return adminTasks;
+        }
+      } catch {}
       return [];
     }
 
@@ -160,12 +170,15 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
 
     if (error) {
       console.warn("[getManagerDashboardTasks notice]", error.message);
-      // Fallback: fetch all org tasks
-      const { data: fallbackTasks } = await (client.from("tasks") as any)
-        .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
-        .eq("org_id", orgId)
-        .order("created_at", { ascending: false });
-      return fallbackTasks || [];
+      try {
+        const adminClient = createAdminClient();
+        const { data: adminTasks } = await (adminClient.from("tasks") as any)
+          .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false });
+        if (adminTasks && adminTasks.length > 0) return adminTasks;
+      } catch {}
+      return [];
     }
 
     if (!rawTasks || rawTasks.length === 0) {

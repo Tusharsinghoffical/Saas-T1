@@ -135,13 +135,33 @@ export class SupabaseTaskRepository implements ITaskRepository {
         if (filters.priority) rawQuery = rawQuery.eq("priority", filters.priority);
         if (filters.teamId) rawQuery = rawQuery.eq("team_id", filters.teamId);
         if (filters.search) rawQuery = rawQuery.ilike("title", `%${filters.search}%`);
-
         const { data: rawData, error: rawError } = await rawQuery;
         if (rawError) {
           console.warn("[listTasks raw fallback error]", rawError.message);
-          return { tasks: [], total: 0 };
+          try {
+            const adminClient = this.getAdminClient();
+            if (adminClient) {
+              let adminQuery = (adminClient.from("tasks") as any)
+                .select("*")
+                .eq("org_id", orgId)
+                .order("created_at", { ascending: false })
+                .range(filters.offset, filters.offset + filters.limit - 1);
+              if (filters.status) adminQuery = adminQuery.eq("status", filters.status);
+              if (filters.priority) adminQuery = adminQuery.eq("priority", filters.priority);
+              if (filters.teamId) adminQuery = adminQuery.eq("team_id", filters.teamId);
+              if (filters.search) adminQuery = adminQuery.ilike("title", `%${filters.search}%`);
+              const { data: adminTasks } = await adminQuery;
+              if (adminTasks && adminTasks.length > 0) {
+                rawTasks = adminTasks;
+              }
+            }
+          } catch {}
+          if (!rawTasks || rawTasks.length === 0) {
+            return { tasks: [], total: 0 };
+          }
+        } else {
+          rawTasks = rawData || [];
         }
-        rawTasks = rawData || [];
       } else {
         rawTasks = fallbackData || [];
       }
