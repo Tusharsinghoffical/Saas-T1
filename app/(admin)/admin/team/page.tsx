@@ -86,6 +86,11 @@ export default function AdminTeamPage() {
     setIsLoading(true);
     try {
       const res = await fetch("/api/v1/org/members");
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        console.warn("[fetchMembers] Server returned non-JSON response:", res.status);
+        return;
+      }
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setMembers(
@@ -100,11 +105,11 @@ export default function AdminTeamPage() {
             createdAt: m.createdAt || m.created_at,
           }))
         );
-      } else {
-        showToast(json.error || "Failed to load members. Check server logs.", "error");
+      } else if (json.error) {
+        showToast(json.error, "error");
       }
     } catch (err: any) {
-      showToast("Network error: " + (err?.message || "Could not reach server."), "error");
+      console.warn("[fetchMembers error]", err);
     } finally {
       setIsLoading(false);
     }

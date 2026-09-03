@@ -181,6 +181,14 @@ export default function SignupPage() {
       const orgName = encodeURIComponent(response.data?.orgName || sanitizedData.orgName);
       router.push(`/onboarding?org_id=${orgId}&org_name=${orgName}`);
     } catch (err: any) {
+      if (
+        err?.message?.includes("Server Action") ||
+        err?.message?.includes("failed-to-find-server-action") ||
+        err?.message?.includes("not found on the server")
+      ) {
+        window.location.reload();
+        return;
+      }
       setServerError(err.message || "An unexpected network error occurred.");
       recordFailedAttempt();
       setIsLoading(false);

@@ -149,6 +149,15 @@ export default function LoginPage() {
 
       router.push(response.data?.redirectUrl || "/admin/dashboard");
     } catch (err: any) {
+      if (
+        err?.message?.includes("Server Action") ||
+        err?.message?.includes("failed-to-find-server-action") ||
+        err?.message?.includes("not found on the server")
+      ) {
+        // Automatically reload page to fetch the newly deployed server actions
+        window.location.reload();
+        return;
+      }
       setServerError(err.message || "An unexpected network error occurred.");
       recordFailedAttempt();
       setIsLoading(false);
@@ -179,9 +188,19 @@ export default function LoginPage() {
         return;
       }
 
-      setMagicLinkSuccess(response.data?.message || "Magic sign-in link dispatched! Check your inbox.");
+      setMagicLinkSuccess(
+        `Magic link sent to ${sanitizedEmail}! Check your inbox to sign in.`
+      );
     } catch (err: any) {
-      setServerError(err.message || "An unexpected error occurred.");
+      if (
+        err?.message?.includes("Server Action") ||
+        err?.message?.includes("failed-to-find-server-action") ||
+        err?.message?.includes("not found on the server")
+      ) {
+        window.location.reload();
+        return;
+      }
+      setServerError(err.message || "Failed to send magic link.");
       setIsLoading(false);
     }
   };
