@@ -1,4 +1,5 @@
 import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import { logger } from "@/infrastructure/logger/logger";
 import { ActivityLog, ActivityLogInput, ActivityFilterDTO } from "../entities/ActivityLog";
 
 export interface IActivityRepository {
@@ -15,19 +16,25 @@ export class SupabaseActivityRepository implements IActivityRepository {
 
   private getClient() {
     try {
-      const adminClient = createAdminClient();
-      if (adminClient) return adminClient;
+      return createClient();
     } catch {
-      // Fallback if admin client cannot be created
+      try {
+        return createAdminClient();
+      } catch {
+        return createClient();
+      }
     }
-    return createClient();
   }
 
   async recordLog(input: ActivityLogInput): Promise<boolean> {
     if (!this.hasSupabase()) {
-      console.log(
-        `[Audit Log Mock] Org: ${input.orgId} | Actor: ${input.actorId} | Action: ${input.action} | Entity: ${input.entity}#${input.entityId}`
-      );
+      logger.debug({
+        event: "audit_log_mock",
+        orgId: input.orgId,
+        actorId: input.actorId,
+        action: input.action,
+        entity: `${input.entity}#${input.entityId}`,
+      });
       return true;
     }
 
