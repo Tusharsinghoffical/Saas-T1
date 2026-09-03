@@ -96,7 +96,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
     let { data, error } = await query;
 
     if (error) {
-      // Fallback without embedded task_dependencies if schema relationship is ambiguous
+      // Fallback 1: Query without embedded task_dependencies
       let fallbackQuery = (supabase as any)
         .from("tasks")
         .select(
@@ -119,12 +119,67 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
       const { data: fallbackData, error: fallbackError } = await fallbackQuery;
       if (fallbackError) {
-        console.warn("[listTasks error fallback]", fallbackError.message);
-        return { tasks: [], total: 0 };
+        // Fallback 2: Direct raw tasks query without joins to guarantee data displays
+        let rawQuery = (supabase as any)
+          .from("tasks")
+          .select("*")
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: false })
+          .range(filters.offset, filters.offset + filters.limit - 1);
+
+        if (filters.status) rawQuery = rawQuery.eq("status", filters.status);
+        if (filters.priority) rawQuery = rawQuery.eq("priority", filters.priority);
+        if (filters.teamId) rawQuery = rawQuery.eq("team_id", filters.teamId);
+        if (filters.search) rawQuery = rawQuery.ilike("title", `%${filters.search}%`);
+
+        const { data: rawData, error: rawError } = await rawQuery;
+        if (rawError) {
+          console.warn("[listTasks raw fallback error]", rawError.message);
+          return { tasks: [], total: 0 };
+        }
+        rawTasks = rawData || [];
+      } else {
+        rawTasks = fallbackData || [];
       }
-      rawTasks = fallbackData || [];
     } else {
       rawTasks = data || [];
+    }
+
+    // Resilient independent assignee loading if join was not present or empty
+    if (rawTasks.length > 0 && (!rawTasks[0].task_assignees || rawTasks[0].task_assignees.length === 0)) {
+      try {
+        const taskIds = rawTasks.map((t: any) => t.id);
+        const { data: assigneesData } = await (supabase as any)
+          .from("task_assignees")
+          .select("task_id, user_id")
+          .in("task_id", taskIds);
+
+        if (assigneesData && assigneesData.length > 0) {
+          const userIds = Array.from(new Set(assigneesData.map((a: any) => a.user_id)));
+          const { data: profilesData } = await (supabase as any)
+            .from("profiles")
+            .select("id, full_name, avatar_url")
+            .in("id", userIds);
+
+          const profileMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+          const assigneesByTask = new Map<string, any[]>();
+          for (const a of assigneesData) {
+            const list = assigneesByTask.get(a.task_id) || [];
+            list.push({
+              user_id: a.user_id,
+              profiles: profileMap.get(a.user_id) || { id: a.user_id, full_name: "Member", avatar_url: null },
+            });
+            assigneesByTask.set(a.task_id, list);
+          }
+          for (const t of rawTasks) {
+            if (!t.task_assignees || t.task_assignees.length === 0) {
+              t.task_assignees = assigneesByTask.get(t.id) || [];
+            }
+          }
+        }
+      } catch (assigneeErr) {
+        console.warn("[listTasks assignee hydration notice]", assigneeErr);
+      }
     }
 
     // Auto-seed starter workspace tasks if organization has zero tasks on initial load

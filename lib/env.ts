@@ -6,7 +6,7 @@ const clientEnvSchema = z.object({
     .string()
     .url("NEXT_PUBLIC_APP_URL must be a valid URL")
     .optional()
-    .default("http://localhost:3000"),
+    .default("https://tasq-one.onrender.com"),
   NEXT_PUBLIC_ENABLE_BILLING: z
     .string()
     .optional()

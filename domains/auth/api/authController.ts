@@ -93,7 +93,7 @@ export class AuthController {
       );
     }
 
-    const baseUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com";
     const redirectTo = `${baseUrl}/auth/callback`;
     return await loginWithMagicLinkUseCase(validated.data.email, redirectTo);
   }

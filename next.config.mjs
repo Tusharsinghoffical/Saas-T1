@@ -27,7 +27,7 @@ const nextConfig = {
       );
     }
 
-    const corsOrigin = appUrl || (isProd ? "" : "http://localhost:3000");
+    const corsOrigin = appUrl || "https://tasq-one.onrender.com";
 
     const cspHeader = `
       default-src 'self';

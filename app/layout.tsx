@@ -18,7 +18,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com"),
   title: "TASQ-ONE — Multi-Tenant Work OS for SMBs",
   description: "AI-assisted multi-tenant SaaS task management platform for small and medium businesses.",
   manifest: "/manifest.json",

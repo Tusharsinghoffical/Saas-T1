@@ -514,7 +514,7 @@ export class SupabaseUserRepository implements IUserRepository {
     }
 
     const adminClient = createAdminClient();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com";
     const redirectTo = `${appUrl}/accept-invite`;
 
     // Ensure default team if teamId not passed

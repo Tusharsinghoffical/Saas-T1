@@ -21,6 +21,20 @@
 create extension if not exists "pgcrypto";
 create extension if not exists "uuid-ossp";
 
+-- Ensure Supabase Roles exist (required for fresh/CI Postgres, harmless no-op on Supabase Cloud)
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then
+    create role anon nologin;
+  end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then
+    create role authenticated nologin;
+  end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then
+    create role service_role nologin;
+  end if;
+end $$;
+
 -- CI / Local Postgres Auth Schema compatibility (harmless on Supabase Cloud)
 create schema if not exists auth;
 create table if not exists auth.users (
@@ -691,6 +705,17 @@ declare
   v_task_id uuid;
   v_now timestamptz := now();
 begin
+  -- A. Ensure at least one primary organization exists
+  if not exists (select 1 from public.organizations) then
+    insert into public.organizations (name, timezone)
+    values ('Revonza Studio', 'Asia/Kolkata');
+  end if;
+
+  -- B. Auto-heal any profiles that have null org_id by attaching them to the primary organization
+  update public.profiles
+  set org_id = (select id from public.organizations order by created_at asc limit 1)
+  where org_id is null;
+
   -- Loop through all existing organizations
   for r_org in (select id from public.organizations) loop
     -- 1. Identify existing users by role in this organization
