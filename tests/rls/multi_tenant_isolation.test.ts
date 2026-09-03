@@ -329,6 +329,105 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
         )
       ).rejects.toThrow("Unsupported file type");
     });
+
+    it("P0: listOrgMembers returns empty array for empty org and never leaks profiles from another org", async () => {
+      const { SupabaseUserRepository } = await import("@/domains/users/repository/userRepository");
+      const repo = new SupabaseUserRepository();
+
+      // Mock hasSupabase to true
+      (repo as any).hasSupabase = () => true;
+
+      // Mock getClient returning empty profiles for Org A
+      const mockProfilesQuery = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        is: vi.fn().mockReturnThis(),
+        order: vi.fn().mockResolvedValue({ data: [], error: null }),
+      };
+
+      (repo as any).getClient = () => ({
+        from: vi.fn().mockImplementation((table: string) => {
+          if (table === "profiles") return mockProfilesQuery;
+          return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: [] }) };
+        }),
+      });
+
+      const members = await repo.listOrgMembers("org-empty-a");
+      expect(members).toEqual([]);
+      // Ensure select was filtered strictly by org-empty-a
+      expect(mockProfilesQuery.eq).toHaveBeenCalledWith("org_id", "org-empty-a");
+    });
+
+    it("P0: listOrgMembers never injects auth users from Org B into Org A", async () => {
+      const { SupabaseUserRepository } = await import("@/domains/users/repository/userRepository");
+      const repo = new SupabaseUserRepository();
+
+      (repo as any).hasSupabase = () => true;
+
+      // Org A has only Alice
+      const orgAProfiles = [
+        {
+          id: "user-a-1",
+          org_id: "org-a",
+          full_name: "Alice A",
+          role: "admin",
+          avatar_url: null,
+          notification_preferences: null,
+          created_at: new Date().toISOString(),
+          deleted_at: null,
+        },
+      ];
+
+      (repo as any).getClient = () => ({
+        from: vi.fn().mockImplementation((table: string) => {
+          if (table === "profiles") {
+            return {
+              select: vi.fn().mockReturnThis(),
+              eq: vi.fn().mockReturnThis(),
+              is: vi.fn().mockReturnThis(),
+              order: vi.fn().mockResolvedValue({ data: orgAProfiles, error: null }),
+            };
+          }
+          if (table === "team_members") {
+            return {
+              select: vi.fn().mockReturnThis(),
+              in: vi.fn().mockResolvedValue({ data: [] }),
+            };
+          }
+          return {};
+        }),
+      });
+
+      // Global auth list has Alice (Org A), plus Bob and Charlie (Org B)
+      (repo as any).getAdminClient = () => ({
+        auth: {
+          admin: {
+            listUsers: vi.fn().mockResolvedValue({
+              data: {
+                users: [
+                  { id: "user-a-1", email: "alice@org-a.com" },
+                  { id: "user-b-1", email: "bob@org-b.com" },
+                  { id: "user-b-2", email: "charlie@org-b.com" },
+                ],
+              },
+            }),
+          },
+        },
+      });
+
+      const members = await repo.listOrgMembers("org-a");
+
+      // Assert only Alice is returned
+      expect(members.length).toBe(1);
+      expect(members[0].id).toBe("user-a-1");
+      expect(members[0].email).toBe("alice@org-a.com");
+
+      // Assert Bob and Charlie are NEVER injected into Org A
+      const memberIds = members.map((m) => m.id);
+      expect(memberIds).not.toContain("user-b-1");
+      expect(memberIds).not.toContain("user-b-2");
+    });
   });
 });
+
 

@@ -44,6 +44,14 @@ export class SupabaseUserRepository implements IUserRepository {
     );
   }
 
+  private getClient() {
+    return createClient();
+  }
+
+  private getAdminClient() {
+    return createAdminClient();
+  }
+
   async getProfileById(userId: string): Promise<UserProfile | null> {
     if (!this.hasSupabase()) {
       if (process.env.NODE_ENV === "production") {
@@ -64,7 +72,7 @@ export class SupabaseUserRepository implements IUserRepository {
       };
     }
 
-    const supabase = createClient();
+    const supabase = this.getClient();
     const { data: profile, error } = await (supabase.from("profiles") as any)
       .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
       .eq("id", userId)
@@ -91,8 +99,7 @@ export class SupabaseUserRepository implements IUserRepository {
       return "team-default-1";
     }
 
-    const adminClient = createAdminClient();
-    const clientToUse = adminClient || createClient();
+    const clientToUse = this.getClient();
 
     // Check if an existing team exists for this org
     const { data: existingTeams } = await (clientToUse.from("teams") as any)
@@ -126,8 +133,7 @@ export class SupabaseUserRepository implements IUserRepository {
       return teamId || "team-default-1";
     }
 
-    const adminClient = createAdminClient();
-    const clientToUse = adminClient || createClient();
+    const clientToUse = this.getClient();
 
     let targetTeamId = teamId;
     if (!targetTeamId) {
@@ -158,86 +164,67 @@ export class SupabaseUserRepository implements IUserRepository {
       ];
     }
 
-    let adminClient: any = null;
-    try {
-      adminClient = createAdminClient();
-    } catch {
-      // Non-blocking
-    }
-    const clientToUse = adminClient || createClient();
+    // SECURITY: Use cookie-scoped client enforcing PostgreSQL Row-Level Security
+    const client = this.getClient();
 
-    // Run profiles, auth users, and team memberships ALL IN PARALLEL (eliminates 3-step waterfall)
-    const [profilesResult, authUsersResult, teamMembershipsResult] = await Promise.all([
-      // 1. Profiles query
-      (clientToUse.from("profiles") as any)
-        .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
-        .or(`org_id.eq.${orgId},id.eq.${orgId}`)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: true }),
-      // 2. Auth users (email enrichment + ghost-user synthesis)
-      adminClient?.auth?.admin
-        ? adminClient.auth.admin.listUsers({ perPage: 200 }).catch(() => ({ data: { users: [] } }))
-        : Promise.resolve({ data: { users: [] } }),
-      // 3. Team memberships
-      Promise.resolve(
-        (clientToUse.from("team_members") as any)
-          .select(`user_id, team_id, teams:team_id (id, name)`)
-      ).catch(() => ({ data: [] })),
-    ]);
+    // 1. Query profiles strictly within caller's organization
+    const { data: profiles, error } = await (client.from("profiles") as any)
+      .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+      .eq("org_id", orgId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true });
 
-    let finalProfiles: any[] = profilesResult.data || [];
-
-    // Fallback: fetch all profiles if org-scoped query returned nothing
-    if (finalProfiles.length === 0) {
-      const { data: allProfiles } = await (clientToUse.from("profiles") as any)
-        .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: true })
-        .limit(50);
-      if (allProfiles && allProfiles.length > 0) {
-        finalProfiles = allProfiles;
-      }
-    }
-
-    // Enrich with auth user emails and synthesize any unsynced auth users
-    const authUserMap: Record<string, string> = {};
-    const authUsers = (authUsersResult as any)?.data?.users || [];
-    if (authUsers.length > 0) {
-      const profileIds = new Set(finalProfiles.map((p: any) => p.id));
-      authUsers.forEach((u: any) => {
-        if (u.id && u.email) {
-          authUserMap[u.id] = u.email;
-          if (!profileIds.has(u.id)) {
-            finalProfiles.push({
-              id: u.id,
-              org_id: orgId,
-              full_name: u.user_metadata?.full_name || u.email.split("@")[0],
-              role: u.app_metadata?.role || u.user_metadata?.role || "employee",
-              avatar_url: null,
-              created_at: u.created_at,
-              deleted_at: null,
-            });
-          }
-        }
-      });
-    }
-
-    if (!finalProfiles || finalProfiles.length === 0) {
+    if (error) {
+      console.warn("Profiles lookup error:", error.message);
       return [];
     }
 
-    // Build team membership map from parallel result
-    const teamMemberMap: Record<string, { teamId: string; teamName: string }> = {};
-    const teamMemberships = (teamMembershipsResult as any)?.data || [];
-    if (Array.isArray(teamMemberships)) {
-      teamMemberships.forEach((tm: any) => {
-        if (tm.user_id && tm.team_id) {
-          teamMemberMap[tm.user_id] = {
-            teamId: tm.team_id,
-            teamName: tm.teams?.name || "Assigned Team",
-          };
+    const finalProfiles: any[] = profiles || [];
+    // If organization has no profiles, return empty array immediately (never query cross-tenant fallback)
+    if (finalProfiles.length === 0) {
+      return [];
+    }
+
+    const profileIds = new Set(finalProfiles.map((p: any) => p.id));
+    const profileIdList = Array.from(profileIds);
+
+    // 2. Fetch auth user emails strictly for verified profile IDs in THIS organization
+    const authUserMap: Record<string, string> = {};
+    try {
+      const adminClient = this.getAdminClient();
+      if (adminClient?.auth?.admin) {
+        const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 200 });
+        const users = userList?.users || [];
+        for (const u of users) {
+          // Never inject users from other orgs — only map emails for verified members of this org
+          if (u.id && u.email && profileIds.has(u.id)) {
+            authUserMap[u.id] = u.email;
+          }
         }
-      });
+      }
+    } catch {
+      // Non-blocking email enrichment
+    }
+
+    // 3. Team memberships strictly for verified profile IDs in this org
+    const teamMemberMap: Record<string, { teamId: string; teamName: string }> = {};
+    try {
+      const { data: teamMemberships } = await (client.from("team_members") as any)
+        .select(`user_id, team_id, teams:team_id (id, name)`)
+        .in("user_id", profileIdList);
+
+      if (Array.isArray(teamMemberships)) {
+        teamMemberships.forEach((tm: any) => {
+          if (tm.user_id && tm.team_id) {
+            teamMemberMap[tm.user_id] = {
+              teamId: tm.team_id,
+              teamName: tm.teams?.name || "Assigned Team",
+            };
+          }
+        });
+      }
+    } catch {
+      // Non-blocking team mapping
     }
 
     return finalProfiles.map((p: any) => ({
