@@ -118,6 +118,27 @@ describe("P2.5: Organization Settings Ownership Check (Cross-Org IDOR)", () => {
       (process.env as any).NODE_ENV = originalEnv;
     }
   });
+
+  it("P2: sweepExpiredRateLimits purges expired entries from in-memory rate limit map", async () => {
+    const { checkRateLimit, sweepExpiredRateLimits, _getMemoryRateLimitSize } = await import(
+      "@/infrastructure/redis/redisClient"
+    );
+
+    // Insert 5 entries with 1 second TTL
+    for (let i = 0; i < 5; i++) {
+      await checkRateLimit(`sweep-test-key-${i}`, 10, 1);
+    }
+
+    const sizeBefore = _getMemoryRateLimitSize();
+    expect(sizeBefore).toBeGreaterThanOrEqual(5);
+
+    // Simulate 2 seconds passing into the future
+    const futureTime = Date.now() + 2000;
+    const swept = sweepExpiredRateLimits(futureTime);
+
+    expect(swept).toBeGreaterThanOrEqual(5);
+  });
 });
+
 
 

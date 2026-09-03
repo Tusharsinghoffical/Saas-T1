@@ -9,6 +9,39 @@ import { logger } from "@/infrastructure/logger/logger";
 const memoryCache = new Map<string, { value: any; expiresAt: number }>();
 const memoryRateLimit = new Map<string, { count: number; expiresAt: number }>();
 
+/**
+ * Sweeps expired keys from in-memory rate limiter and L1 cache to prevent memory leaks.
+ */
+export function sweepExpiredRateLimits(now: number = Date.now()): number {
+  let swept = 0;
+  for (const [key, entry] of memoryRateLimit.entries()) {
+    if (entry.expiresAt <= now) {
+      memoryRateLimit.delete(key);
+      swept++;
+    }
+  }
+  for (const [key, entry] of memoryCache.entries()) {
+    if (entry.expiresAt <= now) {
+      memoryCache.delete(key);
+    }
+  }
+  return swept;
+}
+
+export function _getMemoryRateLimitSize(): number {
+  return memoryRateLimit.size;
+}
+
+// Periodic TTL sweep (every 5 minutes). unref() ensures it does not keep test runners or scripts alive.
+if (typeof setInterval !== "undefined") {
+  const timer = setInterval(() => {
+    sweepExpiredRateLimits();
+  }, 5 * 60 * 1000);
+  if (timer && typeof timer.unref === "function") {
+    timer.unref();
+  }
+}
+
 function getRedisConfig() {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -248,6 +281,13 @@ export async function checkRateLimit(
   const entry = memoryRateLimit.get(key);
 
   if (!entry || entry.expiresAt < now) {
+    if (memoryRateLimit.size >= 10000) {
+      sweepExpiredRateLimits(now);
+      if (memoryRateLimit.size >= 10000) {
+        const oldestKey = memoryRateLimit.keys().next().value;
+        if (oldestKey) memoryRateLimit.delete(oldestKey);
+      }
+    }
     memoryRateLimit.set(key, {
       count: 1,
       expiresAt: now + windowSeconds * 1000,
