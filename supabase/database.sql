@@ -416,18 +416,48 @@ begin
 
   claims := event->'claims';
 
+  -- Preserve standard PostgreSQL 'role' ('authenticated') so PostgREST does not fail.
+  -- Store application user role into 'user_role' and 'app_metadata'
   if user_role is not null then
-    claims := jsonb_set(claims, '{role}', to_jsonb(user_role));
+    claims := jsonb_set(claims, '{user_role}', to_jsonb(user_role));
+    if (claims ? 'app_metadata') then
+      claims := jsonb_set(claims, '{app_metadata,role}', to_jsonb(user_role));
+    end if;
   end if;
 
   if user_org_id is not null then
     claims := jsonb_set(claims, '{org_id}', to_jsonb(user_org_id));
+    if (claims ? 'app_metadata') then
+      claims := jsonb_set(claims, '{app_metadata,org_id}', to_jsonb(user_org_id));
+    end if;
   end if;
 
   event := jsonb_set(event, '{claims}', claims);
   return event;
 end;
 $$;
+
+-- 4.4 PostgreSQL Role Aliases for Backward Compatibility
+-- Prevents "role admin/employee/manager does not exist" for any existing JWTs
+do $$
+begin
+  if not exists (select from pg_roles where rolname = 'admin') then
+    create role admin inherit in role authenticated;
+  end if;
+  if not exists (select from pg_roles where rolname = 'manager') then
+    create role manager inherit in role authenticated;
+  end if;
+  if not exists (select from pg_roles where rolname = 'employee') then
+    create role employee inherit in role authenticated;
+  end if;
+exception
+  when others then null;
+end $$;
+
+grant anon, authenticated, service_role to admin, manager, employee;
+grant all on all tables in schema public to admin, manager, employee;
+grant all on all sequences in schema public to admin, manager, employee;
+grant all on all routines in schema public to admin, manager, employee;
 
 -- ==============================================================================
 -- 5. ROW-LEVEL SECURITY (RLS) POLICIES & HELPER FUNCTIONS
@@ -444,6 +474,7 @@ as $$
   select coalesce(
     nullif(current_setting('request.jwt.claim.org_id', true), '')::uuid,
     (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'org_id')::uuid,
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb -> 'app_metadata' ->> 'org_id')::uuid,
     (select p.org_id from public.profiles p where p.id = auth.uid() and p.deleted_at is null limit 1)
   );
 $$;
@@ -456,8 +487,11 @@ security definer
 set search_path = public
 as $$
   select coalesce(
+    nullif(current_setting('request.jwt.claim.user_role', true), ''),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'user_role'),
     nullif(current_setting('request.jwt.claim.role', true), ''),
     (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'),
+    (nullif(current_setting('request.jwt.claims', true), '')::jsonb -> 'app_metadata' ->> 'role'),
     (select p.role from public.profiles p where p.id = auth.uid() and p.deleted_at is null limit 1),
     'employee'
   );
