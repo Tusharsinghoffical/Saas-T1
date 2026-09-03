@@ -241,6 +241,9 @@ create table if not exists public.activity_logs (
   created_at timestamptz default now()
 );
 
+-- Ensure diff exists on pre-existing activity_logs table
+alter table public.activity_logs add column if not exists diff jsonb;
+
 -- 2.13 Slack Integrations (Optional)
 create table if not exists public.slack_integrations (
   id uuid primary key default gen_random_uuid(),

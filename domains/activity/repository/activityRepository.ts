@@ -56,7 +56,12 @@ export class SupabaseActivityRepository implements IActivityRepository {
       const { error } = await (client.from("activity_logs") as any).insert(payload);
 
       if (error) {
-        console.error("[Audit Log Insert Error]", error.message);
+        if (error.message?.includes("diff") && payload.diff !== undefined) {
+          const { diff, ...fallbackPayload } = payload;
+          const { error: retryErr } = await (client.from("activity_logs") as any).insert(fallbackPayload);
+          if (!retryErr) return true;
+        }
+        console.warn("[Audit Log Insert Notice]", error.message);
         return false;
       }
       return true;
