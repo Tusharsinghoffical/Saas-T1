@@ -50,6 +50,10 @@ services:
         sync: false
       - key: NEXT_PUBLIC_POSTHOG_HOST
         value: https://app.posthog.com
+      - key: SENTRY_DSN
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
       - key: NEXT_PUBLIC_ENABLE_BILLING
         value: "false"
 
