@@ -27,22 +27,9 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
   private getClient(useAdmin: boolean = false) {
     if (useAdmin) {
-      try {
-        const admin = createAdminClient();
-        if (admin) return admin;
-      } catch {}
+      return createAdminClient();
     }
-    // SECURITY: Prioritize cookie-scoped client so PostgreSQL Row-Level Security (RLS) is enforced.
-    try {
-      return createClient();
-    } catch {
-      // Fallback to service role client if executed outside web request context
-      try {
-        return createAdminClient();
-      } catch {
-        return createClient();
-      }
-    }
+    return createClient();
   }
 
   async listTasks(orgId: string, filters: TaskFilterDTO): Promise<{ tasks: Task[]; total: number }> {

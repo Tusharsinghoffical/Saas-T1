@@ -15,15 +15,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
   }
 
   private getClient() {
-    try {
-      return createClient();
-    } catch {
-      try {
-        return createAdminClient();
-      } catch {
-        return createClient();
-      }
-    }
+    return createClient();
   }
 
   async recordLog(input: ActivityLogInput): Promise<boolean> {

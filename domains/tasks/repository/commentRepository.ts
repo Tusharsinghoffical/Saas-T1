@@ -13,16 +13,7 @@ export class SupabaseCommentRepository implements ICommentRepository {
   }
 
   private getClient() {
-    // SECURITY: Prioritize cookie-scoped client so PostgreSQL Row-Level Security (RLS) is enforced.
-    try {
-      return createClient();
-    } catch {
-      try {
-        return createAdminClient();
-      } catch {
-        return createClient();
-      }
-    }
+    return createClient();
   }
 
   async listComments(taskId: string): Promise<Comment[]> {
