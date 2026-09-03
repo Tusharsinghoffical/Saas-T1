@@ -36,33 +36,51 @@ begin
 end $$;
 
 -- CI / Local Postgres Auth Schema compatibility (harmless on Supabase Cloud)
-create schema if not exists auth;
-create table if not exists auth.users (
-  id uuid primary key default gen_random_uuid(),
-  email text unique,
-  raw_user_meta_data jsonb default '{}'::jsonb,
-  raw_app_meta_data jsonb default '{}'::jsonb,
-  created_at timestamptz default now()
-);
+do $$
+begin
+  if not exists (select 1 from information_schema.schemata where schema_name = 'auth') then
+    create schema auth;
+  end if;
 
-create or replace function auth.uid() returns uuid as $$
-  select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
-$$ language sql stable;
+  if not exists (select 1 from information_schema.tables where table_schema = 'auth' and table_name = 'users') then
+    create table auth.users (
+      id uuid primary key default gen_random_uuid(),
+      email text unique,
+      raw_user_meta_data jsonb default '{}'::jsonb,
+      raw_app_meta_data jsonb default '{}'::jsonb,
+      created_at timestamptz default now()
+    );
+  end if;
 
-create or replace function auth.role() returns text as $$
-  select nullif(current_setting('request.jwt.claim.role', true), '')::text;
-$$ language sql stable;
+  if not exists (select 1 from pg_proc join pg_namespace on pg_proc.pronamespace = pg_namespace.oid where pg_namespace.nspname = 'auth' and proname = 'uid') then
+    create function auth.uid() returns uuid as $f$
+      select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
+    $f$ language sql stable;
+  end if;
 
-create or replace function auth.jwt() returns jsonb as $$
-  select coalesce(
-    nullif(current_setting('request.jwt.claims', true), '')::jsonb,
-    jsonb_build_object(
-      'sub', current_setting('request.jwt.claim.sub', true),
-      'role', current_setting('request.jwt.claim.role', true),
-      'org_id', current_setting('request.jwt.claim.org_id', true)
-    )
-  );
-$$ language sql stable;
+  if not exists (select 1 from pg_proc join pg_namespace on pg_proc.pronamespace = pg_namespace.oid where pg_namespace.nspname = 'auth' and proname = 'role') then
+    create function auth.role() returns text as $f$
+      select nullif(current_setting('request.jwt.claim.role', true), '')::text;
+    $f$ language sql stable;
+  end if;
+
+  if not exists (select 1 from pg_proc join pg_namespace on pg_proc.pronamespace = pg_namespace.oid where pg_namespace.nspname = 'auth' and proname = 'jwt') then
+    create function auth.jwt() returns jsonb as $f$
+      select coalesce(
+        nullif(current_setting('request.jwt.claims', true), '')::jsonb,
+        jsonb_build_object(
+          'sub', current_setting('request.jwt.claim.sub', true),
+          'role', current_setting('request.jwt.claim.role', true),
+          'org_id', current_setting('request.jwt.claim.org_id', true)
+        )
+      );
+    $f$ language sql stable;
+  end if;
+exception
+  when insufficient_privilege then
+    -- On Supabase Cloud, auth schema & functions are pre-created and managed by Supabase
+    null;
+end $$;
 
 -- ==============================================================================
 -- 2. CORE DATABASE TABLES
@@ -322,11 +340,16 @@ exception
 end;
 $$;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-after insert on auth.users
-for each row
-execute function public.handle_new_user();
+do $$
+begin
+  drop trigger if exists on_auth_user_created on auth.users;
+  create trigger on_auth_user_created
+  after insert on auth.users
+  for each row
+  execute function public.handle_new_user();
+exception
+  when others then null;
+end $$;
 
 -- 4.2 Dedicated Atomic Signup RPC
 create or replace function public.signup_organization_admin(
