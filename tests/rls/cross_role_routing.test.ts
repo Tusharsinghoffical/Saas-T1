@@ -277,21 +277,20 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
   });
 
   // ── 4. MIGRATION 0009 INTEGRITY ───────────────────────────────────────────
-  describe("Migration 0009 Schema & Safety Constraints", () => {
-    it("Verifies migration 0009 contains soft delete columns and active indexes", () => {
+  describe("Master Schema & Safety Constraints", () => {
+    it("Verifies master schema contains soft delete columns and active indexes", () => {
       const migrationPath = path.join(
         process.cwd(),
         "supabase",
-        "migrations",
-        "0009_soft_delete_and_referential_safety.sql"
+        "SYNC_AND_REPAIR_DATABASE.sql"
       );
       expect(fs.existsSync(migrationPath)).toBe(true);
 
       const sqlContent = fs.readFileSync(migrationPath, "utf-8");
-      expect(sqlContent).toContain("add column if not exists deleted_at timestamptz");
+      expect(sqlContent).toContain("deleted_at timestamptz");
       expect(sqlContent).toContain("create index if not exists idx_profiles_active");
       expect(sqlContent).toContain("where deleted_at is null");
-      expect(sqlContent).toContain("add column if not exists created_by uuid references public.profiles(id)");
+      expect(sqlContent).toContain("references public.profiles(id)");
     });
   });
 

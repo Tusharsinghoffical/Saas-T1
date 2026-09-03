@@ -1,25 +1,12 @@
 -- ==============================================================================
 -- TASQ-ONE: MASTER DATABASE SETUP & REPAIR SCRIPT (ALL-IN-ONE)
--- RUN THIS IN SUPABASE DASHBOARD -> SQL EDITOR -> CLICK "RUN"
---
--- This single script:
--- 1. Enables required PostgreSQL extensions.
--- 2. Creates all tables with proper schemas, constraints, and indexes.
--- 3. Configures bulletproof auth trigger & signup RPC functions.
--- 4. Sets up non-recursive, leak-proof PostgreSQL Row-Level Security (RLS).
--- 5. Enables Realtime event broadcasting for Kanban board live-sync.
--- 6. Automatically seeds sample tasks, teams, and activity logs.
 -- ==============================================================================
 
 -- 1. EXTENSIONS
 create extension if not exists "pgcrypto";
 create extension if not exists "uuid-ossp";
 
--- ==============================================================================
 -- 2. CORE DATABASE TABLES
--- ==============================================================================
-
--- Organizations (Tenants)
 create table if not exists public.organizations (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -31,7 +18,6 @@ create table if not exists public.organizations (
   updated_at timestamptz default now()
 );
 
--- Profiles (Users linked to auth.users and organizations)
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   org_id uuid references public.organizations(id) on delete cascade,
@@ -44,7 +30,6 @@ create table if not exists public.profiles (
   deleted_at timestamptz
 );
 
--- Ensure organization foreign key references profiles
 do $$
 begin
   if not exists (
@@ -59,7 +44,6 @@ exception
 end;
 $$;
 
--- Teams
 create table if not exists public.teams (
   id uuid primary key default gen_random_uuid(),
   org_id uuid references public.organizations(id) on delete cascade,
@@ -69,14 +53,12 @@ create table if not exists public.teams (
   updated_at timestamptz default now()
 );
 
--- Team Members
 create table if not exists public.team_members (
   team_id uuid references public.teams(id) on delete cascade,
   user_id uuid references public.profiles(id) on delete cascade,
   primary key (team_id, user_id)
 );
 
--- Tasks
 create table if not exists public.tasks (
   id uuid primary key default gen_random_uuid(),
   org_id uuid references public.organizations(id) on delete cascade,
@@ -91,21 +73,18 @@ create table if not exists public.tasks (
   updated_at timestamptz default now()
 );
 
--- Task Assignees (Many-to-Many)
 create table if not exists public.task_assignees (
   task_id uuid references public.tasks(id) on delete cascade,
   user_id uuid references public.profiles(id) on delete cascade,
   primary key (task_id, user_id)
 );
 
--- Task Dependencies
 create table if not exists public.task_dependencies (
   task_id uuid references public.tasks(id) on delete cascade,
   depends_on_task_id uuid references public.tasks(id) on delete cascade,
   primary key (task_id, depends_on_task_id)
 );
 
--- Task Comments
 create table if not exists public.task_comments (
   id uuid primary key default gen_random_uuid(),
   task_id uuid references public.tasks(id) on delete cascade,
@@ -114,7 +93,6 @@ create table if not exists public.task_comments (
   created_at timestamptz default now()
 );
 
--- Task Attachments (Resource / Repo / Document URLs)
 create table if not exists public.task_attachments (
   id uuid primary key default gen_random_uuid(),
   task_id uuid references public.tasks(id) on delete cascade,
@@ -124,7 +102,6 @@ create table if not exists public.task_attachments (
   created_at timestamptz default now()
 );
 
--- In-App Notifications
 create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.profiles(id) on delete cascade,
@@ -134,7 +111,6 @@ create table if not exists public.notifications (
   created_at timestamptz default now()
 );
 
--- Audit & Activity Logs
 create table if not exists public.activity_logs (
   id uuid primary key default gen_random_uuid(),
   org_id uuid references public.organizations(id) on delete cascade,
@@ -146,9 +122,7 @@ create table if not exists public.activity_logs (
   created_at timestamptz default now()
 );
 
--- ==============================================================================
--- 3. PERFORMANCE INDEXES
--- ==============================================================================
+-- 3. INDEXES
 create index if not exists idx_profiles_org on public.profiles(org_id);
 create index if not exists idx_profiles_active on public.profiles(org_id) where deleted_at is null;
 create index if not exists idx_teams_org on public.teams(org_id);
@@ -161,14 +135,9 @@ create index if not exists idx_task_attachments_task on public.task_attachments(
 create index if not exists idx_notifications_user_read on public.notifications(user_id, read_at);
 create index if not exists idx_activity_logs_org_created on public.activity_logs(org_id, created_at desc);
 
--- Realtime delete emission for live Kanban sync
 alter table if exists public.tasks replica identity full;
 
--- ==============================================================================
--- 4. BULLETPROOF AUTH TRIGGERS & RPC
--- ==============================================================================
-
--- 4.1 Auto create Profile and Org on new user signup
+-- 4. TRIGGERS & RPC
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -244,7 +213,6 @@ after insert on auth.users
 for each row
 execute function public.handle_new_user();
 
--- 4.2 Dedicated Atomic Signup RPC
 create or replace function public.signup_organization_admin(
   p_org_name text,
   p_user_id uuid,
@@ -277,7 +245,6 @@ begin
 end;
 $$;
 
--- 4.3 Custom Access Token Hook
 create or replace function public.custom_access_token_hook(event jsonb)
 returns jsonb
 language plpgsql
@@ -309,9 +276,7 @@ begin
 end;
 $$;
 
--- ==============================================================================
--- 5. ROW-LEVEL SECURITY (RLS) POLICIES
--- ==============================================================================
+-- 5. ROW-LEVEL SECURITY
 alter table public.organizations enable row level security;
 alter table public.profiles enable row level security;
 alter table public.teams enable row level security;
@@ -481,9 +446,7 @@ create policy "Users can view their notifications"
 on public.notifications for all to authenticated
 using (user_id = auth.uid());
 
--- ==============================================================================
--- 6. SAMPLE WORKSPACE DATA SEED (Instantly populates realistic tasks & teams)
--- ==============================================================================
+-- 6. SAMPLE WORKSPACE DATA SEED
 do $$
 declare
   r_org record;
@@ -493,10 +456,8 @@ declare
   v_now timestamptz := now();
 begin
   for r_org in (select id from public.organizations) loop
-    -- 1. Get first profile in this org
     select id into v_user_id from public.profiles where org_id = r_org.id order by created_at asc limit 1;
 
-    -- 2. Ensure Team exists
     select id into v_team_id from public.teams where org_id = r_org.id limit 1;
     if v_team_id is null then
       insert into public.teams (org_id, name)
@@ -507,9 +468,7 @@ begin
       values (r_org.id, 'Operations & Growth');
     end if;
 
-    -- 3. Delete old tasks if count is 0 and insert 6 rich starter tasks
     if not exists (select 1 from public.tasks where org_id = r_org.id) then
-      -- Task 1: Completed
       insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
       values (
         r_org.id,
@@ -527,7 +486,6 @@ begin
         insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
       end if;
 
-      -- Task 2: In Progress (Urgent)
       insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
       values (
         r_org.id,
@@ -545,7 +503,6 @@ begin
         insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
       end if;
 
-      -- Task 3: In Progress (High)
       insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
       values (
         r_org.id,
@@ -563,7 +520,6 @@ begin
         insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
       end if;
 
-      -- Task 4: In Review (Medium)
       insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
       values (
         r_org.id,
@@ -581,7 +537,6 @@ begin
         insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
       end if;
 
-      -- Task 5: Pending (High)
       insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
       values (
         r_org.id,
@@ -599,7 +554,6 @@ begin
         insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
       end if;
 
-      -- Task 6: Pending (Medium)
       insert into public.tasks (org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at)
       values (
         r_org.id,
@@ -617,7 +571,6 @@ begin
         insert into public.task_assignees (task_id, user_id) values (v_task_id, v_user_id) on conflict do nothing;
       end if;
 
-      -- Sample comment & activity
       insert into public.task_comments (task_id, user_id, body)
       values (v_task_id, v_user_id, 'Welcome to TASQ-ONE! Feel free to edit or drag this task across Kanban columns.');
 
