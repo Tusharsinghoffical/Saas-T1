@@ -1,4 +1,5 @@
 import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import { logger } from "@/infrastructure/logger/logger";
 import { UserProfile } from "../entities/UserProfile";
 import { ValidationError } from "@/shared/errors/domainErrors";
 
@@ -346,7 +347,7 @@ export class SupabaseUserRepository implements IUserRepository {
 
     // 3. Fallback: Client signUp
     if (!authUser) {
-      const supabase = createClient();
+      const supabase = this.getClient();
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -367,21 +368,39 @@ export class SupabaseUserRepository implements IUserRepository {
           throw new ValidationError("An account with this email address already exists. Try another email or log in.");
         }
         if (errMsg.includes("rate limit") || errMsg.includes("rate_limit")) {
+          logger.error({
+            event: "user_create_rate_limited",
+            error: signUpError.message,
+            diagnostic: "Supabase rate limit reached during user signup.",
+          });
           throw new ValidationError(
-            "Supabase Rate Limit Reached: To create employees without email rate limits, please copy the 'service_role (secret)' key (starts with eyJ...) from Supabase Dashboard -> Settings -> API Keys -> Legacy API Keys and set it as SUPABASE_SERVICE_ROLE_KEY in Render Environment Variables."
+            "Unable to create user account right now. Please try again shortly or contact support."
           );
         }
         if (errMsg.includes("user not allowed") || errMsg.includes("disabled")) {
+          logger.error({
+            event: "user_create_disabled",
+            error: signUpError.message,
+            diagnostic: "Email provider is disabled or service role auth credentials failed.",
+          });
           throw new ValidationError(
-            "Supabase Auth Error: Email signups are disabled in your Supabase project or the Service Role Key on Render is invalid. Please verify SUPABASE_SERVICE_ROLE_KEY in Render Environment Variables and ensure Email provider is enabled in Supabase."
+            "Unable to create user account. Please contact support."
           );
         }
-        throw new ValidationError(signUpError.message || "Failed to create user account.");
+        logger.error({
+          event: "user_create_failed",
+          error: signUpError.message,
+        });
+        throw new ValidationError("Unable to create user account. Please try again or contact support.");
       }
     }
 
     if (!authUser) {
-      throw new ValidationError("Failed to create user credentials. Please check your Supabase credentials.");
+      logger.error({
+        event: "user_create_missing_auth_user",
+        diagnostic: "Supabase auth failed to produce a valid user record.",
+      });
+      throw new ValidationError("Unable to create user account. Please contact support.");
     }
 
     const userId = authUser.id;

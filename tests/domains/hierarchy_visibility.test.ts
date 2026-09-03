@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getAdminDashboardUseCase } from "@/domains/tasks/usecases/getAdminDashboard";
 import { getManagerDashboardUseCase } from "@/domains/tasks/usecases/getManagerDashboard";
 import { listOrgMembersUseCase } from "@/domains/users/usecases/listOrgMembers";
@@ -158,5 +158,87 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
         getManagerDashboardUseCase(managerContext, "team-mkt", mockDashboardRepo)
       ).rejects.toThrow("Manager cannot access data outside their assigned team scope.");
     });
+
+    it("P1: createUserWithPassword error messages strictly sanitize infra secrets and vendor names", async () => {
+      const { SupabaseUserRepository } = await import("@/domains/users/repository/userRepository");
+      const repo = new SupabaseUserRepository();
+      (repo as any).hasSupabase = () => true;
+
+      // Mock adminClient auth returning null user so it falls through to client signUp
+      (repo as any).getAdminClient = () => ({
+        auth: {
+          admin: {
+            listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),
+            createUser: vi.fn().mockResolvedValue({ data: null, error: new Error("admin failed") }),
+          },
+        },
+      });
+
+      // Mock client signUp returning rate limit error
+      (repo as any).getClient = () => ({
+        auth: {
+          signUp: vi.fn().mockResolvedValue({
+            data: null,
+            error: new Error("over_email_send_rate_limit"),
+          }),
+        },
+      });
+
+      // 1. Rate limit case
+      try {
+        await repo.createUserWithPassword(
+          "org-1",
+          "test@example.com",
+          "Pass1234!",
+          "Test",
+          "employee",
+          "admin-1"
+        );
+        expect.unreachable();
+      } catch (err: any) {
+        expect(err.message).toBe(
+          "Unable to create user account right now. Please try again shortly or contact support."
+        );
+        expect(err.message).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+        expect(err.message).not.toContain("Render");
+        expect(err.message).not.toContain("eyJ");
+      }
+
+      // 2. Disabled signups case
+      (repo as any).getAdminClient = () => ({
+        auth: {
+          admin: {
+            listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),
+            createUser: vi.fn().mockResolvedValue({ data: null, error: new Error("admin failed") }),
+          },
+        },
+      });
+
+      (repo as any).getClient = () => ({
+        auth: {
+          signUp: vi.fn().mockResolvedValue({
+            data: null,
+            error: new Error("Signups not allowed for this instance (disabled)"),
+          }),
+        },
+      });
+
+      try {
+        await repo.createUserWithPassword(
+          "org-1",
+          "test@example.com",
+          "Pass1234!",
+          "Test",
+          "employee",
+          "admin-1"
+        );
+        expect.unreachable();
+      } catch (err: any) {
+        expect(err.message).toBe("Unable to create user account. Please contact support.");
+        expect(err.message).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
+        expect(err.message).not.toContain("Render");
+      }
+    });
   });
 });
+
