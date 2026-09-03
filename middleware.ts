@@ -51,13 +51,24 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  const pathname = request.nextUrl.pathname;
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isManagerRoute = pathname.startsWith("/manager");
+  const isEmployeeRoute = pathname.startsWith("/employee");
+  const isProtectedRoute = isAdminRoute || isManagerRoute || isEmployeeRoute;
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
   const hasSupabase =
     Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
 
-  // In local demo / test mode with placeholder keys, allow navigation freely
+  // Fail-closed: If Supabase configuration is missing, protected routes MUST NOT be accessible
   if (!hasSupabase) {
+    if (isProtectedRoute) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("error", "database_unreachable");
+      return NextResponse.redirect(loginUrl);
+    }
     return response;
   }
 
@@ -90,12 +101,6 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  const pathname = request.nextUrl.pathname;
-  const isAdminRoute = pathname.startsWith("/admin");
-  const isManagerRoute = pathname.startsWith("/manager");
-  const isEmployeeRoute = pathname.startsWith("/employee");
-  const isProtectedRoute = isAdminRoute || isManagerRoute || isEmployeeRoute;
 
   // 1. Unauthenticated users cannot access protected workspace routes
   if (isProtectedRoute && !user) {

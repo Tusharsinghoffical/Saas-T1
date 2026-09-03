@@ -342,5 +342,23 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
       }
     });
+
+    it("AUDIT-SEC-MIDDLEWARE-BYPASS: blocks protected routes if Supabase is unconfigured/placeholder", async () => {
+      const { middleware } = await import("@/middleware");
+      const { NextRequest } = await import("next/server");
+
+      const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      try {
+        process.env.NEXT_PUBLIC_SUPABASE_URL = "https://your-project-ref.supabase.co"; // placeholder
+        const req = new NextRequest("http://localhost:3000/admin/dashboard");
+        const res = await middleware(req);
+        // Must redirect to /login?error=database_unreachable
+        expect(res.headers.get("location")).toContain("/login");
+        expect(res.headers.get("location")).toContain("error=database_unreachable");
+      } finally {
+        process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
+      }
+    });
   });
 });
+
