@@ -32,6 +32,10 @@ export class SupabaseTaskRepository implements ITaskRepository {
     return createClient();
   }
 
+  private getAdminClient() {
+    return createAdminClient();
+  }
+
   async listTasks(orgId: string, filters: TaskFilterDTO): Promise<{ tasks: Task[]; total: number }> {
     if (!this.hasSupabase()) {
       const mockTasks: Task[] = [

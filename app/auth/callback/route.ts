@@ -2,9 +2,23 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/infrastructure/supabase/supabaseServer";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") || "/admin/dashboard";
+
+  const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+  const defaultAppUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com";
+
+  let safeOrigin = defaultAppUrl;
+  if (
+    forwardedHost &&
+    !forwardedHost.includes("0.0.0.0") &&
+    !forwardedHost.includes("127.0.0.1") &&
+    !forwardedHost.includes("localhost")
+  ) {
+    safeOrigin = `${forwardedProto}://${forwardedHost}`;
+  }
 
   if (code) {
     const supabase = createClient();
@@ -30,7 +44,7 @@ export async function GET(request: Request) {
 
       const type = searchParams.get("type");
       if (type === "invite" || type === "recovery") {
-        return NextResponse.redirect(`${origin}/accept-invite`);
+        return NextResponse.redirect(`${safeOrigin}/accept-invite`);
       }
 
       let targetPath = next;
@@ -53,9 +67,9 @@ export async function GET(request: Request) {
         else targetPath = "/employee/dashboard";
       }
 
-      return NextResponse.redirect(`${origin}${targetPath}`);
+      return NextResponse.redirect(`${safeOrigin}${targetPath}`);
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=Authentication%20failed`);
+  return NextResponse.redirect(`${safeOrigin}/login?error=Authentication%20failed`);
 }
