@@ -297,5 +297,38 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
         })
       ).rejects.toThrow("Task not found in your organization.");
     });
+
+    it("AUDIT-SEC-R2-MIME-WHITELIST: rejects unsafe MIME types (HTML, SVG, JS)", async () => {
+      const { getPresignedUploadUrlUseCase } = await import(
+        "@/domains/tasks/usecases/getPresignedUploadUrl"
+      );
+      const { ValidationError } = await import("@/shared/errors/domainErrors");
+
+      const ownTaskRepo: ITaskRepository = {
+        ...mockTaskRepo,
+        getTaskById: vi.fn().mockResolvedValue({ id: "valid-task-id", orgId: contextOrgA.orgId } as any),
+      };
+
+      // HTML should be rejected
+      await expect(
+        getPresignedUploadUrlUseCase(
+          contextOrgA,
+          "valid-task-id",
+          { fileName: "malicious.html", fileType: "text/html", fileSize: 1024 },
+          ownTaskRepo
+        )
+      ).rejects.toThrow(ValidationError);
+
+      // SVG should be rejected
+      await expect(
+        getPresignedUploadUrlUseCase(
+          contextOrgA,
+          "valid-task-id",
+          { fileName: "exploit.svg", fileType: "image/svg+xml", fileSize: 1024 },
+          ownTaskRepo
+        )
+      ).rejects.toThrow("Unsupported file type");
+    });
   });
 });
+

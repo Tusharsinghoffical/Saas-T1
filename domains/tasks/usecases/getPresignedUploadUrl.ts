@@ -37,6 +37,32 @@ export async function getPresignedUploadUrlUseCase(
     throw new ValidationError("File exceeds 25MB limit.");
   }
 
+  // Safe business MIME allowlist: prohibits executable/scriptable files (HTML, SVG, JS, scripts)
+  const ALLOWED_MIME_TYPES = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
+    "text/csv",
+    "application/zip",
+    "application/x-zip-compressed",
+  ]);
+
+  const normalizedType = (data.fileType || "").trim().toLowerCase();
+  if (!ALLOWED_MIME_TYPES.has(normalizedType)) {
+    throw new ValidationError(
+      "Unsupported file type. Allowed formats: JPEG, PNG, WEBP, GIF, PDF, Office documents, CSV, TXT, ZIP."
+    );
+  }
+
   // Sanitize filename: only safe chars allowed in object key
   const safeName = data.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 
