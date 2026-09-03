@@ -42,6 +42,8 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: EMAIL_FROM
+        sync: false
       - key: CRON_SECRET
         sync: false
       - key: NEXT_PUBLIC_POSTHOG_KEY

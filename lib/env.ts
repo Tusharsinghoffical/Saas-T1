@@ -62,6 +62,10 @@ const serverEnvSchema = z.object({
   RESEND_API_KEY: z
     .string()
     .min(1, "RESEND_API_KEY is required for transactional emails"),
+  EMAIL_FROM: z
+    .string()
+    .optional()
+    .default("TASQ-ONE <notifications@tasq-one.com>"),
   CRON_SECRET: z
     .string()
     .min(1, "CRON_SECRET is required for scheduled tasks & cron endpoints"),
@@ -140,6 +144,7 @@ export function validateEnv(): Env {
     CLOUDFLARE_R2_BUCKET: process.env.CLOUDFLARE_R2_BUCKET,
     CLOUDFLARE_R2_ENDPOINT: process.env.CLOUDFLARE_R2_ENDPOINT,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    EMAIL_FROM: process.env.EMAIL_FROM,
     CRON_SECRET: process.env.CRON_SECRET,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_PRICE_ID_PRO: process.env.STRIPE_PRICE_ID_PRO,

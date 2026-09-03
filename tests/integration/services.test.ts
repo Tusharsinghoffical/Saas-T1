@@ -138,6 +138,28 @@ describe("P2.5: Organization Settings Ownership Check (Cross-Org IDOR)", () => {
 
     expect(swept).toBeGreaterThanOrEqual(5);
   });
+
+  it("P0: sendEmail respects custom EMAIL_FROM and falls back safely when unset", async () => {
+    const { sendEmail } = await import("@/infrastructure/email/resendClient");
+
+    // Test 1: Unset EMAIL_FROM
+    delete process.env.EMAIL_FROM;
+    const res1 = await sendEmail({
+      to: "test@example.com",
+      subject: "Test Subject",
+      html: "<p>Hello</p>",
+    });
+    expect(res1.success).toBe(true);
+
+    // Test 2: Custom EMAIL_FROM
+    process.env.EMAIL_FROM = "Custom Team <alerts@customdomain.io>";
+    const res2 = await sendEmail({
+      to: "test2@example.com",
+      subject: "Test Subject 2",
+      html: "<p>Hello 2</p>",
+    });
+    expect(res2.success).toBe(true);
+  });
 });
 
 

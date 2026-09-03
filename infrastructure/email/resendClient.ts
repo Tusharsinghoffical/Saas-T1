@@ -26,6 +26,14 @@ export async function sendEmail({
   }
 
   try {
+    const emailFrom = process.env.EMAIL_FROM || "TASQ-ONE <notifications@tasq-one.com>";
+    if (!process.env.EMAIL_FROM && process.env.NODE_ENV === "production") {
+      logger.warn({
+        event: "email_from_default_fallback",
+        message: "EMAIL_FROM is unset in production. Falling back to 'TASQ-ONE <notifications@tasq-one.com>'. Verify domain in Resend.",
+      });
+    }
+
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -33,7 +41,7 @@ export async function sendEmail({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "TASQ-ONE <notifications@tasq-one.com>",
+        from: emailFrom,
         to: [to],
         subject,
         html,
