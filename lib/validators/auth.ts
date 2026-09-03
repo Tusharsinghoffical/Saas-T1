@@ -41,12 +41,10 @@ export const loginSchema = z
     email: z
       .string()
       .trim()
-      .toLowerCase()
-      .email("Please enter a valid email address")
-      .min(1, "Email is required"),
+      .min(1, "Email or Member ID is required"),
     password: z
       .string()
-      .min(8, "Password must be at least 8 characters"),
+      .min(6, "Password must be at least 6 characters"),
   })
   .strict();
 

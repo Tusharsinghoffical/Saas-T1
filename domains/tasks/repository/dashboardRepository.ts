@@ -310,32 +310,55 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       }
     }
 
+    // Fallback if RLS blocked user-scoped read: strictly check tasks assigned to or created by THIS user via adminClient
     if (rawTasks.length === 0) {
-      // Fallback: Show organization-wide tasks so employee dashboard is never a blank screen
-      const { data: orgTasks } = await (client.from("tasks") as any)
-        .select(`
-          *,
-          task_assignees (
-            user_id,
-            profiles:user_id (id, full_name, avatar_url)
-          )
-        `)
-        .eq("org_id", orgId)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      if (orgTasks && orgTasks.length > 0) {
-        return orgTasks;
-      }
-
       try {
         const adminClient = createAdminClient();
-        const { data: adminOrgTasks } = await (adminClient.from("tasks") as any)
-          .select("*")
-          .eq("org_id", orgId)
-          .order("created_at", { ascending: false })
-          .limit(10);
-        if (adminOrgTasks && adminOrgTasks.length > 0) {
-          return adminOrgTasks;
+        const [adminAssigned, adminCreated] = await Promise.all([
+          (adminClient.from("task_assignees") as any)
+            .select("task_id")
+            .eq("user_id", userId),
+          (adminClient.from("tasks") as any)
+            .select(`
+              *,
+              task_assignees (
+                user_id,
+                profiles:user_id (id, full_name, avatar_url)
+              )
+            `)
+            .eq("org_id", orgId)
+            .eq("created_by", userId)
+            .order("created_at", { ascending: false }),
+        ]);
+
+        let fallbackTasks: any[] = adminCreated.data || [];
+        const fallbackAssignedIds: string[] = ((adminAssigned.data as any[]) || [])
+          .map((a: any) => a.task_id)
+          .filter(Boolean);
+
+        if (fallbackAssignedIds.length > 0) {
+          const existingIds = new Set(fallbackTasks.map((t: any) => t.id));
+          const missingIds = fallbackAssignedIds.filter((id) => !existingIds.has(id));
+          if (missingIds.length > 0) {
+            const { data: moreTasks } = await (adminClient.from("tasks") as any)
+              .select(`
+                *,
+                task_assignees (
+                  user_id,
+                  profiles:user_id (id, full_name, avatar_url)
+                )
+              `)
+              .eq("org_id", orgId)
+              .in("id", missingIds)
+              .order("created_at", { ascending: false });
+
+            if (moreTasks) {
+              fallbackTasks = [...fallbackTasks, ...moreTasks];
+            }
+          }
+        }
+        if (fallbackTasks.length > 0) {
+          return fallbackTasks;
         }
       } catch {}
     }

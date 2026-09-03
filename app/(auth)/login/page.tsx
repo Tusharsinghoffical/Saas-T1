@@ -284,7 +284,7 @@ export default function LoginPage() {
           {/* Work Email */}
           <div>
             <label htmlFor="login-email" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
-              Work Email
+              Work Email or Member ID
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -293,14 +293,17 @@ export default function LoginPage() {
               <input
                 id="login-email"
                 name="email"
-                type="email"
+                type="text"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck="false"
                 disabled={lockoutRemaining > 0 || isLoading}
                 value={formData.email}
                 onChange={(e) => {
                   setFormData({ ...formData, email: e.target.value });
                   if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
                 }}
-                placeholder="you@company.com"
+                placeholder="you@company.com or EMP-XXXXXX"
                 className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border ${
                   errors.email
                     ? "border-urgent focus:ring-urgent"

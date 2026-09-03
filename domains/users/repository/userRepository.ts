@@ -408,6 +408,15 @@ export class SupabaseUserRepository implements IUserRepository {
 
       if (!signUpError && signUpData?.user) {
         authUser = signUpData.user;
+        if (adminClient?.auth?.admin && authUser.id) {
+          try {
+            await adminClient.auth.admin.updateUserById(authUser.id, {
+              email_confirm: true,
+              app_metadata: { role, org_id: orgId },
+              user_metadata: { full_name: fullName, role, org_id: orgId },
+            });
+          } catch {}
+        }
       } else if (signUpError) {
         const errMsg = signUpError.message.toLowerCase();
         if (errMsg.includes("already registered") || errMsg.includes("already exists")) {

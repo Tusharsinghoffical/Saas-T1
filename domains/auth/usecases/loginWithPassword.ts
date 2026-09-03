@@ -25,7 +25,11 @@ export async function loginWithPasswordUseCase(
   try {
     const result = await repo.loginPassword(input);
     const redirectUrl =
-      result.role === "employee" ? "/employee/dashboard" : "/admin/dashboard";
+      result.role === "employee"
+        ? "/employee/dashboard"
+        : result.role === "manager"
+        ? "/manager/dashboard"
+        : "/admin/dashboard";
 
     // ── SECURITY FIX: Log successful login event only if valid tenant orgId exists
     const orgId = result.user?.app_metadata?.org_id as string;

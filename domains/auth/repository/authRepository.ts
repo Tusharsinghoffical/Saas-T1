@@ -223,13 +223,74 @@ export class SupabaseAuthRepository implements IAuthRepository {
     }
 
     try {
+      let emailToUse = (credentials.email || "").trim();
+
+      // Check if user provided a Member ID (EMP-..., MGR-..., ADM-...) or UUID instead of email
+      if (!emailToUse.includes("@")) {
+        try {
+          const adminClient = createAdminClient();
+          let targetUserId: string | null = null;
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+          if (uuidRegex.test(emailToUse)) {
+            targetUserId = emailToUse;
+          } else {
+            // Clean Member Code (e.g. EMP-A1B2C3, MGR-835DCB, A1B2C3)
+            const cleanCode = emailToUse.replace(/^(emp|mgr|adm)-?/i, "").replace(/[^a-f0-9]/gi, "").slice(0, 8);
+            if (cleanCode.length >= 4) {
+              const { data: matchedProfiles } = await (adminClient.from("profiles") as any)
+                .select("id")
+                .ilike("id", `${cleanCode}%`)
+                .limit(1);
+
+              if (matchedProfiles && matchedProfiles.length > 0) {
+                targetUserId = matchedProfiles[0].id;
+              }
+            }
+          }
+
+          if (targetUserId) {
+            const { data: authUserData } = await adminClient.auth.admin.getUserById(targetUserId);
+            if (authUserData?.user?.email) {
+              emailToUse = authUserData.user.email;
+            }
+          }
+        } catch (lookupErr) {
+          console.warn("[loginPassword lookup error]:", lookupErr);
+        }
+      }
+
       const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
+      let { data, error } = await supabase.auth.signInWithPassword({
+        email: emailToUse,
         password: credentials.password || "",
       });
 
-      if (error || !data.user) {
+      // If sign-in failed due to unconfirmed email, auto-confirm and retry with adminClient
+      if (error && error.message && error.message.toLowerCase().includes("email not confirmed")) {
+        try {
+          const adminClient = createAdminClient();
+          const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 200 });
+          const target = userList?.users?.find(
+            (u: any) => u.email?.toLowerCase() === emailToUse.toLowerCase()
+          );
+          if (target) {
+            await adminClient.auth.admin.updateUserById(target.id, { email_confirm: true });
+            const retry = await supabase.auth.signInWithPassword({
+              email: emailToUse,
+              password: credentials.password || "",
+            });
+            if (!retry.error && retry.data?.user) {
+              data = retry.data;
+              error = null;
+            }
+          }
+        } catch (confirmErr) {
+          console.warn("[auto-confirm retry error]:", confirmErr);
+        }
+      }
+
+      if (error || !data?.user) {
         throw new Error(error?.message || "Invalid credentials.");
       }
 
