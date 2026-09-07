@@ -475,10 +475,8 @@ export default function EmployeeDashboardPage() {
     fetchMyTasks(false);
   }, [fetchMyTasks]);
 
-  const { isRefreshing, triggerManual } = useAutoRefresh(
-    (silent) => fetchMyTasks(silent ?? true),
-    20,
-    true
+  const { isRefreshing, triggerManual } = useAutoRefresh(() =>
+    fetchMyTasks(false)
   );
 
   // 2. Realtime Postgres connection & Cross-Tab Activity Sync

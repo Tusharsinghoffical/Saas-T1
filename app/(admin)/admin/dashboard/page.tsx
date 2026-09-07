@@ -296,10 +296,8 @@ export default function AdminDashboardPage() {
     fetchAllData(false);
   }, [fetchAllData]);
 
-  const { isRefreshing, triggerManual } = useAutoRefresh(
-    (silent) => fetchAllData(silent ?? true),
-    20,
-    true
+  const { isRefreshing, triggerManual } = useAutoRefresh(() =>
+    fetchAllData(false)
   );
 
   const nowMs = Date.now();

@@ -126,11 +126,9 @@ export default function ActivityLogPage() {
     fetchLogs(1, false);
   }, [fetchLogs]);
 
-  // Gentle, non-disruptive background auto-sync (pauses while user is typing or modal open)
-  const { isRefreshing, triggerManual } = useAutoRefresh(
-    (silent) => fetchLogs(1, silent ?? true),
-    20,
-    true
+  // Manual refresh control
+  const { isRefreshing, triggerManual } = useAutoRefresh(() =>
+    fetchLogs(1, false)
   );
 
   // Live Realtime Channel for Activity Logs & Task Mutations

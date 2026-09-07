@@ -200,14 +200,11 @@ export function NotificationBell({ userId: propUserId }: { userId?: string }) {
     }
   }, [triggerAlertFeedback]);
 
-  // Real-time Subscriptions & Polling
+  // Real-time Subscriptions (BroadcastChannel & Supabase)
   useEffect(() => {
     fetchNotifications();
 
-    // 1. Gentle background polling fallback
-    const interval = setInterval(fetchNotifications, 12000);
-
-    // 2. Cross-tab BroadcastChannel listener
+    // 1. Cross-tab BroadcastChannel listener
     let notifBc: BroadcastChannel | null = null;
     let activityBc: BroadcastChannel | null = null;
     try {
@@ -226,7 +223,7 @@ export function NotificationBell({ userId: propUserId }: { userId?: string }) {
       // Ignore
     }
 
-    // 3. Supabase Realtime subscription
+    // 2. Supabase Realtime subscription
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     const hasSupabase =
       Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
@@ -274,7 +271,6 @@ export function NotificationBell({ userId: propUserId }: { userId?: string }) {
     }
 
     return () => {
-      clearInterval(interval);
       if (notifBc) notifBc.close();
       if (activityBc) activityBc.close();
       if (channel) {
