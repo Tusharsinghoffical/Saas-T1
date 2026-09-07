@@ -38,6 +38,18 @@ export interface IUserRepository {
     teamId?: string | null
   ): Promise<{ success: boolean; message: string }>;
   acceptInvite(password: string): Promise<{ success: boolean }>;
+  updateProfile?(
+    userId: string,
+    orgId: string,
+    updates: {
+      fullName?: string;
+      position?: string | null;
+      phoneNumber?: string | null;
+      bio?: string | null;
+      department?: string | null;
+      avatarUrl?: string | null;
+    }
+  ): Promise<UserProfile>;
 }
 
 export class SupabaseUserRepository implements IUserRepository {
@@ -75,6 +87,10 @@ export class SupabaseUserRepository implements IUserRepository {
         fullName: "Demo User",
         role: "employee", // Least privilege for demo stubs
         avatarUrl: null,
+        position: "Software Engineer",
+        phoneNumber: "+1 (555) 019-2834",
+        bio: "Building impactful features at TasqOne.",
+        department: "Engineering",
         email: "demo@tasq-one.com",
         deletedAt: null,
       };
@@ -83,7 +99,7 @@ export class SupabaseUserRepository implements IUserRepository {
     const supabase = this.getClient();
     const { data: profile, error } = await (supabase.from("profiles") as any)
       .select(
-        "id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at"
+        "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
       )
       .eq("id", userId)
       .single();
@@ -98,6 +114,10 @@ export class SupabaseUserRepository implements IUserRepository {
       fullName: profile.full_name,
       role: profile.role,
       avatarUrl: profile.avatar_url,
+      position: profile.position || null,
+      phoneNumber: profile.phone_number || null,
+      bio: profile.bio || null,
+      department: profile.department || null,
       notificationPreferences: profile.notification_preferences,
       createdAt: profile.created_at,
       deletedAt: profile.deleted_at,
@@ -185,7 +205,7 @@ export class SupabaseUserRepository implements IUserRepository {
     // 1. Query profiles strictly within caller's organization
     const { data: profiles, error } = await (client.from("profiles") as any)
       .select(
-        "id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at"
+        "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
       )
       .eq("org_id", orgId)
       .is("deleted_at", null)
@@ -200,7 +220,7 @@ export class SupabaseUserRepository implements IUserRepository {
             adminClient.from("profiles") as any
           )
             .select(
-              "id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at"
+              "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
             )
             .eq("org_id", orgId)
             .is("deleted_at", null)
@@ -212,6 +232,10 @@ export class SupabaseUserRepository implements IUserRepository {
               fullName: p.full_name,
               role: p.role,
               avatarUrl: p.avatar_url,
+              position: p.position || null,
+              phoneNumber: p.phone_number || null,
+              bio: p.bio || null,
+              department: p.department || null,
               notificationPreferences: p.notification_preferences,
               createdAt: p.created_at,
               deletedAt: p.deleted_at,
@@ -236,7 +260,7 @@ export class SupabaseUserRepository implements IUserRepository {
             adminClient.from("profiles") as any
           )
             .select(
-              "id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at"
+              "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
             )
             .eq("org_id", orgId)
             .is("deleted_at", null)
@@ -309,6 +333,10 @@ export class SupabaseUserRepository implements IUserRepository {
       fullName: p.full_name || "Team Member",
       email: authUserMap[p.id] || undefined,
       role: p.role || "employee",
+      position: p.position || null,
+      phoneNumber: p.phone_number || null,
+      bio: p.bio || null,
+      department: p.department || null,
       teamId: teamMemberMap[p.id]?.teamId || null,
       teamName: teamMemberMap[p.id]?.teamName || null,
       avatarUrl: p.avatar_url,
@@ -316,6 +344,99 @@ export class SupabaseUserRepository implements IUserRepository {
       createdAt: p.created_at,
       deletedAt: p.deleted_at,
     }));
+  }
+
+  async updateProfile(
+    userId: string,
+    orgId: string,
+    updates: {
+      fullName?: string;
+      position?: string | null;
+      phoneNumber?: string | null;
+      bio?: string | null;
+      department?: string | null;
+      avatarUrl?: string | null;
+    }
+  ): Promise<UserProfile> {
+    const dbUpdates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName.trim();
+    if (updates.position !== undefined) dbUpdates.position = updates.position?.trim() || null;
+    if (updates.phoneNumber !== undefined) dbUpdates.phone_number = updates.phoneNumber?.trim() || null;
+    if (updates.bio !== undefined) dbUpdates.bio = updates.bio?.trim() || null;
+    if (updates.department !== undefined) dbUpdates.department = updates.department?.trim() || null;
+    if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl || null;
+
+    if (!this.hasSupabase()) {
+      return {
+        id: userId,
+        orgId,
+        fullName: updates.fullName || "Demo User",
+        role: "admin",
+        avatarUrl: updates.avatarUrl || null,
+        position: updates.position || "Software Engineer",
+        phoneNumber: updates.phoneNumber || "+1 (555) 019-2834",
+        bio: updates.bio || null,
+        department: updates.department || "Engineering",
+        deletedAt: null,
+      };
+    }
+
+    const adminClient = this.getAdminClient();
+    const client = adminClient || this.getClient();
+
+    try {
+      const { data: updated, error } = await (client.from("profiles") as any)
+        .update(dbUpdates)
+        .eq("id", userId)
+        .select("id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at")
+        .single();
+
+      if (!error && updated) {
+        return {
+          id: updated.id,
+          orgId: updated.org_id,
+          fullName: updated.full_name,
+          role: updated.role,
+          avatarUrl: updated.avatar_url,
+          position: updated.position || null,
+          phoneNumber: updated.phone_number || null,
+          bio: updated.bio || null,
+          department: updated.department || null,
+          notificationPreferences: updated.notification_preferences,
+          createdAt: updated.created_at,
+          deletedAt: updated.deleted_at,
+        };
+      }
+    } catch {
+      // Graceful fallback below
+    }
+
+    // Fallback if specific columns are not migrated yet in existing database
+    const coreUpdates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.fullName !== undefined) coreUpdates.full_name = updates.fullName.trim();
+    if (updates.avatarUrl !== undefined) coreUpdates.avatar_url = updates.avatarUrl;
+
+    const { data: fbUpdated } = await (client.from("profiles") as any)
+      .update(coreUpdates)
+      .eq("id", userId)
+      .select()
+      .single();
+
+    return {
+      id: userId,
+      orgId,
+      fullName: updates.fullName || fbUpdated?.full_name || "User",
+      role: fbUpdated?.role || "employee",
+      avatarUrl: updates.avatarUrl || fbUpdated?.avatar_url || null,
+      position: updates.position || null,
+      phoneNumber: updates.phoneNumber || null,
+      bio: updates.bio || null,
+      department: updates.department || null,
+    };
   }
 
   async createUserWithPassword(

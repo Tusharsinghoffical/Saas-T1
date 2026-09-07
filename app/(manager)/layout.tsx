@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users } from "lucide-react";
+import { LayoutDashboard, Users, User } from "lucide-react";
 import {
   DashboardSidebar,
   type NavGroup,
@@ -58,6 +58,8 @@ export default function ManagerLayout({
             email: p.email || "manager@workspace.com",
             teamName: p.teamName || "Team Operations",
             role: p.role || "manager",
+            position: p.position || null,
+            phoneNumber: p.phoneNumber || null,
             employeeCode: p.managerCode,
             avatarUrl: p.avatarUrl,
           });
@@ -65,6 +67,54 @@ export default function ManagerLayout({
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
+  }, []);
+
+  // Real-time synchronization of personal profile details
+  useEffect(() => {
+    const handleProfileUpdated = (e: any) => {
+      const updated = e.detail || e.data?.profile;
+      if (updated) {
+        setManagerInfo((prev) =>
+          prev
+            ? {
+                ...prev,
+                fullName: updated.fullName || prev.fullName,
+                position:
+                  updated.position !== undefined
+                    ? updated.position
+                    : prev.position,
+                phoneNumber:
+                  updated.phoneNumber !== undefined
+                    ? updated.phoneNumber
+                    : prev.phoneNumber,
+                avatarUrl:
+                  updated.avatarUrl !== undefined
+                    ? updated.avatarUrl
+                    : prev.avatarUrl,
+              }
+            : null
+        );
+      }
+    };
+
+    window.addEventListener("tasq:profile_updated", handleProfileUpdated);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        bc = new BroadcastChannel("tasq-profile-channel");
+        bc.onmessage = (event) => {
+          if (event.data?.profile) {
+            handleProfileUpdated({ detail: event.data.profile });
+          }
+        };
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener("tasq:profile_updated", handleProfileUpdated);
+      if (bc) bc.close();
+    };
   }, []);
 
   const navGroups: NavGroup[] = useMemo(
@@ -86,6 +136,16 @@ export default function ManagerLayout({
             name: "My Team",
             href: "/manager/team",
             icon: Users,
+          },
+        ],
+      },
+      {
+        title: "Account",
+        items: [
+          {
+            name: "My Profile",
+            href: "/manager/profile",
+            icon: User,
           },
         ],
       },

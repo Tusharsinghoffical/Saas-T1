@@ -40,6 +40,8 @@ interface TeamMember {
   fullName: string;
   email: string | null;
   role: "admin" | "manager" | "employee";
+  position?: string | null;
+  phoneNumber?: string | null;
   teamId?: string | null;
   teamName?: string | null;
   avatarUrl?: string | null;
@@ -118,6 +120,8 @@ export default function AdminTeamPage() {
             fullName: m.fullName || m.full_name || "Team Member",
             email: m.email || null,
             role: m.role || "employee",
+            position: m.position || null,
+            phoneNumber: m.phoneNumber || m.phone_number || null,
             teamId: m.teamId || m.team_id || null,
             teamName:
               m.teamName ||
@@ -179,7 +183,19 @@ export default function AdminTeamPage() {
       console.warn("Realtime profiles connection error:", e);
     }
 
+    // Cross-tab broadcast listener for profile/position updates
+    let profileBc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        profileBc = new BroadcastChannel("tasq-profile-channel");
+        profileBc.onmessage = () => {
+          fetchMembers();
+        };
+      }
+    } catch {}
+
     return () => {
+      if (profileBc) profileBc.close();
       if (channel) {
         const supabase = createClient();
         supabase.removeChannel(channel);
@@ -595,6 +611,7 @@ export default function AdminTeamPage() {
                 <tr>
                   <th className="px-5 py-3.5">Member / ID</th>
                   <th className="px-5 py-3.5">Email</th>
+                  <th className="px-5 py-3.5">Position / Title</th>
                   <th className="px-5 py-3.5">Assigned Team / Squad</th>
                   <th className="px-5 py-3.5">Access Role</th>
                   <th className="px-5 py-3.5">Dashboard Route</th>
@@ -632,6 +649,19 @@ export default function AdminTeamPage() {
                     {/* Email */}
                     <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
                       {member.email || "Workspace User"}
+                    </td>
+
+                    {/* Position / Job Title */}
+                    <td className="whitespace-nowrap px-5 py-3.5">
+                      {member.position ? (
+                        <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary-300">
+                          {member.position}
+                        </span>
+                      ) : (
+                        <span className="text-xs italic text-slate-400">
+                          Not specified
+                        </span>
+                      )}
                     </td>
 
                     {/* Team Assignment — editable dropdown */}

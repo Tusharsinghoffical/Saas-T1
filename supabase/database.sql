@@ -105,14 +105,22 @@ create table if not exists public.profiles (
   full_name text not null,
   role text check (role in ('admin', 'manager', 'employee')) default 'employee',
   avatar_url text,
+  position text,
+  phone_number text,
+  bio text,
+  department text,
   notification_preferences jsonb default '{"email": true, "in_app": true}'::jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   deleted_at timestamptz
 );
 
--- Ensure deleted_at column exists if table was created previously
+-- Ensure all personal details columns exist if table was created previously
 alter table public.profiles add column if not exists deleted_at timestamptz;
+alter table public.profiles add column if not exists position text;
+alter table public.profiles add column if not exists phone_number text;
+alter table public.profiles add column if not exists bio text;
+alter table public.profiles add column if not exists department text;
 alter table public.profiles add column if not exists notification_preferences jsonb default '{"email": true, "in_app": true}'::jsonb;
 alter table public.organizations add column if not exists slack_webhook_url text;
 alter table public.organizations add column if not exists slack_notifications_enabled boolean default true;

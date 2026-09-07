@@ -9,12 +9,15 @@ import {
   AlertCircle,
   Sparkles,
   MessageSquare,
+  User,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { ProfileSettingsView } from "@/components/profile/ProfileSettingsView";
 
 export default function AdminSettingsPage() {
+  const [activeTab, setActiveTab] = useState<"profile" | "workspace">("profile");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{
@@ -97,42 +100,74 @@ export default function AdminSettingsPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Organization Settings
+          Settings &amp; Personal Profile
         </h1>
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
-          Manage workspace identity, timezone, and external Slack webhook
-          integrations.
+          Update your personal details, position, and manage organization settings.
         </p>
       </div>
 
-      {/* Floating Toast Notification */}
-      {toast && (
-        <div
-          className={`animate-fade-in flex items-center justify-between rounded-2xl border p-4 text-xs font-medium ${
-            toast.type === "success"
-              ? "border-success/20 bg-success/10 text-success"
-              : "border-urgent/20 bg-urgent/10 text-urgent"
+      {/* Tabs Navigation */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
+        <button
+          type="button"
+          onClick={() => setActiveTab("profile")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition-all ${
+            activeTab === "profile"
+              ? "border-primary text-primary dark:text-primary-400"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
           }`}
         >
-          <div className="flex items-center gap-2.5">
-            {toast.type === "success" ? (
-              <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-            ) : (
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
-            )}
-            <span>{toast.message}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setToast(null)}
-            className="ml-2 font-bold hover:underline"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+          <User className="h-4 w-4" />
+          <span>Personal Details &amp; Position</span>
+        </button>
 
-      <form onSubmit={handleSaveSettings} className="space-y-6">
+        <button
+          type="button"
+          onClick={() => setActiveTab("workspace")}
+          className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition-all ${
+            activeTab === "workspace"
+              ? "border-primary text-primary dark:text-primary-400"
+              : "border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+          }`}
+        >
+          <Building2 className="h-4 w-4" />
+          <span>Workspace &amp; Organization</span>
+        </button>
+      </div>
+
+      {activeTab === "profile" ? (
+        <ProfileSettingsView role="admin" />
+      ) : (
+        <>
+          {/* Floating Toast Notification */}
+          {toast && (
+            <div
+              className={`animate-fade-in flex items-center justify-between rounded-2xl border p-4 text-xs font-medium ${
+                toast.type === "success"
+                  ? "border-success/20 bg-success/10 text-success"
+                  : "border-urgent/20 bg-urgent/10 text-urgent"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                {toast.type === "success" ? (
+                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                )}
+                <span>{toast.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setToast(null)}
+                className="ml-2 font-bold hover:underline"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveSettings} className="space-y-6">
         {/* Organization Identity Card */}
         <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3 dark:border-slate-800">
@@ -247,6 +282,8 @@ export default function AdminSettingsPage() {
           </Button>
         </div>
       </form>
+      </>
+      )}
     </div>
   );
 }

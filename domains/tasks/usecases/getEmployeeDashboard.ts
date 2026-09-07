@@ -19,6 +19,8 @@ export async function getEmployeeDashboardUseCase(
     fullName: string;
     email: string;
     role: string;
+    position?: string | null;
+    phoneNumber?: string | null;
     teamId: string | null;
     teamName: string;
     avatarUrl: string | null;
@@ -160,6 +162,8 @@ export async function getEmployeeDashboardUseCase(
       fullName,
       email,
       role: context.role || "employee",
+      position: profileData?.position || null,
+      phoneNumber: profileData?.phoneNumber || null,
       teamId,
       teamName,
       avatarUrl,

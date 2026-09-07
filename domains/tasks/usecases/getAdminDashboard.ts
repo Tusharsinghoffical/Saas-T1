@@ -27,8 +27,11 @@ export async function getAdminDashboardUseCase(
 
     if (profile) {
       adminProfile = {
+        id: profile.id,
         fullName: profile.fullName || "Admin User",
         email: profile.email || "",
+        position: profile.position || null,
+        phoneNumber: profile.phoneNumber || null,
         orgName: (orgSettings as any)?.name || context.orgId || "Organization",
         role: "admin",
         avatarUrl: profile.avatarUrl || null,

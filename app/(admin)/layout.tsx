@@ -8,6 +8,7 @@ import {
   Activity,
   Settings,
   BarChart3,
+  User,
 } from "lucide-react";
 import {
   DashboardSidebar,
@@ -62,6 +63,8 @@ export default function AdminLayout({
             id: p.id,
             fullName: p.fullName || "Admin User",
             email: p.email || "",
+            position: p.position || null,
+            phoneNumber: p.phoneNumber || null,
             orgName: p.orgName || "Organization",
             role: "admin",
             avatarUrl: p.avatarUrl,
@@ -77,6 +80,8 @@ export default function AdminLayout({
                 id: p.id,
                 fullName: p.fullName || "Admin User",
                 email: p.email || "",
+                position: p.position || null,
+                phoneNumber: p.phoneNumber || null,
                 orgName: p.orgName || "Organization",
                 role: "admin",
                 avatarUrl: p.avatarUrl,
@@ -92,6 +97,54 @@ export default function AdminLayout({
       }
     }
     loadProfile();
+  }, []);
+
+  // Real-time synchronization of personal profile details (Name & Position)
+  useEffect(() => {
+    const handleProfileUpdated = (e: any) => {
+      const updated = e.detail || e.data?.profile;
+      if (updated) {
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                fullName: updated.fullName || prev.fullName,
+                position:
+                  updated.position !== undefined
+                    ? updated.position
+                    : prev.position,
+                phoneNumber:
+                  updated.phoneNumber !== undefined
+                    ? updated.phoneNumber
+                    : prev.phoneNumber,
+                avatarUrl:
+                  updated.avatarUrl !== undefined
+                    ? updated.avatarUrl
+                    : prev.avatarUrl,
+              }
+            : null
+        );
+      }
+    };
+
+    window.addEventListener("tasq:profile_updated", handleProfileUpdated);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        bc = new BroadcastChannel("tasq-profile-channel");
+        bc.onmessage = (event) => {
+          if (event.data?.profile) {
+            handleProfileUpdated({ detail: event.data.profile });
+          }
+        };
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener("tasq:profile_updated", handleProfileUpdated);
+      if (bc) bc.close();
+    };
   }, []);
 
   // Categorized Navigation
@@ -137,9 +190,15 @@ export default function AdminLayout({
               "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
           },
           {
-            name: "Settings",
+            name: "Settings & Profile",
             href: "/admin/settings",
             icon: Settings,
+            badge: null,
+          },
+          {
+            name: "My Profile",
+            href: "/admin/profile",
+            icon: User,
             badge: null,
           },
         ],

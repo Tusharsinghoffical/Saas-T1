@@ -38,6 +38,8 @@ export interface UserProfileInfo {
   fullName: string;
   email: string;
   role: string;
+  position?: string | null;
+  phoneNumber?: string | null;
   avatarUrl?: string | null;
   employeeCode?: string;
   orgName?: string;
@@ -329,59 +331,77 @@ export function DashboardSidebar({
         </div>
 
         {/* User Identity & Logout Footer */}
-        <div className="border-t border-slate-200/80 p-3 dark:border-slate-800">
-          {isCollapsed ? (
-            <div className="flex flex-col items-center gap-2">
-              <div
-                className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-600 text-xs font-bold text-white shadow-xs"
-                title={user?.fullName || "User Profile"}
-              >
-                {initials}
-                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
-              </div>
+        {(() => {
+          const profileHref =
+            role === "admin"
+              ? "/admin/profile"
+              : role === "manager"
+                ? "/manager/profile"
+                : "/employee/profile";
 
-              <Link
-                href="/login"
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
-                title="Sign Out"
-              >
-                <LogOut className="h-4 w-4" />
-              </Link>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <div className="relative flex-shrink-0">
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${roleConfig.avatarBg} text-xs font-bold text-white shadow-sm`}
+          return (
+            <div className="border-t border-slate-200/80 p-3 dark:border-slate-800">
+              {isCollapsed ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Link
+                    href={profileHref}
+                    className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-600 text-xs font-bold text-white shadow-xs transition hover:scale-105"
+                    title={`${user?.fullName || "User"} (${user?.position || role}) - Click to edit profile`}
                   >
-                    {isLoadingUser ? "…" : initials}
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
-                </div>
+                    {initials}
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
+                  </Link>
 
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-xs font-bold text-slate-900 dark:text-white">
-                    {isLoadingUser
-                      ? "Loading…"
-                      : user?.fullName || "Active User"}
-                  </div>
-                  <div className="truncate text-[10px] text-slate-500 dark:text-slate-400">
-                    {isLoadingUser ? "" : user?.email || "workspace user"}
-                  </div>
+                  <Link
+                    href="/login"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
+                    title="Sign Out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Link>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                  <Link
+                    href={profileHref}
+                    className="group/profile flex min-w-0 flex-1 items-center gap-2.5"
+                    title="Edit Personal Details & Profile"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br ${roleConfig.avatarBg} text-xs font-bold text-white shadow-sm transition group-hover/profile:scale-105`}
+                      >
+                        {isLoadingUser ? "…" : initials}
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
+                    </div>
 
-              <Link
-                href="/login"
-                className="group flex-shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
-                title="Sign Out"
-              >
-                <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-bold text-slate-900 transition-colors group-hover/profile:text-primary dark:text-white dark:group-hover/profile:text-primary-400">
+                        {isLoadingUser
+                          ? "Loading…"
+                          : user?.fullName || "Active User"}
+                      </div>
+                      <div className="truncate text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                        {isLoadingUser
+                          ? ""
+                          : user?.position || user?.email || "workspace user"}
+                      </div>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/login"
+                    className="group flex-shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
+                    title="Sign Out"
+                  >
+                    <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
     );
   };

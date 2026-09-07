@@ -162,6 +162,55 @@ export class UserController {
     const auth = await requireAuth();
     return await removeUserUseCase(auth, targetUserId);
   }
+
+  async getPersonalProfile() {
+    const auth = await requireAuth();
+    const { userRepository } = await import("../repository/userRepository");
+    const profile = await userRepository.getProfileById(auth.userId);
+    if (!profile) {
+      throw new NotFoundError("Profile not found.");
+    }
+    return {
+      ...profile,
+      email: profile.email || auth.email,
+    };
+  }
+
+  async updatePersonalProfile(updates: {
+    fullName?: string;
+    position?: string | null;
+    phoneNumber?: string | null;
+    bio?: string | null;
+    department?: string | null;
+    avatarUrl?: string | null;
+  }) {
+    const auth = await requireAuth();
+    const { userRepository } = await import("../repository/userRepository");
+    const updated = await userRepository.updateProfile(auth.userId, auth.orgId, updates);
+
+    // Record activity audit trail
+    try {
+      const { activityRepository } = await import("@/domains/activity/repository/activityRepository");
+      await activityRepository.recordLog({
+        orgId: auth.orgId,
+        actorId: auth.userId,
+        action: "member.profile_updated",
+        entity: "profiles",
+        entityId: auth.userId,
+        diff: {
+          updatedFields: Object.keys(updates),
+          position: updates.position,
+        },
+      });
+    } catch {
+      // Non-blocking audit
+    }
+
+    return {
+      ...updated,
+      email: updated.email || auth.email,
+    };
+  }
 }
 
 export const userController = new UserController();

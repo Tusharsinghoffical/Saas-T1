@@ -57,6 +57,8 @@ export default function EmployeeLayout({
             id: p.id,
             fullName: p.fullName || "Team Member",
             email: p.email || "employee@workspace.com",
+            position: p.position || null,
+            phoneNumber: p.phoneNumber || null,
             teamName: p.teamName || "General Squad",
             orgName: p.orgName || "Workspace",
             role: "employee",
@@ -67,6 +69,54 @@ export default function EmployeeLayout({
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
+  }, []);
+
+  // Real-time synchronization of personal profile details
+  useEffect(() => {
+    const handleProfileUpdated = (e: any) => {
+      const updated = e.detail || e.data?.profile;
+      if (updated) {
+        setEmployeeInfo((prev) =>
+          prev
+            ? {
+                ...prev,
+                fullName: updated.fullName || prev.fullName,
+                position:
+                  updated.position !== undefined
+                    ? updated.position
+                    : prev.position,
+                phoneNumber:
+                  updated.phoneNumber !== undefined
+                    ? updated.phoneNumber
+                    : prev.phoneNumber,
+                avatarUrl:
+                  updated.avatarUrl !== undefined
+                    ? updated.avatarUrl
+                    : prev.avatarUrl,
+              }
+            : null
+        );
+      }
+    };
+
+    window.addEventListener("tasq:profile_updated", handleProfileUpdated);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        bc = new BroadcastChannel("tasq-profile-channel");
+        bc.onmessage = (event) => {
+          if (event.data?.profile) {
+            handleProfileUpdated({ detail: event.data.profile });
+          }
+        };
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener("tasq:profile_updated", handleProfileUpdated);
+      if (bc) bc.close();
+    };
   }, []);
 
   const navGroups: NavGroup[] = useMemo(
@@ -82,14 +132,27 @@ export default function EmployeeLayout({
           },
         ],
       },
+      {
+        title: "Account",
+        items: [
+          {
+            name: "My Profile",
+            href: "/employee/profile",
+            icon: User,
+          },
+        ],
+      },
     ],
     []
   );
 
   const breadcrumbs = useMemo(() => {
     const squad = employeeInfo?.teamName || "General Squad";
+    if (pathname?.includes("/employee/profile")) {
+      return [{ label: squad }, { label: "Member" }, { label: "My Profile" }];
+    }
     return [{ label: squad }, { label: "Member" }, { label: "My Tasks" }];
-  }, [employeeInfo?.teamName]);
+  }, [employeeInfo?.teamName, pathname]);
 
   const initials = employeeInfo?.fullName
     ? employeeInfo.fullName
@@ -133,10 +196,25 @@ export default function EmployeeLayout({
         <nav className="fixed bottom-3 left-4 right-4 z-40 flex h-15 items-center justify-around rounded-2xl border border-slate-200/80 bg-white/90 px-3 shadow-xl backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/90 sm:hidden">
           <Link
             href="/employee/dashboard"
-            className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center font-bold text-primary dark:text-primary-400"
+            className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center font-bold ${
+              pathname === "/employee/dashboard"
+                ? "text-primary dark:text-primary-400"
+                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            }`}
           >
             <CheckSquare className="h-4.5 w-4.5" />
             <span className="mt-0.5 text-[10px]">My Tasks</span>
+          </Link>
+          <Link
+            href="/employee/profile"
+            className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center font-medium ${
+              pathname === "/employee/profile"
+                ? "text-primary dark:text-primary-400"
+                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            }`}
+          >
+            <User className="h-4.5 w-4.5" />
+            <span className="mt-0.5 text-[10px]">Profile</span>
           </Link>
           <button
             type="button"

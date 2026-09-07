@@ -27,6 +27,7 @@ export interface OrgMember {
   id: string;
   fullName: string;
   role?: string;
+  position?: string | null;
   avatarUrl?: string | null;
 }
 
@@ -644,6 +645,17 @@ export function TaskFormModal({
                     {member.fullName.slice(0, 1)}
                   </div>
                   <span>{member.fullName}</span>
+                  {member.position && (
+                    <span
+                      className={`text-[10px] font-normal ${
+                        isSelected
+                          ? "text-white/80"
+                          : "text-slate-500 dark:text-slate-400"
+                      }`}
+                    >
+                      ({member.position})
+                    </span>
+                  )}
                 </button>
               );
             })}

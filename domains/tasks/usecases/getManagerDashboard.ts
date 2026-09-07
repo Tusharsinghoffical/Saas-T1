@@ -54,6 +54,8 @@ export async function getManagerDashboardUseCase(
     email:
       managerProfileData?.email || context.email || "manager@workspace.com",
     role: context.role || "manager",
+    position: managerProfileData?.position || null,
+    phoneNumber: managerProfileData?.phoneNumber || null,
     teamId: managerProfileData?.teamId || teamId || null,
     teamName: managerProfileData?.teamName || "Sprint Lead Squad",
     avatarUrl: managerProfileData?.avatarUrl || null,

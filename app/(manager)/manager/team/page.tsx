@@ -39,6 +39,8 @@ interface EmployeeMember {
   fullName: string;
   email: string | null;
   role: "admin" | "manager" | "employee";
+  position?: string | null;
+  phoneNumber?: string | null;
   teamId?: string | null;
   teamName?: string | null;
   avatarUrl?: string | null;
@@ -103,6 +105,8 @@ export default function ManagerTeamPage() {
           fullName: m.fullName || m.full_name || "Team Member",
           email: m.email || null,
           role: m.role || "employee",
+          position: m.position || null,
+          phoneNumber: m.phoneNumber || m.phone_number || null,
           teamId: m.teamId || m.team_id || null,
           teamName: m.teamName || m.team_name || "General",
           avatarUrl: m.avatarUrl || m.avatar_url || null,
@@ -159,8 +163,23 @@ export default function ManagerTeamPage() {
     } catch (e) {
       console.warn("Realtime connection error:", e);
     }
+    // Cross-tab broadcast listener for profile/position updates
+    let profileBc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        profileBc = new BroadcastChannel("tasq-profile-channel");
+        profileBc.onmessage = () => {
+          fetchMembers();
+        };
+      }
+    } catch {}
+
     return () => {
-      if (channel) createClient().removeChannel(channel);
+      if (profileBc) profileBc.close();
+      if (channel) {
+        const supabase = createClient();
+        supabase.removeChannel(channel);
+      }
     };
   }, [fetchMembers]);
 
@@ -464,9 +483,10 @@ export default function ManagerTeamPage() {
       {/* Employee Table */}
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {/* Table Header */}
-        <div className="grid grid-cols-[2fr_2fr_1.5fr_1fr_auto] gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-3.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800 dark:bg-slate-800/30">
+        <div className="grid grid-cols-[2fr_1.8fr_1.5fr_1.5fr_1fr_auto] gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-3.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800 dark:bg-slate-800/30">
           <span>Member / ID</span>
           <span>Email</span>
+          <span>Position / Title</span>
           <span>Assigned Team</span>
           <span>Route</span>
           <span className="text-right">Actions</span>
@@ -497,7 +517,7 @@ export default function ManagerTeamPage() {
             {filteredMembers.map((member, idx) => (
               <div
                 key={member.id}
-                className="group grid grid-cols-[2fr_2fr_1.5fr_1fr_auto] items-center gap-4 px-6 py-4 text-sm transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                className="group grid grid-cols-[2fr_1.8fr_1.5fr_1.5fr_1fr_auto] items-center gap-4 px-6 py-4 text-sm transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
               >
                 {/* Name + Avatar + MemberIdBadge */}
                 <div className="flex min-w-0 items-center gap-3">
@@ -518,6 +538,17 @@ export default function ManagerTeamPage() {
                 <div className="flex items-center gap-1.5 truncate text-[12px] text-slate-500 dark:text-slate-400">
                   <Mail className="h-3 w-3 flex-shrink-0 text-slate-300" />
                   <span className="truncate">{member.email || "—"}</span>
+                </div>
+
+                {/* Position / Job Title */}
+                <div>
+                  {member.position ? (
+                    <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] font-semibold text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary-300">
+                      {member.position}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] italic text-slate-400">—</span>
+                  )}
                 </div>
 
                 {/* Team Assignment */}
