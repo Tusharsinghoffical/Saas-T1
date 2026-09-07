@@ -11,7 +11,9 @@ import {
   GripVertical,
   Link2,
   Lock,
+  Sparkles,
 } from "lucide-react";
+import { formatTaskDisplay } from "@/lib/utils/taskFormatter";
 
 export interface KanbanTaskItem {
   id: string;
@@ -100,6 +102,11 @@ export function TaskCard({
     task.subtasks?.filter((st) => st.completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
 
+  const { title: cleanTitle, isAiEnhanced } = formatTaskDisplay(
+    task.title,
+    task.description
+  );
+
   return (
     <div
       draggable
@@ -120,6 +127,16 @@ export function TaskCard({
           <Badge variant={priorityVariants[task.priority] || "default"}>
             {task.priority}
           </Badge>
+
+          {isAiEnhanced && (
+            <span
+              title="AI Enhanced Task"
+              className="inline-flex items-center gap-0.5 rounded border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400"
+            >
+              <Sparkles className="h-2.5 w-2.5" />
+              AI
+            </span>
+          )}
 
           {isBlocked && (
             <span
@@ -155,7 +172,7 @@ export function TaskCard({
 
       {/* Task Title */}
       <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 transition-colors group-hover:text-primary dark:text-slate-100">
-        {task.title}
+        {cleanTitle}
       </h4>
 
       {/* Task Tags */}

@@ -22,6 +22,12 @@ import {
   Hash,
   ShieldCheck,
   Sparkles,
+  Copy,
+  Check,
+  Briefcase,
+  Play,
+  Eye,
+  Layers,
 } from "lucide-react";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import {
@@ -32,7 +38,6 @@ import {
   ProductivityChart,
   type ProductivityDay,
 } from "@/components/dashboard/ProductivityChart";
-import { Badge } from "@/components/ui/badge";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useRealtimeTasks } from "@/lib/supabase/useRealtimeTasks";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
@@ -40,6 +45,7 @@ import {
   useAutoRefresh,
   AutoRefreshBadge,
 } from "@/components/ui/AutoRefreshControl";
+import { formatTaskDisplay } from "@/lib/utils/taskFormatter";
 
 const STATUS_CONFIG: Record<
   string,
@@ -48,68 +54,70 @@ const STATUS_CONFIG: Record<
   pending: {
     label: "Pending",
     color: "text-slate-600 dark:text-slate-300",
-    bg: "bg-slate-100 dark:bg-slate-700",
+    bg: "bg-slate-100 dark:bg-slate-800",
     dot: "bg-slate-400",
   },
   in_progress: {
     label: "In Progress",
-    color: "text-indigo-600 dark:text-indigo-400",
-    bg: "bg-indigo-50 dark:bg-indigo-950/30",
-    dot: "bg-indigo-500",
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-950/40",
+    dot: "bg-blue-500",
   },
   in_review: {
     label: "In Review",
-    color: "text-amber-600 dark:text-amber-400",
-    bg: "bg-amber-50 dark:bg-amber-950/30",
-    dot: "bg-amber-500",
+    color: "text-purple-600 dark:text-purple-400",
+    bg: "bg-purple-50 dark:bg-purple-950/40",
+    dot: "bg-purple-500",
   },
   completed: {
     label: "Completed",
     color: "text-emerald-600 dark:text-emerald-400",
-    bg: "bg-emerald-50 dark:bg-emerald-950/30",
+    bg: "bg-emerald-50 dark:bg-emerald-950/40",
     dot: "bg-emerald-500",
   },
 };
 
 const PRIORITY_CONFIG: Record<
   string,
-  { label: string; color: string; bg: string }
+  { label: string; color: string; bg: string; dot: string }
 > = {
   low: {
     label: "Low",
     color: "text-slate-500",
     bg: "bg-slate-100 dark:bg-slate-800",
+    dot: "bg-slate-400",
   },
   medium: {
     label: "Medium",
-    color: "text-blue-600",
+    color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-50 dark:bg-blue-950/40",
+    dot: "bg-blue-500",
   },
   high: {
     label: "High",
-    color: "text-orange-600",
-    bg: "bg-orange-50 dark:bg-orange-950/40",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    dot: "bg-amber-500",
   },
   urgent: {
     label: "Urgent",
-    color: "text-red-600",
-    bg: "bg-red-50 dark:bg-red-950/40",
+    color: "text-rose-600 dark:text-rose-400",
+    bg: "bg-rose-50 dark:bg-rose-950/40",
+    dot: "bg-rose-500",
   },
 };
 
 // Mini Avatar component
 function MiniAvatar({
   name,
-  color = "primary",
 }: {
   name?: string;
-  color?: string;
 }) {
   const initial = (name || "U")[0]?.toUpperCase();
   return (
     <span
       title={name}
-      className="inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-primary/15 text-[10px] font-bold text-primary ring-1 ring-primary/10 dark:border-slate-800"
+      className="inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-indigo-500/20 text-[10px] font-bold text-indigo-600 ring-1 ring-indigo-500/10 dark:border-slate-800 dark:bg-indigo-500/30 dark:text-indigo-300"
     >
       {initial}
     </span>
@@ -136,7 +144,7 @@ function TaskAttribution({
       {/* Assignees */}
       {assignees && assignees.length > 0 ? (
         <div className="flex items-center gap-1.5">
-          <UserCheck className="h-3 w-3 flex-shrink-0 text-primary" />
+          <UserCheck className="h-3 w-3 flex-shrink-0 text-indigo-500" />
           <div className="flex -space-x-1.5">
             {assignees.slice(0, 4).map((a: any, idx: number) => (
               <MiniAvatar key={a.id || idx} name={a.fullName || a.full_name} />
@@ -184,16 +192,28 @@ export default function AdminDashboardPage() {
   const [orgId, setOrgId] = useState<string>("");
   const [chartData, setChartData] = useState<ProductivityDay[]>([]);
   const [cacheStatus, setCacheStatus] = useState<string>("live");
-  const [greeting, setGreeting] = useState<string>("Welcome");
+  const [copiedId, setCopiedId] = useState(false);
+  const [adminCode, setAdminCode] = useState("EMP-96973D");
 
   const { tasks, setTasks, upsertTask, isConnected } = useTaskStore();
   useRealtimeTasks(orgId || undefined);
 
+  const [greeting, setGreeting] = useState<{
+    text: string;
+    sub: string;
+  }>({
+    text: "Good Afternoon",
+    sub: "Organization Administrator",
+  });
+
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good Morning");
-    else if (hour < 17) setGreeting("Good Afternoon");
-    else setGreeting("Good Evening");
+    if (hour < 12)
+      setGreeting({ text: "Good Morning", sub: "Organization Administrator" });
+    else if (hour < 17)
+      setGreeting({ text: "Good Afternoon", sub: "Organization Administrator" });
+    else
+      setGreeting({ text: "Good Evening", sub: "Organization Administrator" });
   }, []);
 
   const fetchAllData = useCallback(async (silent = false) => {
@@ -201,11 +221,19 @@ export default function AdminDashboardPage() {
       setIsLoading(true);
     }
     try {
-      const [tasksRes, membersRes, dashboardRes] = await Promise.all([
+      const [tasksRes, membersRes, dashboardRes, profileRes] = await Promise.all([
         fetch("/api/v1/tasks").catch(() => null),
         fetch("/api/v1/org/members").catch(() => null),
         fetch("/api/v1/dashboard/admin").catch(() => null),
+        fetch("/api/v1/user/profile").catch(() => null),
       ]);
+
+      if (profileRes && profileRes.ok) {
+        const profJson = await profileRes.json();
+        if (profJson.success && profJson.data?.employeeCode) {
+          setAdminCode(profJson.data.employeeCode);
+        }
+      }
 
       if (tasksRes && tasksRes.ok) {
         const tasksJson = await tasksRes.json();
@@ -264,7 +292,6 @@ export default function AdminDashboardPage() {
     }
   }, [setTasks, tasks.length]);
 
-  // Initial data load on mount
   useEffect(() => {
     fetchAllData(false);
   }, [fetchAllData]);
@@ -300,15 +327,21 @@ export default function AdminDashboardPage() {
 
   const handleTaskCreated = (newTask: any) => upsertTask(newTask);
 
+  const copyAdminCode = () => {
+    navigator.clipboard.writeText(adminCode);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
   const kpiCards = [
     {
       label: "Active Tasks",
       value: liveKpis.activeTasks,
       sub: "In flight across workspace",
       icon: Clock,
-      color: "text-primary",
-      bg: "from-primary/10 to-primary/5",
-      border: "border-primary/15",
+      color: "text-blue-500",
+      bg: "bg-blue-500/10 dark:bg-blue-500/15",
+      border: "border-blue-500/20",
       valueColor: "text-slate-900 dark:text-white",
     },
     {
@@ -319,18 +352,18 @@ export default function AdminDashboardPage() {
           ? "Requires urgent attention"
           : "All tasks on schedule",
       icon: AlertTriangle,
-      color: liveKpis.overdueTasks > 0 ? "text-red-500" : "text-slate-400",
+      color: liveKpis.overdueTasks > 0 ? "text-rose-500" : "text-slate-400",
       bg:
         liveKpis.overdueTasks > 0
-          ? "from-red-500/10 to-red-500/5"
-          : "from-slate-100/80 to-slate-50",
+          ? "bg-rose-500/15"
+          : "bg-slate-100 dark:bg-slate-800/80",
       border:
         liveKpis.overdueTasks > 0
-          ? "border-red-500/20"
-          : "border-slate-200 dark:border-slate-700",
+          ? "border-rose-500/40"
+          : "border-slate-200 dark:border-slate-800",
       valueColor:
         liveKpis.overdueTasks > 0
-          ? "text-red-600 dark:text-red-400"
+          ? "text-rose-600 dark:text-rose-400"
           : "text-slate-900 dark:text-white",
     },
     {
@@ -339,8 +372,8 @@ export default function AdminDashboardPage() {
       sub: `${liveKpis.completedTasks} completed to date`,
       icon: CheckCircle2,
       color: "text-emerald-500",
-      bg: "from-emerald-500/10 to-emerald-500/5",
-      border: "border-emerald-500/15",
+      bg: "bg-emerald-500/10 dark:bg-emerald-500/15",
+      border: "border-emerald-500/20",
       valueColor: "text-emerald-600 dark:text-emerald-400",
     },
     {
@@ -352,151 +385,199 @@ export default function AdminDashboardPage() {
           ? "Avg completion velocity"
           : "Awaiting first task",
       icon: TrendingUp,
-      color: "text-violet-500",
-      bg: "from-violet-500/10 to-violet-500/5",
-      border: "border-violet-500/15",
+      color: "text-purple-500",
+      bg: "bg-purple-500/10 dark:bg-purple-500/15",
+      border: "border-purple-500/20",
       valueColor: "text-slate-900 dark:text-white",
     },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Admin Overview
-            </h1>
-            {/* Live Status Pill */}
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold transition-all ${
-                isConnected
-                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 shadow-sm shadow-emerald-500/10 dark:text-emerald-400"
-                  : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-              }`}
-            >
-              <Radio
-                className={`h-3 w-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`}
-              />
-              {isConnected ? "Realtime Sync Active" : "Syncing…"}
-            </span>
-            {cacheStatus === "redis-cache" && (
-              <span className="inline-flex items-center gap-1 rounded-lg border border-indigo-500/20 bg-indigo-500/15 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400">
-                <Zap className="h-2.5 w-2.5" /> Redis
+    <div className="space-y-6 pb-12">
+      {/* ── 🚀 Executive Admin Command Banner ── */}
+      <div className="relative overflow-hidden rounded-3xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 p-6 text-white shadow-2xl backdrop-blur-xl sm:p-7">
+        {/* Ambient Glow */}
+        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-indigo-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl" />
+
+        <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+          {/* Left Title & Identity */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-indigo-200 backdrop-blur-md">
+                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                <span>{greeting.text}</span>
               </span>
-            )}
-          </div>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Real-time visibility across all managers, employees & tasks
-          </p>
-        </div>
 
-        {/* Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* View Toggle */}
-          <div className="flex items-center gap-0.5 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
-            {(["kanban", "list", "analytics"] as const).map((mode) => {
-              const icons = {
-                kanban: LayoutGrid,
-                list: List,
-                analytics: BarChart3,
-              };
-              const labels = {
-                kanban: "Kanban",
-                list: "List",
-                analytics: "Analytics",
-              };
-              const Icon = icons[mode];
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setViewMode(mode)}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                    viewMode === mode
-                      ? "bg-white text-primary shadow-sm ring-1 ring-primary/10 dark:bg-slate-900"
-                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              <span className="inline-flex items-center gap-1 rounded-full border border-indigo-500/30 bg-indigo-500/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-indigo-300">
+                <ShieldCheck className="h-3 w-3" />
+                Organization Admin
+              </span>
+
+              {/* Realtime Status Beacon */}
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold backdrop-blur-md transition-colors ${
+                  isConnected
+                    ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
+                    : "border-amber-500/30 bg-amber-500/20 text-amber-300"
+                }`}
+              >
+                <Radio
+                  className={`h-3 w-3 ${
+                    isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"
                   }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {labels[mode]}
-                </button>
-              );
-            })}
+                />
+                <span>
+                  {isConnected ? "Realtime Sync Active" : "Connecting..."}
+                </span>
+              </span>
+
+              {cacheStatus === "redis-cache" && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
+                  <Zap className="h-2.5 w-2.5" /> Redis Cached
+                </span>
+              )}
+            </div>
+
+            {/* Main Headline */}
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                Admin Overview
+              </h1>
+              <p className="mt-0.5 text-xs text-indigo-200/80 sm:text-sm">
+                Real-time visibility across all managers, employees, and sprint
+                executions
+              </p>
+            </div>
+
+            {/* Quick Identifier Chips */}
+            <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
+              <button
+                type="button"
+                onClick={copyAdminCode}
+                title="Click to copy Admin ID"
+                className="group inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 font-mono text-[11px] font-bold text-indigo-200 transition hover:bg-white/15 hover:text-white"
+              >
+                <Hash className="h-3 w-3 text-indigo-400" />
+                <span>ID: {adminCode}</span>
+                {copiedId ? (
+                  <Check className="h-3 w-3 text-emerald-400" />
+                ) : (
+                  <Copy className="h-3 w-3 text-indigo-300 opacity-70 transition group-hover:text-white" />
+                )}
+              </button>
+
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-indigo-200">
+                <Briefcase className="h-3 w-3 text-amber-400" />
+                <span>Workspace Scope: Global</span>
+              </span>
+            </div>
           </div>
 
-          {/* Manual Refresh */}
-          <AutoRefreshBadge
-            isRefreshing={isRefreshing || isLoading}
-            triggerManual={triggerManual}
-          />
+          {/* Right Controls: View Mode + AutoRefresh + Actions */}
+          <div className="flex flex-wrap items-center gap-2.5 lg:flex-col lg:items-end">
+            {/* Top row: View switcher */}
+            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1 text-xs font-semibold backdrop-blur-md">
+              {(["kanban", "list", "analytics"] as const).map((mode) => {
+                const icons = {
+                  kanban: LayoutGrid,
+                  list: List,
+                  analytics: BarChart3,
+                };
+                const labels = {
+                  kanban: "Kanban",
+                  list: "List",
+                  analytics: "Analytics",
+                };
+                const Icon = icons[mode];
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => setViewMode(mode)}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition-all ${
+                      viewMode === mode
+                        ? "bg-white font-bold text-slate-900 shadow-md"
+                        : "text-indigo-200 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{labels[mode]}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-          <Link
-            href="/admin/team"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:text-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-          >
-            <Users className="h-3.5 w-3.5 text-primary" />
-            Team ({orgMembers.length})
-          </Link>
+            {/* Bottom row: AutoRefresh + Team + New Task */}
+            <div className="flex flex-wrap items-center gap-2">
+              <AutoRefreshBadge
+                isRefreshing={isRefreshing || isLoading}
+                triggerManual={triggerManual}
+              />
 
-          <button
-            type="button"
-            onClick={() => setIsTaskModalOpen(true)}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-br from-primary to-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-primary/25 transition-all hover:scale-[1.02] hover:from-primary/90 hover:to-violet-600/90 hover:shadow-lg hover:shadow-primary/20"
-          >
-            <Plus className="h-4 w-4" />
-            New Task
-          </button>
+              <Link
+                href="/admin/team"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-3.5 py-2 text-xs font-semibold text-indigo-200 transition hover:bg-white/15 hover:text-white"
+              >
+                <Users className="h-3.5 w-3.5 text-indigo-400" />
+                <span>Team ({orgMembers.length})</span>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setIsTaskModalOpen(true)}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 transition-all hover:from-indigo-400 hover:to-indigo-500"
+              >
+                <Plus className="h-4 w-4 stroke-[2.5]" />
+                <span>New Task</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* ── KPI Metric Cards ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
         {kpiCards.map((card) => {
           const Icon = card.icon;
           return (
             <div
               key={card.label}
-              className={`relative overflow-hidden rounded-2xl bg-gradient-to-br p-5 ${card.bg} border ${card.border} shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50 dark:bg-none`}
+              className={`group space-y-1 rounded-2xl border p-4 shadow-sm transition hover:shadow-md ${
+                card.border
+              } ${card.label === "Overdue Tasks" && liveKpis.overdueTasks > 0 ? "bg-rose-500/5 dark:bg-rose-500/10" : "bg-white dark:bg-slate-900/90"}`}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {card.label}
-                  </p>
-                  <div
-                    className={`mt-2 text-3xl font-extrabold ${card.valueColor}`}
-                  >
-                    {isLoading ? (
-                      <div className="h-8 w-12 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
-                    ) : (
-                      card.value
-                    )}
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-                    {card.sub}
-                  </p>
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span>{card.label}</span>
+                <div className={`rounded-lg p-1.5 ${card.bg} ${card.color}`}>
+                  <Icon className="h-4 w-4" />
                 </div>
-                <div
-                  className={`rounded-xl bg-white/60 p-2.5 dark:bg-slate-800/60 ${card.color}`}
-                >
-                  <Icon className="w-4.5 h-4.5 h-5 w-5" />
-                </div>
+              </div>
+              <div className={`text-2xl font-black sm:text-3xl ${card.valueColor}`}>
+                {isLoading ? (
+                  <div className="h-8 w-12 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+                ) : (
+                  card.value
+                )}
+              </div>
+              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                {card.sub}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* ── 30-Day Chart ── */}
-      <ProductivityChart
-        data={chartData}
-        title="30-Day Workspace Productivity"
-        subtitle="Daily task creation & completion velocity trend"
-      />
+      {/* ── 30-Day Workspace Productivity Trend Chart ── */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <ProductivityChart
+          data={chartData}
+          title="30-Day Workspace Productivity"
+          subtitle="Daily task creation & completion velocity trend"
+        />
+      </div>
 
-      {/* ── Task Stats Row ── */}
+      {/* ── Task Status Swimlane Summary Bar ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {["pending", "in_progress", "in_review", "completed"].map((status) => {
           const cfg = STATUS_CONFIG[status];
@@ -504,10 +585,10 @@ export default function AdminDashboardPage() {
           return (
             <div
               key={status}
-              className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 ${
+              className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm ${
                 status === "completed"
-                  ? "border-emerald-200/50 bg-emerald-50/60 dark:border-emerald-500/20 dark:bg-emerald-950/20"
-                  : "border-slate-200/80 bg-white dark:border-slate-700/50 dark:bg-slate-800/60"
+                  ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/10"
+                  : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/90"
               }`}
             >
               <span
@@ -535,24 +616,24 @@ export default function AdminDashboardPage() {
         />
       )}
 
-      {/* ── Enhanced List View ── */}
+      {/* ── Enhanced Linear List View ── */}
       {viewMode === "list" && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
           {/* List Header */}
           <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800/30">
             <div className="flex items-center gap-2.5">
-              <List className="h-4 w-4 text-primary" />
+              <List className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 All Workspace Tasks
               </h3>
-              <span className="rounded-lg bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+              <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] font-bold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
                 {tasks.length}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setIsTaskModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-primary transition hover:text-primary/80"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 transition hover:text-indigo-700 dark:text-indigo-400"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Task
@@ -562,7 +643,7 @@ export default function AdminDashboardPage() {
           {/* Task Rows */}
           {tasks.length === 0 ? (
             <div className="py-20 text-center">
-              <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+              <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
               <p className="text-sm text-slate-400">
                 No tasks yet. Create the first one!
               </p>
@@ -579,10 +660,15 @@ export default function AdminDashboardPage() {
                   task.status !== "completed" &&
                   new Date(dueDate).getTime() < nowMs;
 
+                const { title: cleanTitle, isAiEnhanced } = formatTaskDisplay(
+                  task.title,
+                  task.description
+                );
+
                 return (
                   <div
                     key={task.id}
-                    className="group flex flex-col gap-4 px-6 py-4 transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40 sm:flex-row sm:items-start"
+                    className="group flex flex-col gap-4 px-6 py-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/40 sm:flex-row sm:items-start"
                   >
                     {/* Row Index + Status Dot */}
                     <div className="flex flex-shrink-0 items-center gap-3">
@@ -597,12 +683,17 @@ export default function AdminDashboardPage() {
                     {/* Task Body */}
                     <div className="min-w-0 flex-1 space-y-2">
                       {/* Title */}
-                      <div className="flex flex-wrap items-start gap-2">
-                        <p className="text-[13px] font-bold leading-snug text-slate-900 dark:text-white">
-                          {task.title}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-[13px] font-bold leading-snug text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400">
+                          {cleanTitle}
                         </p>
+                        {isAiEnhanced && (
+                          <span className="inline-flex items-center gap-1 rounded border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                            <Sparkles className="h-2.5 w-2.5" /> AI
+                          </span>
+                        )}
                         {isOverdue && (
-                          <span className="inline-flex items-center gap-0.5 rounded-md border border-red-200/60 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-500 dark:border-red-500/20 dark:bg-red-950/30">
+                          <span className="inline-flex items-center gap-0.5 rounded-md border border-rose-200/60 bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-500 dark:border-rose-500/20 dark:bg-rose-950/30">
                             <AlertTriangle className="h-2.5 w-2.5" /> Overdue
                           </span>
                         )}
@@ -621,7 +712,9 @@ export default function AdminDashboardPage() {
                       <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 dark:text-slate-500">
                         {dueDate && (
                           <span
-                            className={`flex items-center gap-1 ${isOverdue ? "font-semibold text-red-500" : ""}`}
+                            className={`flex items-center gap-1 ${
+                              isOverdue ? "font-semibold text-rose-500" : ""
+                            }`}
                           >
                             <Calendar className="h-3 w-3" />
                             Due{" "}
@@ -632,7 +725,7 @@ export default function AdminDashboardPage() {
                           </span>
                         )}
                         {task.tags && task.tags.length > 0 && (
-                          <span className="flex items-center gap-0.5 text-primary/80">
+                          <span className="flex items-center gap-0.5 text-indigo-500">
                             <Hash className="h-2.5 w-2.5" />
                             {task.tags.join(" · ")}
                           </span>
@@ -673,7 +766,7 @@ export default function AdminDashboardPage() {
               </span>
               <Link
                 href="/admin/team"
-                className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+                className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline dark:text-indigo-400"
               >
                 View Team <ArrowRight className="h-3 w-3" />
               </Link>
@@ -682,24 +775,25 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ── Analytics Placeholder ── */}
+      {/* ── Advanced Analytics View ── */}
       {viewMode === "analytics" && (
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <Sparkles className="h-7 w-7 text-primary" />
+        <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+            <Sparkles className="h-7 w-7" />
           </div>
           <h3 className="mb-1 text-base font-bold text-slate-800 dark:text-white">
-            Advanced Analytics
+            Advanced Analytics & Observability
           </h3>
-          <p className="mx-auto mb-4 max-w-sm text-sm text-slate-500 dark:text-slate-400">
-            Deep-dive charts, burndown reports, and per-member velocity metrics.
+          <p className="mx-auto mb-5 max-w-md text-sm text-slate-500 dark:text-slate-400">
+            Deep-dive into live event streams, burndown reports, and PostHog
+            client-side telemetry.
           </p>
           <Link
             href="/admin/analytics-debug"
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow transition hover:bg-primary/90"
+            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-600/30 transition hover:bg-indigo-500"
           >
             <BarChart3 className="h-3.5 w-3.5" />
-            Open Analytics <ArrowRight className="h-3 w-3" />
+            Open PostHog Analytics Debugger <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       )}
