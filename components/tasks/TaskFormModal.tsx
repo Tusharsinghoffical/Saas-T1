@@ -21,6 +21,7 @@ import {
   Link2,
 } from "lucide-react";
 import { captureEvent } from "@/lib/analytics/posthog";
+import { broadcastTaskChange } from "@/lib/supabase/useRealtimeTasks";
 
 export interface OrgMember {
   id: string;
@@ -401,6 +402,21 @@ export function TaskFormModal({
           assigneesCount: payload.assigneeIds?.length || 0,
         });
       }
+
+      // Broadcast real-time task update and activity refresh
+      if (json.data) {
+        const targetOrgId = json.data.org_id || json.data.orgId || "workspace";
+        broadcastTaskChange(targetOrgId, "UPSERT_TASK", json.data);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+          if ("BroadcastChannel" in window) {
+            const bc = new BroadcastChannel("tasq-activity-channel");
+            bc.postMessage({ type: "ACTIVITY_UPDATED" });
+            bc.close();
+          }
+        }
+      }
+
       if (onSuccess) onSuccess(json.data);
       onClose();
     } catch (err: any) {

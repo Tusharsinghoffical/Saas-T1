@@ -118,6 +118,13 @@ export function captureEvent(
     window.dispatchEvent(
       new CustomEvent("tasq:analytics_event", { detail: eventRecord })
     );
+
+    // Cross-tab real-time broadcast
+    if ("BroadcastChannel" in window) {
+      const bc = new BroadcastChannel("tasq-analytics-channel");
+      bc.postMessage({ type: "NEW_EVENT", event: eventRecord });
+      bc.close();
+    }
   } catch (_) {}
 }
 
@@ -141,4 +148,10 @@ export function clearRecentEvents(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(RECENT_EVENTS_KEY);
   window.dispatchEvent(new CustomEvent("tasq:analytics_cleared"));
+
+  if ("BroadcastChannel" in window) {
+    const bc = new BroadcastChannel("tasq-analytics-channel");
+    bc.postMessage({ type: "CLEARED" });
+    bc.close();
+  }
 }

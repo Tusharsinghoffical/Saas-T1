@@ -64,10 +64,13 @@ export function useRealtimeTasks(
             event: "*",
             schema: "public",
             table: "tasks",
-            filter: `org_id=eq.${orgId}`,
           },
           (payload) => {
             const { eventType, new: newRow, old: oldRow } = payload;
+            const targetOrg = (newRow as any)?.org_id || (oldRow as any)?.org_id;
+            if (orgId && targetOrg && targetOrg !== orgId) {
+              return;
+            }
 
             if (eventType === "INSERT" || eventType === "UPDATE") {
               const taskItem: KanbanTaskItem = {
@@ -83,6 +86,16 @@ export function useRealtimeTasks(
             } else if (eventType === "DELETE") {
               if ((oldRow as any)?.id) {
                 removeTask((oldRow as any).id);
+              }
+            }
+
+            // Notify activity log & other components across tabs
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+              if ("BroadcastChannel" in window) {
+                const bc = new BroadcastChannel("tasq-activity-channel");
+                bc.postMessage({ type: "ACTIVITY_UPDATED" });
+                bc.close();
               }
             }
           }

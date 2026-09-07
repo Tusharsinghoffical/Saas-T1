@@ -41,10 +41,25 @@ export default function AnalyticsDebugPage() {
 
     window.addEventListener("tasq:analytics_event", handleNewEvent);
     window.addEventListener("tasq:analytics_cleared", handleCleared);
+    window.addEventListener("storage", handleNewEvent);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("tasq-analytics-channel");
+      bc.onmessage = (ev) => {
+        if (ev.data?.type === "CLEARED") {
+          setEvents([]);
+        } else {
+          refreshEvents();
+        }
+      };
+    }
 
     return () => {
       window.removeEventListener("tasq:analytics_event", handleNewEvent);
       window.removeEventListener("tasq:analytics_cleared", handleCleared);
+      window.removeEventListener("storage", handleNewEvent);
+      if (bc) bc.close();
     };
   }, []);
 

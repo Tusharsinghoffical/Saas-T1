@@ -316,6 +316,15 @@ export function KanbanBoard({
       });
     }
 
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+      if ("BroadcastChannel" in window) {
+        const bc = new BroadcastChannel("tasq-activity-channel");
+        bc.postMessage({ type: "ACTIVITY_UPDATED" });
+        bc.close();
+      }
+    }
+
     // 3. Persist to API via PATCH
     try {
       const res = await fetch(`/api/v1/tasks/${taskId}`, {
@@ -353,6 +362,14 @@ export function KanbanBoard({
   const handleTaskSaved = (savedTask: KanbanTaskItem) => {
     upsertTask(savedTask);
     broadcastTaskChange(orgId, "UPSERT_TASK", savedTask);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+      if ("BroadcastChannel" in window) {
+        const bc = new BroadcastChannel("tasq-activity-channel");
+        bc.postMessage({ type: "ACTIVITY_UPDATED" });
+        bc.close();
+      }
+    }
   };
 
   return (

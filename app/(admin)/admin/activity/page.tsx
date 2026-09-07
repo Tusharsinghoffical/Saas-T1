@@ -112,44 +112,84 @@ export default function ActivityLogPage() {
     fetchLogs();
   }, [fetchLogs]);
 
-  const { isRefreshing, triggerManual } = useAutoRefresh(fetchLogs);
+  // Real-time background auto-refresh every 3 seconds
+  const { isRefreshing, triggerManual } = useAutoRefresh(fetchLogs, 3, true);
 
-  // Live Realtime Channel for Activity Logs
+  // Live Realtime Channel for Activity Logs & Task Mutations
   useEffect(() => {
+    // 1. Cross-tab BroadcastChannel listener
+    let bcActivity: BroadcastChannel | null = null;
+    let bcTasks: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        bcActivity = new BroadcastChannel("tasq-activity-channel");
+        bcActivity.onmessage = () => {
+          fetchLogs(1);
+        };
+
+        bcTasks = new BroadcastChannel("tasq-one-sync");
+        bcTasks.onmessage = () => {
+          fetchLogs(1);
+        };
+      }
+    } catch (e) {
+      console.warn("BroadcastChannel error:", e);
+    }
+
+    // 2. Custom DOM event listener
+    const handleActivityEvent = () => fetchLogs(1);
+    window.addEventListener("tasq:activity_updated", handleActivityEvent);
+    window.addEventListener("tasq:analytics_event", handleActivityEvent);
+
+    // 3. Supabase Realtime Channel
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     const hasSupabase =
       Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
 
-    if (!hasSupabase) {
-      setIsConnected(true);
-      return;
-    }
-
     let channel: any = null;
-    try {
-      const supabase = createClient();
-      const channelId = `realtime:activity_feed:${Math.random().toString(36).slice(2, 8)}`;
-      channel = supabase
-        .channel(channelId)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "activity_logs",
-          },
-          () => {
-            fetchLogs(1);
-          }
-        )
-        .subscribe((status) => {
-          setIsConnected(status === "SUBSCRIBED");
-        });
-    } catch (e) {
-      console.warn("Realtime activity subscription error:", e);
+    if (hasSupabase) {
+      try {
+        const supabase = createClient();
+        const channelId = `realtime:activity_feed:${Math.random().toString(36).slice(2, 8)}`;
+        channel = supabase
+          .channel(channelId)
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "activity_logs",
+            },
+            () => {
+              fetchLogs(1);
+            }
+          )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "tasks",
+            },
+            () => {
+              fetchLogs(1);
+            }
+          )
+          .subscribe((status) => {
+            setIsConnected(status === "SUBSCRIBED");
+          });
+      } catch (e) {
+        console.warn("Realtime activity subscription error:", e);
+      }
+    } else {
+      setIsConnected(true);
     }
 
     return () => {
+      window.removeEventListener("tasq:activity_updated", handleActivityEvent);
+      window.removeEventListener("tasq:analytics_event", handleActivityEvent);
+      if (bcActivity) bcActivity.close();
+      if (bcTasks) bcTasks.close();
       if (channel) {
         const supabase = createClient();
         supabase.removeChannel(channel);
