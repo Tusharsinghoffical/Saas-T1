@@ -424,8 +424,8 @@ export default function EmployeeDashboardPage() {
   };
 
   // 1. Fetch live assigned tasks from API
-  const fetchMyTasks = useCallback(async () => {
-    setIsLoading(true);
+  const fetchMyTasks = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const res = await fetch("/api/v1/dashboard/me");
       const json = await res.json();
@@ -442,15 +442,19 @@ export default function EmployeeDashboardPage() {
     } catch {
       // silent
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchMyTasks();
+    fetchMyTasks(false);
   }, [fetchMyTasks]);
 
-  const { isRefreshing, triggerManual } = useAutoRefresh(fetchMyTasks);
+  const { isRefreshing, triggerManual } = useAutoRefresh(
+    (silent) => fetchMyTasks(silent ?? true),
+    20,
+    true
+  );
 
   // 2. Realtime Postgres connection
   useEffect(() => {

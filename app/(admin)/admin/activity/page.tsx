@@ -60,7 +60,8 @@ interface ActivityLogRecord {
 
 export default function ActivityLogPage() {
   const [logs, setLogs] = useState<ActivityLogRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [pendingLogs, setPendingLogs] = useState<ActivityLogRecord[] | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [page, setPage] = useState(1);
@@ -78,8 +79,10 @@ export default function ActivityLogPage() {
   );
 
   const fetchLogs = useCallback(
-    async (targetPage = 1) => {
-      setIsLoading(true);
+    async (targetPage = 1, silent = false) => {
+      if (!silent && logs.length === 0) {
+        setIsInitialLoading(true);
+      }
       try {
         const params = new URLSearchParams({
           page: targetPage.toString(),
@@ -91,29 +94,44 @@ export default function ActivityLogPage() {
         const res = await fetch(`/api/v1/activity?${params.toString()}`);
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
-          setLogs(json.data);
-          if (json.pagination) {
-            setPage(json.pagination.page);
-            setTotalPages(json.pagination.totalPages);
-            setTotalCount(json.pagination.total);
+          // If user is currently inspecting a modal or actively searching:
+          const isInteracting = selectedLog !== null || searchQuery.trim().length > 0;
+          if (silent && isInteracting && targetPage === 1) {
+            // Buffer updates in the background without disturbing the user
+            if (json.data.length > 0 && json.data[0]?.id !== logs[0]?.id) {
+              setPendingLogs(json.data);
+            }
+          } else {
+            // Smoothly update state in place
+            setLogs(json.data);
+            setPendingLogs(null);
+            if (json.pagination) {
+              setPage(json.pagination.page);
+              setTotalPages(json.pagination.totalPages);
+              setTotalCount(json.pagination.total);
+            }
           }
         }
       } catch (err) {
         console.error("Failed to fetch activity logs:", err);
       } finally {
-        setIsLoading(false);
+        setIsInitialLoading(false);
       }
     },
-    [entityFilter, actionFilter]
+    [entityFilter, actionFilter, logs, selectedLog, searchQuery]
   );
 
   // Initial data load on mount
   useEffect(() => {
-    fetchLogs();
+    fetchLogs(1, false);
   }, [fetchLogs]);
 
-  // Real-time background auto-refresh every 3 seconds
-  const { isRefreshing, triggerManual } = useAutoRefresh(fetchLogs, 3, true);
+  // Gentle, non-disruptive background auto-sync (pauses while user is typing or modal open)
+  const { isRefreshing, triggerManual } = useAutoRefresh(
+    (silent) => fetchLogs(1, silent ?? true),
+    20,
+    true
+  );
 
   // Live Realtime Channel for Activity Logs & Task Mutations
   useEffect(() => {
@@ -124,12 +142,13 @@ export default function ActivityLogPage() {
       if (typeof window !== "undefined" && "BroadcastChannel" in window) {
         bcActivity = new BroadcastChannel("tasq-activity-channel");
         bcActivity.onmessage = () => {
-          fetchLogs(1);
+          // Silent background sync
+          fetchLogs(1, true);
         };
 
         bcTasks = new BroadcastChannel("tasq-one-sync");
         bcTasks.onmessage = () => {
-          fetchLogs(1);
+          fetchLogs(1, true);
         };
       }
     } catch (e) {
@@ -137,7 +156,7 @@ export default function ActivityLogPage() {
     }
 
     // 2. Custom DOM event listener
-    const handleActivityEvent = () => fetchLogs(1);
+    const handleActivityEvent = () => fetchLogs(1, true);
     window.addEventListener("tasq:activity_updated", handleActivityEvent);
     window.addEventListener("tasq:analytics_event", handleActivityEvent);
 
@@ -161,7 +180,7 @@ export default function ActivityLogPage() {
               table: "activity_logs",
             },
             () => {
-              fetchLogs(1);
+              fetchLogs(1, true);
             }
           )
           .on(
@@ -172,7 +191,7 @@ export default function ActivityLogPage() {
               table: "tasks",
             },
             () => {
-              fetchLogs(1);
+              fetchLogs(1, true);
             }
           )
           .subscribe((status) => {
@@ -630,7 +649,7 @@ export default function ActivityLogPage() {
         <div className="flex flex-wrap items-center gap-2">
           {/* Manual Refresh */}
           <AutoRefreshBadge
-            isRefreshing={isRefreshing || isLoading}
+            isRefreshing={isRefreshing || isInitialLoading}
             triggerManual={triggerManual}
           />
 
@@ -748,6 +767,31 @@ export default function ActivityLogPage() {
         </div>
       </div>
 
+      {/* ── Background Data Buffer Banner ── */}
+      {pendingLogs && pendingLogs.length > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/10 px-4 py-2.5 text-xs text-primary transition-all shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            <span className="font-semibold">
+              New workspace activities collected in background.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setLogs(pendingLogs);
+              setPendingLogs(null);
+            }}
+            className="cursor-pointer rounded-lg bg-primary px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-primary/90 transition"
+          >
+            Show Updates Now
+          </button>
+        </div>
+      )}
+
       {/* ── Audit Table ── */}
       <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="overflow-x-auto">
@@ -763,7 +807,7 @@ export default function ActivityLogPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {isLoading ? (
+              {isInitialLoading && logs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-16 text-center text-slate-400">
                     <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin text-primary" />
@@ -884,7 +928,7 @@ export default function ActivityLogPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => fetchLogs(Math.max(1, page - 1))}
-              disabled={page <= 1 || isLoading}
+              disabled={page <= 1 || isInitialLoading}
               className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold transition hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -892,7 +936,7 @@ export default function ActivityLogPage() {
             </button>
             <button
               onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
-              disabled={page >= totalPages || isLoading}
+              disabled={page >= totalPages || isInitialLoading}
               className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold transition hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
             >
               <span>Next</span>

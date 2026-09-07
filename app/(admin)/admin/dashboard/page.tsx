@@ -196,8 +196,10 @@ export default function AdminDashboardPage() {
     else setGreeting("Good Evening");
   }, []);
 
-  const fetchAllData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchAllData = useCallback(async (silent = false) => {
+    if (!silent && tasks.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const [tasksRes, membersRes, dashboardRes] = await Promise.all([
         fetch("/api/v1/tasks").catch(() => null),
@@ -260,14 +262,18 @@ export default function AdminDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [setTasks]);
+  }, [setTasks, tasks.length]);
 
   // Initial data load on mount
   useEffect(() => {
-    fetchAllData();
+    fetchAllData(false);
   }, [fetchAllData]);
 
-  const { isRefreshing, triggerManual } = useAutoRefresh(fetchAllData);
+  const { isRefreshing, triggerManual } = useAutoRefresh(
+    (silent) => fetchAllData(silent ?? true),
+    20,
+    true
+  );
 
   const nowMs = Date.now();
   const liveKpis = useMemo(() => {

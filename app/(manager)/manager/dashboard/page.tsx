@@ -110,8 +110,10 @@ export default function ManagerDashboardPage() {
   useRealtimeTasks(orgId || undefined);
 
   // 1. Fetch Real Live Data from API
-  const fetchAllData = useCallback(async () => {
-    setIsLoading(true);
+  const fetchAllData = useCallback(async (silent = false) => {
+    if (!silent && tasks.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const [tasksRes, membersRes, dashboardRes] = await Promise.all([
         fetch("/api/v1/tasks?limit=100"),
@@ -179,14 +181,18 @@ export default function ManagerDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [setTasks]);
+  }, [setTasks, tasks.length]);
 
   // Initial data load on mount
   useEffect(() => {
-    fetchAllData();
+    fetchAllData(false);
   }, [fetchAllData]);
 
-  const { isRefreshing, triggerManual } = useAutoRefresh(fetchAllData);
+  const { isRefreshing, triggerManual } = useAutoRefresh(
+    (silent) => fetchAllData(silent ?? true),
+    20,
+    true
+  );
 
   // 2. Real-Time Dynamic KPI Calculations directly from Store State
   const nowMs = Date.now();
