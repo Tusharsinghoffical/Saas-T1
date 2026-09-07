@@ -17,15 +17,25 @@ export async function saveAttachmentUseCase(
   repo: IAttachmentRepository = attachmentRepository,
   taskRepo: ITaskRepository = taskRepository
 ): Promise<Attachment> {
-  if (
-    data.fileSize === undefined ||
-    data.fileSize === null ||
-    data.fileSize <= 0
-  ) {
-    throw new ValidationError("File size must be greater than 0 bytes.");
+  // Reject negative file sizes
+  if (data.fileSize !== undefined && data.fileSize !== null && data.fileSize < 0) {
+    throw new ValidationError("File size cannot be negative.");
   }
 
-  if (data.fileSize > MAX_ATTACHMENT_SIZE_BYTES) {
+  // Links (external resource URLs) have fileSize: 0 or fileType: "link"
+  const isLink = data.fileType === "link" || data.fileSize === 0;
+
+  if (!isLink) {
+    if (
+      data.fileSize === undefined ||
+      data.fileSize === null ||
+      data.fileSize <= 0
+    ) {
+      throw new ValidationError("File size must be greater than 0 bytes.");
+    }
+  }
+
+  if (data.fileSize && data.fileSize > MAX_ATTACHMENT_SIZE_BYTES) {
     throw new ValidationError("File size exceeds the 25MB limit.");
   }
 

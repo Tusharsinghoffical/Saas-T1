@@ -386,8 +386,28 @@ export function TaskDetail({
       return;
     }
 
+    // Smart cleanup for accidentally merged or pasted URLs (e.g. https://thttps://drive.google.com/...asq-one.onrender.com...)
+    const lastHttps = cleanUrl.lastIndexOf("https://");
+    const lastHttp = cleanUrl.lastIndexOf("http://");
+    const bestProtocolIdx = Math.max(lastHttps, lastHttp);
+    if (bestProtocolIdx > 0) {
+      cleanUrl = cleanUrl.slice(bestProtocolIdx);
+    }
+
+    // Strip accidental app URL suffix if user pasted into an existing address bar link
+    cleanUrl = cleanUrl
+      .replace(/(?:asq-one\.onrender\.com|tasq-one\.onrender\.com|localhost:\d+).*$/i, "")
+      .trim();
+
     if (!cleanUrl.startsWith("http://") && !cleanUrl.startsWith("https://")) {
       cleanUrl = `https://${cleanUrl}`;
+    }
+
+    try {
+      new URL(cleanUrl);
+    } catch {
+      setLinkError("Invalid URL format. Please enter a valid URL (e.g. https://drive.google.com/...).");
+      return;
     }
 
     let title = linkTitle.trim();
@@ -423,9 +443,11 @@ export function TaskDetail({
         setLinkUrl("");
         await fetchAttachments();
       } else {
-        setLinkError(
-          json.error || "Failed to save link to workspace database."
-        );
+        const errorMsg =
+          typeof json.error === "string"
+            ? json.error
+            : json.message || "Failed to save link to workspace database.";
+        setLinkError(errorMsg);
       }
     } catch {
       setLinkError("Network error: Could not save link.");

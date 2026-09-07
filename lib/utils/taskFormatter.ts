@@ -73,7 +73,9 @@ export function formatTaskDisplay(title: string, description?: string | null) {
     if (criteriaSection) {
       const bulletMatches = criteriaSection.match(/[-*•]\s+([^\n\r]+)/g);
       if (bulletMatches) {
-        acceptanceCriteria = bulletMatches.map((b) => b.replace(/^[-*•]\s+/, "").trim());
+        acceptanceCriteria = bulletMatches
+          .map((b) => b.replace(/^[-*•\s\d.)]+/, "").trim())
+          .filter(Boolean);
       }
     }
 
