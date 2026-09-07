@@ -98,23 +98,44 @@ export class SupabaseUserRepository implements IUserRepository {
 
     const supabase = this.getClient();
     let profile: any = null;
-    let { data, error } = await (supabase.from("profiles") as any)
-      .select(
-        "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
-      )
-      .eq("id", userId)
-      .maybeSingle();
 
-    if (error || !data) {
-      const { data: baseData } = await (supabase.from("profiles") as any)
-        .select(
-          "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at"
-        )
-        .eq("id", userId)
-        .maybeSingle();
-      profile = baseData;
-    } else {
-      profile = data;
+    const columnSets = [
+      "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at",
+      "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at",
+      "id, org_id, full_name, role, avatar_url, notification_preferences, created_at",
+      "id, org_id, full_name, role, avatar_url, created_at",
+      "*",
+    ];
+
+    for (const cols of columnSets) {
+      try {
+        const { data, error } = await (supabase.from("profiles") as any)
+          .select(cols)
+          .eq("id", userId)
+          .maybeSingle();
+        if (!error && data) {
+          profile = data;
+          break;
+        }
+      } catch {}
+    }
+
+    if (!profile) {
+      try {
+        const adminClient = this.getAdminClient();
+        if (adminClient) {
+          for (const cols of columnSets) {
+            const { data, error } = await (adminClient.from("profiles") as any)
+              .select(cols)
+              .eq("id", userId)
+              .maybeSingle();
+            if (!error && data) {
+              profile = data;
+              break;
+            }
+          }
+        }
+      } catch {}
     }
 
     if (!profile) {
@@ -124,15 +145,15 @@ export class SupabaseUserRepository implements IUserRepository {
     return {
       id: profile.id,
       orgId: profile.org_id,
-      fullName: profile.full_name,
-      role: profile.role,
-      avatarUrl: profile.avatar_url,
+      fullName: profile.full_name || "Team Member",
+      role: profile.role || "employee",
+      avatarUrl: profile.avatar_url || null,
       position: profile.position || null,
       phoneNumber: profile.phone_number || null,
       bio: profile.bio || null,
       department: profile.department || null,
       notificationPreferences: profile.notification_preferences,
-      createdAt: profile.created_at,
+      createdAt: profile.created_at || new Date().toISOString(),
       deletedAt: profile.deleted_at || null,
     };
   }
@@ -212,66 +233,47 @@ export class SupabaseUserRepository implements IUserRepository {
       return [];
     }
 
+    const columnSets = [
+      "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at",
+      "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at",
+      "id, org_id, full_name, role, avatar_url, notification_preferences, created_at",
+      "id, org_id, full_name, role, avatar_url, created_at",
+      "*",
+    ];
+
     // SECURITY: Use cookie-scoped client enforcing PostgreSQL Row-Level Security
     const client = this.getClient();
-
-    // 1. Query profiles within caller's organization
     let profiles: any[] | null = null;
-    try {
-      const { data, error } = await (client.from("profiles") as any)
-        .select(
-          "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
-        )
-        .eq("org_id", orgId)
-        .order("created_at", { ascending: true });
 
-      if (!error && data) {
-        profiles = data;
-      }
-    } catch {}
-
-    if (!profiles || profiles.length === 0) {
-      // Fallback query without deleted_at in SELECT in case column is not yet present
+    // 1. Query profiles within caller's organization with multi-tier column resilience
+    for (const cols of columnSets) {
       try {
-        const { data: baseProfiles, error: baseErr } = await (client.from("profiles") as any)
-          .select(
-            "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at"
-          )
+        const { data, error } = await (client.from("profiles") as any)
+          .select(cols)
           .eq("org_id", orgId)
           .order("created_at", { ascending: true });
 
-        if (!baseErr && baseProfiles && baseProfiles.length > 0) {
-          profiles = baseProfiles;
+        if (!error && Array.isArray(data) && data.length > 0) {
+          profiles = data;
+          break;
         }
       } catch {}
     }
 
+    // 2. Admin client fallback if client query returned nothing or had RLS issues
     if (!profiles || profiles.length === 0) {
       try {
         const adminClient = this.getAdminClient();
         if (adminClient) {
-          const { data: adminProfiles, error: adminErr } = await (
-            adminClient.from("profiles") as any
-          )
-            .select(
-              "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
-            )
-            .eq("org_id", orgId)
-            .order("created_at", { ascending: true });
-
-          if (!adminErr && adminProfiles && adminProfiles.length > 0) {
-            profiles = adminProfiles;
-          } else {
-            const { data: adminBase } = await (
-              adminClient.from("profiles") as any
-            )
-              .select(
-                "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at"
-              )
+          for (const cols of columnSets) {
+            const { data, error } = await (adminClient.from("profiles") as any)
+              .select(cols)
               .eq("org_id", orgId)
               .order("created_at", { ascending: true });
-            if (adminBase && adminBase.length > 0) {
-              profiles = adminBase;
+
+            if (!error && Array.isArray(data) && data.length > 0) {
+              profiles = data;
+              break;
             }
           }
         }
@@ -280,26 +282,25 @@ export class SupabaseUserRepository implements IUserRepository {
 
     let finalProfiles: any[] = (profiles || []).filter((p: any) => !p.deleted_at);
 
+    // 3. Auto-heal unassociated profiles that belong to this workspace
     if (finalProfiles.length === 0) {
       try {
         const adminClient = this.getAdminClient();
         if (adminClient) {
-          // Auto-heal any orphaned profiles that belong to this workspace
           await (adminClient.from("profiles") as any)
             .update({ org_id: orgId })
             .is("org_id", null);
 
-          const { data: adminProfiles } = await (
-            adminClient.from("profiles") as any
-          )
-            .select(
-              "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at"
-            )
-            .eq("org_id", orgId)
-            .order("created_at", { ascending: true });
+          for (const cols of columnSets) {
+            const { data, error } = await (adminClient.from("profiles") as any)
+              .select(cols)
+              .eq("org_id", orgId)
+              .order("created_at", { ascending: true });
 
-          if (adminProfiles && adminProfiles.length > 0) {
-            finalProfiles = adminProfiles.filter((p: any) => !p.deleted_at);
+            if (!error && Array.isArray(data) && data.length > 0) {
+              finalProfiles = data.filter((p: any) => !p.deleted_at);
+              break;
+            }
           }
         }
       } catch (err) {

@@ -777,22 +777,83 @@ export class SupabaseTaskRepository implements ITaskRepository {
       .select("user_id")
       .eq("task_id", taskId);
 
+    const isUUID = (val: any): boolean =>
+      typeof val === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        val
+      );
+
     const fromUserId =
       currentAssignees && currentAssignees.length > 0
         ? currentAssignees[0].user_id
         : null;
-    const fromTeamId = existingTask.team_id;
+    const fromTeamId = isUUID(existingTask.team_id) ? existingTask.team_id : null;
 
+    // Resolve targetAssigneeId safely (ensure valid UUID)
+    let targetAssigneeId: string | null = null;
+    if (data.assigneeId !== undefined) {
+      if (data.assigneeId && isUUID(data.assigneeId)) {
+        targetAssigneeId = data.assigneeId;
+      } else {
+        targetAssigneeId = null;
+      }
+    }
     const toUserId =
-      data.assigneeId !== undefined ? data.assigneeId : fromUserId;
-    const toTeamId = data.teamId !== undefined ? data.teamId : fromTeamId;
+      data.assigneeId !== undefined ? targetAssigneeId : fromUserId;
+
+    // Resolve target team_id safely (ensure valid UUID or map slug to team)
+    let resolvedTeamId: string | null = null;
+    if (data.teamId !== undefined && data.teamId !== null && data.teamId !== "") {
+      if (isUUID(data.teamId)) {
+        resolvedTeamId = data.teamId;
+      } else {
+        const DEPT_NAME_MAP: Record<string, string> = {
+          "dept-engineering": "Engineering & Tech",
+          "dept-product": "Product & Design",
+          "dept-qa": "QA & Testing",
+          "dept-marketing": "Marketing & Growth",
+          "dept-sales": "Sales & Enterprise Ops",
+          "dept-operations": "Operations & HR",
+        };
+        const targetTeamName = DEPT_NAME_MAP[data.teamId] || data.teamId;
+
+        try {
+          const { data: existingTeam } = await (adminClient.from("teams") as any)
+            .select("id")
+            .eq("org_id", orgId)
+            .ilike("name", targetTeamName)
+            .maybeSingle();
+
+          if (existingTeam?.id && isUUID(existingTeam.id)) {
+            resolvedTeamId = existingTeam.id;
+          } else {
+            const { data: createdTeam, error: createTeamErr } = await (
+              adminClient.from("teams") as any
+            )
+              .insert({
+                org_id: orgId,
+                name: targetTeamName,
+              })
+              .select("id")
+              .maybeSingle();
+
+            if (!createTeamErr && createdTeam?.id && isUUID(createdTeam.id)) {
+              resolvedTeamId = createdTeam.id;
+            }
+          }
+        } catch (teamErr) {
+          console.warn("[reassignTask team resolution warning]:", teamErr);
+        }
+      }
+    }
+    const toTeamId = data.teamId !== undefined ? resolvedTeamId : fromTeamId;
 
     // Update task team_id if provided
     const updatePayload: Record<string, any> = {
       updated_at: new Date().toISOString(),
     };
     if (data.teamId !== undefined) {
-      updatePayload.team_id = data.teamId;
+      updatePayload.team_id = resolvedTeamId;
     }
 
     const { data: updatedTask, error: updateErr } = await (adminClient as any)
@@ -816,48 +877,73 @@ export class SupabaseTaskRepository implements ITaskRepository {
         .delete()
         .eq("task_id", taskId);
 
-      if (data.assigneeId) {
+      if (targetAssigneeId) {
         await (adminClient as any)
           .from("task_assignees")
-          .insert({ task_id: taskId, user_id: data.assigneeId });
+          .insert({ task_id: taskId, user_id: targetAssigneeId });
 
         // Notify new assignee
-        await (adminClient as any).from("notifications").insert({
-          user_id: data.assigneeId,
-          type: "task.assigned",
-          payload: {
-            task_id: taskId,
-            task_title: updatedTask.title,
-            priority: updatedTask.priority || "medium",
-            actor_name: "Manager / Admin",
-            message: `Task "${updatedTask.title}" has been reassigned to you.`,
-            reason: data.reason || null,
-          },
-        });
+        try {
+          await (adminClient as any).from("notifications").insert({
+            user_id: targetAssigneeId,
+            type: "task.assigned",
+            payload: {
+              task_id: taskId,
+              task_title: updatedTask.title,
+              priority: updatedTask.priority || "medium",
+              actor_name: "Manager / Admin",
+              message: `Task "${updatedTask.title}" has been reassigned to you.`,
+              reason: data.reason || null,
+            },
+          });
+        } catch {}
       }
     }
 
-    // Insert task_reassignments audit record
-    const { data: reassignmentRecord, error: auditErr } = await (
-      adminClient as any
-    )
-      .from("task_reassignments")
-      .insert({
-        task_id: taskId,
-        org_id: orgId,
-        reassigned_by: actorId,
-        from_user_id: fromUserId,
-        to_user_id: toUserId,
-        from_team_id: fromTeamId,
-        to_team_id: toTeamId,
-        reason: data.reason || null,
-      })
-      .select()
-      .single();
+    // Insert task_reassignments audit record (non-blocking if table not migrated)
+    let reassignmentRecord: any = null;
+    try {
+      const { data: rec, error: auditErr } = await (adminClient as any)
+        .from("task_reassignments")
+        .insert({
+          task_id: taskId,
+          org_id: orgId,
+          reassigned_by: isUUID(actorId) ? actorId : null,
+          from_user_id: isUUID(fromUserId) ? fromUserId : null,
+          to_user_id: isUUID(toUserId) ? toUserId : null,
+          from_team_id: isUUID(fromTeamId) ? fromTeamId : null,
+          to_team_id: isUUID(toTeamId) ? toTeamId : null,
+          reason: data.reason || null,
+        })
+        .select()
+        .maybeSingle();
 
-    if (auditErr) {
-      console.error("[reassignTask audit error]", auditErr);
+      if (!auditErr && rec) {
+        reassignmentRecord = rec;
+      } else if (auditErr) {
+        console.warn("[reassignTask audit warning - non blocking]:", auditErr.message);
+      }
+    } catch (auditErr) {
+      console.warn("[reassignTask audit exception - non blocking]:", auditErr);
     }
+
+    // Immutable record in activity_logs
+    try {
+      await (adminClient as any).from("activity_logs").insert({
+        org_id: orgId,
+        actor_id: isUUID(actorId) ? actorId : null,
+        action: "task.reassigned",
+        entity: "task",
+        entity_id: taskId,
+        diff: {
+          fromUserId,
+          toUserId,
+          fromTeamId,
+          toTeamId,
+          reason: data.reason || null,
+        },
+      });
+    } catch {}
 
     return {
       task: {

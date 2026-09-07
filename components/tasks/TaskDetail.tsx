@@ -197,6 +197,28 @@ export function TaskDetail({
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
+  // Live Organization Members
+  const [currentMembers, setCurrentMembers] = useState<any[]>(orgMembers);
+
+  useEffect(() => {
+    if (orgMembers && orgMembers.length > 0 && !orgMembers[0]?.id?.startsWith("mem-")) {
+      setCurrentMembers(orgMembers);
+    }
+  }, [orgMembers]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch("/api/v1/org/members")
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setCurrentMembers(json.data);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
   // Dynamic Reallocation State
   const [targetAssigneeId, setTargetAssigneeId] = useState<string>("");
   const [targetTeamId, setTargetTeamId] = useState<string>("");
@@ -620,7 +642,7 @@ export function TaskDetail({
       setReassignReason("");
 
       // Update parent state optimistically
-      const newMember = orgMembers.find((m) => m.id === targetAssigneeId);
+      const newMember = currentMembers.find((m) => m.id === targetAssigneeId);
       const updatedAssignees = newMember
         ? [
             {
@@ -981,7 +1003,7 @@ export function TaskDetail({
                     className="w-full rounded-xl border border-slate-300 bg-white p-2 text-xs text-slate-900 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                   >
                     <option value="">Unassigned</option>
-                    {orgMembers.map((member) => (
+                    {currentMembers.map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.fullName || member.full_name} ({member.role || "member"})
                       </option>
