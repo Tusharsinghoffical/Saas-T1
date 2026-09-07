@@ -67,10 +67,13 @@ export class SupabaseNotificationRepository implements INotificationRepository {
           return adminNotifs.map((n: any) => ({
             id: n.id,
             userId: n.user_id,
+            user_id: n.user_id,
             type: n.type,
             payload: n.payload,
             readAt: n.read_at,
+            read_at: n.read_at,
             createdAt: n.created_at,
+            created_at: n.created_at,
           }));
         }
       } catch {}
@@ -80,10 +83,13 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     return (notifications || []).map((n: any) => ({
       id: n.id,
       userId: n.user_id,
+      user_id: n.user_id,
       type: n.type,
       payload: n.payload,
       readAt: n.read_at,
+      read_at: n.read_at,
       createdAt: n.created_at,
+      created_at: n.created_at,
     }));
   }
 

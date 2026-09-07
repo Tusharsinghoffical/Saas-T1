@@ -22,7 +22,7 @@ export function DashboardHeader({
   userId,
 }: DashboardHeaderProps) {
   return (
-    <header className="sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-xl transition-colors duration-200 dark:border-slate-800/80 dark:bg-slate-900/80 sm:px-6">
+    <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-xl transition-colors duration-200 dark:border-slate-800/80 dark:bg-slate-900/80 sm:px-6">
       {/* Left side: Hamburger (mobile) + Breadcrumbs */}
       <div className="flex items-center gap-3">
         {onOpenMobileMenu && (

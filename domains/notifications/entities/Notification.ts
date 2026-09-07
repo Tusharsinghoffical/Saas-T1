@@ -15,10 +15,13 @@ export interface NotificationPayload {
 export interface Notification {
   id: string;
   userId: string;
+  user_id?: string;
   type: string;
   payload: NotificationPayload | null;
   readAt: string | null;
+  read_at?: string | null;
   createdAt: string;
+  created_at?: string;
 }
 
 export interface NotificationPreferences {
