@@ -155,3 +155,22 @@ export async function removeMemberAction(
     };
   }
 }
+
+/**
+ * Server Action for signing out and revoking auth session.
+ * Always resolves redirect destination to "/" (the landing page).
+ */
+export async function logoutAction(): Promise<ActionResult<{ redirectUrl: string }>> {
+  try {
+    await authController.logout();
+    return {
+      success: true,
+      data: { redirectUrl: "/" },
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Failed to log out.",
+    };
+  }
+}

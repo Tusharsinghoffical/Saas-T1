@@ -10,6 +10,8 @@ import {
   type UserProfileInfo,
 } from "@/components/navigation/DashboardSidebar";
 import { DashboardHeader } from "@/components/navigation/DashboardHeader";
+import { createClient } from "@/infrastructure/supabase/supabaseClient";
+import { logoutAction } from "@/app/(auth)/actions";
 
 export default function EmployeeLayout({
   children,
@@ -21,6 +23,22 @@ export default function EmployeeLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut().catch(() => {});
+      await logoutAction().catch(() => {});
+    } catch {
+      // Best-effort logout
+    } finally {
+      window.location.href = "/";
+    }
+  };
 
   // Hydrate collapsed state from localStorage
   useEffect(() => {
@@ -225,11 +243,14 @@ export default function EmployeeLayout({
             <span className="mt-0.5 text-[10px]">Workspace</span>
           </button>
           <Link
-            href="/login"
-            className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center font-medium text-slate-400 hover:text-rose-600 dark:hover:text-rose-400"
+            href="/"
+            onClick={handleSignOut}
+            className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center font-medium text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 ${
+              isLoggingOut ? "pointer-events-none opacity-50" : ""
+            }`}
           >
-            <LogOut className="h-4.5 w-4.5" />
-            <span className="mt-0.5 text-[10px]">Sign Out</span>
+            <LogOut className={`h-4.5 w-4.5 ${isLoggingOut ? "animate-spin" : ""}`} />
+            <span className="mt-0.5 text-[10px]">{isLoggingOut ? "Signing out…" : "Sign Out"}</span>
           </Link>
         </nav>
       </div>

@@ -12,6 +12,7 @@ import { signupOrgUseCase } from "../usecases/signupOrg";
 import { loginWithPasswordUseCase } from "../usecases/loginWithPassword";
 import { loginWithMagicLinkUseCase } from "../usecases/loginWithMagicLink";
 import { completeOnboardingUseCase } from "../usecases/completeOnboarding";
+import { authRepository } from "../repository/authRepository";
 import { ValidationError, RateLimitError } from "@/shared/errors/domainErrors";
 import { checkRateLimit } from "@/infrastructure/redis/redisClient";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
@@ -144,6 +145,10 @@ export class AuthController {
       );
     }
     return await completeOnboardingUseCase(validated.data);
+  }
+
+  async logout() {
+    await authRepository.logout();
   }
 }
 

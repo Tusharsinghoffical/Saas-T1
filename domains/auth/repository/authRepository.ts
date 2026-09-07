@@ -18,6 +18,7 @@ export interface IAuthRepository {
     priority: string,
     dueDate?: string | null
   ): Promise<void>;
+  logout(): Promise<void>;
 }
 
 export class SupabaseAuthRepository implements IAuthRepository {
@@ -456,6 +457,16 @@ export class SupabaseAuthRepository implements IAuthRepository {
       due_date: dueDate ? new Date(dueDate).toISOString() : null,
       status: "pending",
     });
+  }
+
+  async logout(): Promise<void> {
+    if (!this.hasSupabase()) return;
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut({ scope: "global" });
+    } catch {
+      // Best effort logout
+    }
   }
 }
 

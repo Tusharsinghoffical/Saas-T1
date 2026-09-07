@@ -18,6 +18,8 @@ import {
   Zap,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
+import { createClient } from "@/infrastructure/supabase/supabaseClient";
+import { logoutAction } from "@/app/(auth)/actions";
 
 export interface NavItem {
   name: string;
@@ -71,6 +73,22 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const [copiedCode, setCopiedCode] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut().catch(() => {});
+      await logoutAction().catch(() => {});
+    } catch {
+      // Best-effort logout
+    } finally {
+      window.location.href = "/";
+    }
+  };
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -353,11 +371,14 @@ export function DashboardSidebar({
                   </Link>
 
                   <Link
-                    href="/login"
-                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
-                    title="Sign Out"
+                    href="/"
+                    onClick={handleSignOut}
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 ${
+                      isLoggingOut ? "pointer-events-none opacity-50" : ""
+                    }`}
+                    title={isLoggingOut ? "Signing out…" : "Sign Out"}
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className={`h-4 w-4 ${isLoggingOut ? "animate-spin" : ""}`} />
                   </Link>
                 </div>
               ) : (
@@ -391,11 +412,14 @@ export function DashboardSidebar({
                   </Link>
 
                   <Link
-                    href="/login"
-                    className="group flex-shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
-                    title="Sign Out"
+                    href="/"
+                    onClick={handleSignOut}
+                    className={`group flex-shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 ${
+                      isLoggingOut ? "pointer-events-none opacity-50" : ""
+                    }`}
+                    title={isLoggingOut ? "Signing out…" : "Sign Out"}
                   >
-                    <LogOut className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                    <LogOut className={`h-4 w-4 transition-transform group-hover:translate-x-0.5 ${isLoggingOut ? "animate-spin" : ""}`} />
                   </Link>
                 </div>
               )}
