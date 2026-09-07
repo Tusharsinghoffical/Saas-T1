@@ -6,7 +6,7 @@ export function formatTaskDisplay(title: string, description?: string | null) {
   let cleanTitle = title ? title.trim() : "Untitled Task";
   let isAiEnhanced = false;
   let cleanObjective = "";
-  let acceptanceCriteriaCount = 0;
+  let acceptanceCriteria: string[] = [];
   let cleanDescription = description ? description.trim() : "";
 
   // 1. Detect if AI enhanced
@@ -15,55 +15,82 @@ export function formatTaskDisplay(title: string, description?: string | null) {
     cleanTitle = cleanTitle.replace(/^enhanced:\s*/i, "").trim();
   }
 
-  // 2. Extract core draft text if title contains raw draft prompt boilerplate
-  // Example: "Please enhance and structure the following task draft: """ website dr """ "
-  const promptDraftRegex = /(?:task draft|draft):\s*["'“”«»]*(.+?)["'“”«»]*\s*$/i;
-  const draftMatch = cleanTitle.match(promptDraftRegex);
-  if (draftMatch && draftMatch[1]) {
-    const extracted = draftMatch[1].replace(/["'“”«»]/g, "").trim();
-    if (extracted.length > 0) {
-      cleanTitle = extracted.charAt(0).toUpperCase() + extracted.slice(1);
+  // Helper to sanitize an extracted objective text
+  const sanitizeObjective = (raw: string) => {
+    let s = raw.trim();
+    // Remove triple quotes or quotes
+    s = s.replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
+    // Strip prompt boilerplate if accidentally captured
+    s = s.replace(/^(?:please\s+enhance\s+and\s+structure(?:\s+the\s+following\s+task\s+draft)?:?\s*)/i, "").trim();
+    s = s.replace(/^(?:task\s+draft|draft):?\s*/i, "").trim();
+    s = s.replace(/^["'“”«»]+|["'“”«»]+$/g, "").trim();
+    return s;
+  };
+
+  // 2. Extract actual core draft from triple quotes or quotes or draft prompt in description
+  if (cleanDescription) {
+    const tripleQuoteMatch = cleanDescription.match(/"""\s*([\s\S]*?)\s*"""/);
+    if (tripleQuoteMatch && tripleQuoteMatch[1]?.trim()) {
+      cleanObjective = sanitizeObjective(tripleQuoteMatch[1]);
+    } else {
+      const draftMatch = cleanDescription.match(/(?:task draft|draft):\s*["'“”«»]*(.+?)["'“”«»]*\s*(?:\n|\*\*|$)/i);
+      if (draftMatch && draftMatch[1]?.trim()) {
+        cleanObjective = sanitizeObjective(draftMatch[1]);
+      } else {
+        const objMatch = cleanDescription.match(/\*\*Objective:\*\*\s*([^\n\*]+)/i);
+        if (objMatch && objMatch[1]?.trim()) {
+          cleanObjective = sanitizeObjective(objMatch[1]);
+        }
+      }
     }
   }
 
-  // 3. Process description
+  // Also check if title itself has draft prompt
+  if (!cleanObjective) {
+    const titleDraftMatch = cleanTitle.match(/(?:task draft|draft):\s*["'“”«»]*(.+?)["'“”«»]*\s*$/i);
+    if (titleDraftMatch && titleDraftMatch[1]?.trim()) {
+      cleanObjective = sanitizeObjective(titleDraftMatch[1]);
+    }
+  }
+
+  // 3. If cleanTitle is just the boilerplate prompt (e.g. "Please enhance and structure the following ta...")
+  // Replace cleanTitle with the extracted real objective!
+  if (/^(?:please\s+enhance\s+and\s+structure|enhance\s+and\s+structure|task\s+draft)/i.test(cleanTitle)) {
+    isAiEnhanced = true;
+    if (cleanObjective) {
+      cleanTitle = cleanObjective.charAt(0).toUpperCase() + cleanObjective.slice(1);
+    }
+  } else if (cleanTitle.length > 25 && cleanTitle.toLowerCase().includes("please enhance")) {
+    isAiEnhanced = true;
+    if (cleanObjective) {
+      cleanTitle = cleanObjective.charAt(0).toUpperCase() + cleanObjective.slice(1);
+    }
+  }
+
+  // 4. Parse Acceptance Criteria list from description
   if (cleanDescription) {
-    // Check if description has acceptance criteria
-    const criteriaMatch = cleanDescription.match(/acceptance criteria:?\s*([\s\S]*)/i);
-    if (criteriaMatch && criteriaMatch[1]) {
-      const bullets = criteriaMatch[1].match(/[-*•]\s+([^\n\r]+)/g);
-      if (bullets) {
-        acceptanceCriteriaCount = bullets.length;
+    const criteriaSection = cleanDescription.split(/acceptance criteria:?/i)[1];
+    if (criteriaSection) {
+      const bulletMatches = criteriaSection.match(/[-*•]\s+([^\n\r]+)/g);
+      if (bulletMatches) {
+        acceptanceCriteria = bulletMatches.map((b) => b.replace(/^[-*•]\s+/, "").trim());
       }
     }
 
-    // Extract objective
-    const objMatch = cleanDescription.match(/\*\*Objective:\*\*\s*([^\*]+?)(?=\*\*|$)/i);
-    if (objMatch && objMatch[1]) {
-      const rawObj = objMatch[1].trim();
-      const objDraftMatch = rawObj.match(promptDraftRegex);
-      if (objDraftMatch && objDraftMatch[1]) {
-        cleanObjective = objDraftMatch[1].replace(/["'“”«»]/g, "").trim();
-      } else {
-        cleanObjective = rawObj.replace(/["'“”«»]/g, "").trim();
-      }
-    }
-
-    // Clean description of raw markdown symbols for preview
-    cleanDescription = cleanDescription
-      .replace(/\*\*Objective:\*\*/gi, "")
-      .replace(/\*\*Acceptance Criteria:\*\*/gi, "")
-      .replace(/\*\*/g, "")
-      .replace(/["'“”«»]{2,}/g, "")
-      .replace(/#+\s/g, "")
-      .replace(/-\s+/g, " • ")
-      .trim();
-
-    // If description is just repeating the prompt boilerplate, summarize it cleanly
-    if (cleanDescription.toLowerCase().includes("please enhance and structure the following task draft")) {
-      cleanDescription = cleanObjective
-        ? `Objective: ${cleanObjective}`
-        : "Structured task with verified acceptance criteria";
+    // Format clean preview description
+    if (acceptanceCriteria.length > 0) {
+      cleanDescription = `${acceptanceCriteria.join(" • ")}`;
+    } else if (cleanObjective) {
+      cleanDescription = cleanObjective;
+    } else {
+      cleanDescription = cleanDescription
+        .replace(/\*\*Objective:\*\*/gi, "")
+        .replace(/\*\*Acceptance Criteria:\*\*/gi, "")
+        .replace(/\*\*/g, "")
+        .replace(/["'“”«»]{2,}/g, "")
+        .replace(/#+\s/g, "")
+        .replace(/-\s+/g, " • ")
+        .trim();
     }
   }
 
@@ -71,7 +98,9 @@ export function formatTaskDisplay(title: string, description?: string | null) {
     title: cleanTitle,
     isAiEnhanced,
     objective: cleanObjective,
-    acceptanceCriteriaCount,
+    acceptanceCriteria,
+    acceptanceCriteriaCount: acceptanceCriteria.length,
     cleanDescription,
   };
 }
+

@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
+import { formatTaskDisplay } from "@/lib/utils/taskFormatter";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
 import {
   Clock,
@@ -509,12 +510,13 @@ export function TaskDetail({
   };
 
   const dueDateStr = task.dueDate || task.due_date;
+  const formatted = formatTaskDisplay(task.title, task.description);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={task.title}
+      title={formatted.title}
       description={`Task ID: ${task.id}`}
       maxWidth="2xl"
     >
@@ -545,6 +547,12 @@ export function TaskDetail({
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold uppercase text-primary">
               {task.status.replace("_", " ")}
             </span>
+            {formatted.isAiEnhanced && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/25 bg-purple-500/10 px-2.5 py-0.5 text-xs font-bold text-purple-600 dark:border-purple-500/30 dark:bg-purple-500/15 dark:text-purple-300">
+                <Sparkles className="h-3 w-3 text-purple-500" />
+                AI Enhanced
+              </span>
+            )}
             {dueDateStr && (
               <span className="flex items-center gap-1 text-xs text-slate-500">
                 <Clock className="h-3.5 w-3.5" />
@@ -569,14 +577,53 @@ export function TaskDetail({
           </button>
         </div>
 
-        {/* Task Description */}
-        <div>
-          <h4 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-            Description
-          </h4>
-          <div className="dark:bg-slate-850 whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs leading-relaxed text-slate-800 dark:border-slate-800 dark:text-slate-200">
-            {task.description || "No description provided."}
-          </div>
+        {/* Task Objective & Description */}
+        <div className="space-y-3">
+          {formatted.objective ? (
+            <div>
+              <h4 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Objective
+              </h4>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs font-medium leading-relaxed text-slate-800 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200">
+                {formatted.objective}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h4 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Description
+              </h4>
+              <div className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs leading-relaxed text-slate-800 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-200">
+                {formatted.cleanDescription || task.description || "No description provided."}
+              </div>
+            </div>
+          )}
+
+          {formatted.acceptanceCriteria.length > 0 && (
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <h4 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  Acceptance Criteria ({formatted.acceptanceCriteria.length})
+                </h4>
+              </div>
+              <div className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs dark:border-slate-800 dark:bg-slate-800/40">
+                {formatted.acceptanceCriteria.map((criterion, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-start gap-2.5 rounded-lg border border-slate-200/60 bg-white p-2.5 shadow-sm dark:border-slate-700/60 dark:bg-slate-900"
+                  >
+                    <span className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded bg-emerald-500/10 text-[10px] font-bold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                      {idx + 1}
+                    </span>
+                    <span className="leading-snug text-slate-700 dark:text-slate-300">
+                      {criterion}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Task Dependencies & Blocking Relationships */}
@@ -611,7 +658,7 @@ export function TaskDetail({
                             : "text-slate-800 dark:text-slate-200"
                         }`}
                       >
-                        {dep.title}
+                        {formatTaskDisplay(dep.title, dep.description).title}
                       </span>
                     </div>
 
@@ -640,7 +687,7 @@ export function TaskDetail({
                     key={waiting.id}
                     className="dark:bg-slate-850 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700 dark:border-slate-800 dark:text-slate-300"
                   >
-                    <span>{waiting.title}</span>
+                    <span>{formatTaskDisplay(waiting.title, waiting.description).title}</span>
                     <span className="text-[10px] text-slate-400">Waiting</span>
                   </div>
                 ))}
