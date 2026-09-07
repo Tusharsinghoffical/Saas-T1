@@ -107,7 +107,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
     if (filters.priority) query = query.eq("priority", filters.priority);
     if (filters.teamId) query = query.eq("team_id", filters.teamId);
     if (filters.search) query = query.ilike("title", `%${filters.search}%`);
-    if (!filters.includeDeleted) query = query.is("deleted_at", null);
 
     let { data, error } = await query;
 
@@ -136,8 +135,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
         fallbackQuery = fallbackQuery.eq("team_id", filters.teamId);
       if (filters.search)
         fallbackQuery = fallbackQuery.ilike("title", `%${filters.search}%`);
-      if (!filters.includeDeleted)
-        fallbackQuery = fallbackQuery.is("deleted_at", null);
 
       const { data: fallbackData, error: fallbackError } = await fallbackQuery;
       if (fallbackError) {
@@ -155,8 +152,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
         if (filters.teamId) rawQuery = rawQuery.eq("team_id", filters.teamId);
         if (filters.search)
           rawQuery = rawQuery.ilike("title", `%${filters.search}%`);
-        if (!filters.includeDeleted)
-          rawQuery = rawQuery.is("deleted_at", null);
         const { data: rawData, error: rawError } = await rawQuery;
         if (rawError) {
           console.warn("[listTasks raw fallback error]", rawError.message);
@@ -176,8 +171,6 @@ export class SupabaseTaskRepository implements ITaskRepository {
                 adminQuery = adminQuery.eq("team_id", filters.teamId);
               if (filters.search)
                 adminQuery = adminQuery.ilike("title", `%${filters.search}%`);
-              if (!filters.includeDeleted)
-                adminQuery = adminQuery.is("deleted_at", null);
               const { data: adminTasks } = await adminQuery;
               if (adminTasks && adminTasks.length > 0) {
                 rawTasks = adminTasks;
@@ -657,22 +650,34 @@ export class SupabaseTaskRepository implements ITaskRepository {
     const adminClient = createAdminClient();
 
     // Check if task exists and check deleted status
-    const { data: existing, error: fetchError } = await (adminClient as any)
+    let existing: any = null;
+    const { data: exData, error: fetchError } = await (adminClient as any)
       .from("tasks")
       .select("id, deleted_at")
       .eq("id", taskId)
       .eq("org_id", orgId)
       .single();
 
-    if (fetchError || !existing) {
-      throw new ValidationError("Task not found.");
+    if (fetchError || !exData) {
+      const { data: baseData, error: baseErr } = await (adminClient as any)
+        .from("tasks")
+        .select("id")
+        .eq("id", taskId)
+        .eq("org_id", orgId)
+        .single();
+      if (baseErr || !baseData) {
+        throw new ValidationError("Task not found.");
+      }
+      existing = baseData;
+    } else {
+      existing = exData;
     }
 
-    if (existing.deleted_at) {
+    if (existing?.deleted_at) {
       throw new ValidationError("Task is already deleted.");
     }
 
-    // Soft delete task
+    // Soft delete task (with fallback to hard delete if deleted_at not migrated)
     const { error: updateError } = await (adminClient as any)
       .from("tasks")
       .update({
@@ -683,7 +688,14 @@ export class SupabaseTaskRepository implements ITaskRepository {
       .eq("org_id", orgId);
 
     if (updateError) {
-      throw new Error(updateError.message);
+      const { error: hardDelErr } = await (adminClient as any)
+        .from("tasks")
+        .delete()
+        .eq("id", taskId)
+        .eq("org_id", orgId);
+      if (hardDelErr) {
+        throw new Error(hardDelErr.message);
+      }
     }
 
     // Clean up dependencies where this task was a prerequisite, preventing blocking traps
@@ -733,15 +745,27 @@ export class SupabaseTaskRepository implements ITaskRepository {
     const adminClient = createAdminClient();
 
     // Fetch existing task and assignees
-    const { data: existingTask, error: fetchErr } = await (adminClient as any)
+    let existingTask: any = null;
+    const { data: exTask, error: fetchErr } = await (adminClient as any)
       .from("tasks")
       .select("id, title, priority, org_id, team_id, deleted_at")
       .eq("id", taskId)
       .eq("org_id", orgId)
       .single();
 
-    if (fetchErr || !existingTask) {
-      throw new ValidationError("Task not found.");
+    if (fetchErr || !exTask) {
+      const { data: baseTask, error: baseErr } = await (adminClient as any)
+        .from("tasks")
+        .select("id, title, priority, org_id, team_id")
+        .eq("id", taskId)
+        .eq("org_id", orgId)
+        .single();
+      if (baseErr || !baseTask) {
+        throw new ValidationError("Task not found.");
+      }
+      existingTask = baseTask;
+    } else {
+      existingTask = exTask;
     }
 
     if (existingTask.deleted_at) {

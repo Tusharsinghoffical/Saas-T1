@@ -97,14 +97,27 @@ export class SupabaseUserRepository implements IUserRepository {
     }
 
     const supabase = this.getClient();
-    const { data: profile, error } = await (supabase.from("profiles") as any)
+    let profile: any = null;
+    let { data, error } = await (supabase.from("profiles") as any)
       .select(
         "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
       )
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
-    if (error || !profile) {
+    if (error || !data) {
+      const { data: baseData } = await (supabase.from("profiles") as any)
+        .select(
+          "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at"
+        )
+        .eq("id", userId)
+        .maybeSingle();
+      profile = baseData;
+    } else {
+      profile = data;
+    }
+
+    if (!profile) {
       return null;
     }
 
@@ -120,7 +133,7 @@ export class SupabaseUserRepository implements IUserRepository {
       department: profile.department || null,
       notificationPreferences: profile.notification_preferences,
       createdAt: profile.created_at,
-      deletedAt: profile.deleted_at,
+      deletedAt: profile.deleted_at || null,
     };
   }
 
@@ -202,51 +215,71 @@ export class SupabaseUserRepository implements IUserRepository {
     // SECURITY: Use cookie-scoped client enforcing PostgreSQL Row-Level Security
     const client = this.getClient();
 
-    // 1. Query profiles strictly within caller's organization
-    const { data: profiles, error } = await (client.from("profiles") as any)
-      .select(
-        "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
-      )
-      .eq("org_id", orgId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true });
+    // 1. Query profiles within caller's organization
+    let profiles: any[] | null = null;
+    try {
+      const { data, error } = await (client.from("profiles") as any)
+        .select(
+          "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
+        )
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: true });
 
-    if (error) {
-      console.warn("Profiles lookup error:", error.message);
+      if (!error && data) {
+        profiles = data;
+      }
+    } catch {}
+
+    if (!profiles || profiles.length === 0) {
+      // Fallback query without deleted_at in SELECT in case column is not yet present
+      try {
+        const { data: baseProfiles, error: baseErr } = await (client.from("profiles") as any)
+          .select(
+            "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at"
+          )
+          .eq("org_id", orgId)
+          .order("created_at", { ascending: true });
+
+        if (!baseErr && baseProfiles && baseProfiles.length > 0) {
+          profiles = baseProfiles;
+        }
+      } catch {}
+    }
+
+    if (!profiles || profiles.length === 0) {
       try {
         const adminClient = this.getAdminClient();
         if (adminClient) {
-          const { data: fallbackProfiles } = await (
+          const { data: adminProfiles, error: adminErr } = await (
             adminClient.from("profiles") as any
           )
             .select(
               "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
             )
             .eq("org_id", orgId)
-            .is("deleted_at", null)
             .order("created_at", { ascending: true });
-          if (fallbackProfiles && fallbackProfiles.length > 0) {
-            return fallbackProfiles.map((p: any) => ({
-              id: p.id,
-              orgId: p.org_id,
-              fullName: p.full_name,
-              role: p.role,
-              avatarUrl: p.avatar_url,
-              position: p.position || null,
-              phoneNumber: p.phone_number || null,
-              bio: p.bio || null,
-              department: p.department || null,
-              notificationPreferences: p.notification_preferences,
-              createdAt: p.created_at,
-              deletedAt: p.deleted_at,
-            }));
+
+          if (!adminErr && adminProfiles && adminProfiles.length > 0) {
+            profiles = adminProfiles;
+          } else {
+            const { data: adminBase } = await (
+              adminClient.from("profiles") as any
+            )
+              .select(
+                "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at"
+              )
+              .eq("org_id", orgId)
+              .order("created_at", { ascending: true });
+            if (adminBase && adminBase.length > 0) {
+              profiles = adminBase;
+            }
           }
         }
       } catch {}
-      return [];
     }
 
-    let finalProfiles: any[] = profiles || [];
+    let finalProfiles: any[] = (profiles || []).filter((p: any) => !p.deleted_at);
+
     if (finalProfiles.length === 0) {
       try {
         const adminClient = this.getAdminClient();
@@ -260,14 +293,13 @@ export class SupabaseUserRepository implements IUserRepository {
             adminClient.from("profiles") as any
           )
             .select(
-              "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at"
+              "id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at"
             )
             .eq("org_id", orgId)
-            .is("deleted_at", null)
             .order("created_at", { ascending: true });
 
           if (adminProfiles && adminProfiles.length > 0) {
-            finalProfiles = adminProfiles;
+            finalProfiles = adminProfiles.filter((p: any) => !p.deleted_at);
           }
         }
       } catch (err) {

@@ -83,10 +83,12 @@ export async function requireAuth(): Promise<RequestContext> {
       .from("profiles")
       .select("org_id, role")
       .eq("id", user.id)
-      .is("deleted_at", null)
       .maybeSingle();
 
-    const profile = data as { org_id?: string; role?: string } | null;
+    const profile = data as { org_id?: string; role?: string; deleted_at?: string | null } | null;
+    if (profile?.deleted_at) {
+      throw new ForbiddenError("Your account has been deactivated.");
+    }
     if (profile?.org_id) {
       orgId = profile.org_id;
     }
@@ -102,9 +104,11 @@ export async function requireAuth(): Promise<RequestContext> {
       const { data: prof } = await (adminClient.from("profiles") as any)
         .select("org_id, role")
         .eq("id", user.id)
-        .is("deleted_at", null)
         .maybeSingle();
 
+      if (prof?.deleted_at) {
+        throw new ForbiddenError("Your account has been deactivated.");
+      }
       if (prof?.org_id) {
         orgId = prof.org_id;
       }

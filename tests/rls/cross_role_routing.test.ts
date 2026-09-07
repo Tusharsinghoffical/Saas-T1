@@ -38,6 +38,7 @@ vi.mock("@/infrastructure/supabase/supabaseServer", () => ({
           is: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
           }),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         }),
       }),
     }),
