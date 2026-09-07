@@ -34,6 +34,7 @@ export interface NavGroup {
 }
 
 export interface UserProfileInfo {
+  id?: string;
   fullName: string;
   email: string;
   role: string;

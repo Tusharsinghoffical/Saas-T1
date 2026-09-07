@@ -413,6 +413,10 @@ export function TaskFormModal({
             const bc = new BroadcastChannel("tasq-activity-channel");
             bc.postMessage({ type: "ACTIVITY_UPDATED" });
             bc.close();
+
+            const nbc = new BroadcastChannel("tasq-notifications-channel");
+            nbc.postMessage({ type: "NOTIFICATIONS_UPDATED", taskId: json.data?.id });
+            nbc.close();
           }
         }
       }

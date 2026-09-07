@@ -53,6 +53,7 @@ export default function ManagerLayout({
         if (json.success && json.data?.managerProfile) {
           const p = json.data.managerProfile;
           setManagerInfo({
+            id: p.id,
             fullName: p.fullName || "Lead Manager",
             email: p.email || "manager@workspace.com",
             teamName: p.teamName || "Team Operations",
@@ -131,6 +132,7 @@ export default function ManagerLayout({
           breadcrumbs={breadcrumbs}
           isRealtimeConnected={true}
           userInitials={initials}
+          userId={managerInfo?.id}
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">

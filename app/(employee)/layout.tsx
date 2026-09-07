@@ -54,6 +54,7 @@ export default function EmployeeLayout({
         if (json.success && json.data?.profile) {
           const p = json.data.profile;
           setEmployeeInfo({
+            id: p.id,
             fullName: p.fullName || "Team Member",
             email: p.email || "employee@workspace.com",
             teamName: p.teamName || "General Squad",
@@ -121,6 +122,7 @@ export default function EmployeeLayout({
           breadcrumbs={breadcrumbs}
           isRealtimeConnected={true}
           userInitials={initials}
+          userId={employeeInfo?.id}
         />
 
         <main className="flex-1 p-4 pb-24 sm:p-6 sm:pb-10 lg:p-8">

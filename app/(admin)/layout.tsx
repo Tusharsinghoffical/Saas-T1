@@ -59,6 +59,7 @@ export default function AdminLayout({
         if (json.success && json.data?.adminProfile) {
           const p = json.data.adminProfile;
           setProfile({
+            id: p.id,
             fullName: p.fullName || "Admin User",
             email: p.email || "",
             orgName: p.orgName || "Organization",
@@ -73,6 +74,7 @@ export default function AdminLayout({
             if (meJson.success && meJson.data?.profile) {
               const p = meJson.data.profile;
               setProfile({
+                id: p.id,
                 fullName: p.fullName || "Admin User",
                 email: p.email || "",
                 orgName: p.orgName || "Organization",
@@ -196,6 +198,7 @@ export default function AdminLayout({
           breadcrumbs={breadcrumbs}
           isRealtimeConnected={true}
           userInitials={initials}
+          userId={profile?.id}
         />
 
         {/* Page Container with Ambient Lighting */}
