@@ -9,7 +9,9 @@ import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
  * Custom hook that subscribes to Supabase Realtime changes for the 'tasks' table,
  * scoped strictly to the current organization's org_id.
  */
-export function useRealtimeTasks(orgId: string = "11111111-1111-1111-1111-111111111111") {
+export function useRealtimeTasks(
+  orgId: string = "11111111-1111-1111-1111-111111111111"
+) {
   const { upsertTask, removeTask, setConnectionStatus } = useTaskStore();
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
 

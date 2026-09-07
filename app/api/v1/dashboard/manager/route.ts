@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const headers: Record<string, string> = {
       "X-Cache": result.source === "cache" ? "HIT" : "MISS",
       "Cache-Control": "private, no-cache, no-store, must-revalidate",
-      "Pragma": "no-cache",
-      "Expires": "0",
+      Pragma: "no-cache",
+      Expires: "0",
     };
 
     return NextResponse.json(

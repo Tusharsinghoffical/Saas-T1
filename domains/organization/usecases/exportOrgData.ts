@@ -26,7 +26,9 @@ export async function exportOrgDataUseCase(
   customClient?: any
 ): Promise<ExportDataResult> {
   if (context.role !== "admin") {
-    throw new ForbiddenError("Only organization admins can export organization data.");
+    throw new ForbiddenError(
+      "Only organization admins can export organization data."
+    );
   }
 
   const client = customClient || createClient();
@@ -50,7 +52,9 @@ export async function exportOrgDataUseCase(
 
   // 4. Fetch tasks
   const { data: tasksData } = await (client.from("tasks") as any)
-    .select("id, team_id, title, description, status, priority, due_date, created_at, updated_at")
+    .select(
+      "id, team_id, title, description, status, priority, due_date, created_at, updated_at"
+    )
     .eq("org_id", orgId);
 
   // 5. Fetch task attachments metadata & comments for tasks belonging to this org

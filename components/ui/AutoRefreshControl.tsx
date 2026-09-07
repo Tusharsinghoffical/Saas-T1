@@ -63,10 +63,10 @@ export function AutoRefreshBadge({
       onClick={triggerManual}
       title="Refresh Now"
       disabled={isRefreshing}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-xs ${className}`}
+      className={`shadow-xs inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 ${className}`}
     >
       <RefreshCw
-        className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`}
+        className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`}
       />
       <span>{isRefreshing ? "Refreshing..." : "Refresh"}</span>
     </button>

@@ -4,7 +4,7 @@
 
 This page describes, in plain terms, how TASQ-ONE protects your organization's data. It is written for customers and prospective customers evaluating TASQ-ONE's security posture — for the detailed internal engineering audit trail, see our internal `docs/SECURITY-AUDIT-REPORT.md` and related reports (available on request for enterprise due diligence).
 
-> ⚠️ **Note on claims below:** Every item here should reflect the *actual, currently verified* state of the system — cross-check against your latest `docs/REALITY-CHECK-REPORT.md` before publishing this page externally. Do not publish a security claim that hasn't been independently, freshly verified — a public security page with an inaccurate claim is worse than no page at all.
+> ⚠️ **Note on claims below:** Every item here should reflect the _actual, currently verified_ state of the system — cross-check against your latest `docs/REALITY-CHECK-REPORT.md` before publishing this page externally. Do not publish a security claim that hasn't been independently, freshly verified — a public security page with an inaccurate claim is worse than no page at all.
 
 ---
 
@@ -42,6 +42,7 @@ Every organization's data on TASQ-ONE is isolated using **PostgreSQL Row-Level S
 ## 6. Your Organization's Responsibilities
 
 Security is a shared responsibility:
+
 - Admins should use strong, unique passwords and remove departed employees' access promptly (TASQ-ONE's soft-delete removal immediately revokes their login).
 - Admins are responsible for who they invite and what role they assign — TASQ-ONE enforces the technical boundary, but the judgment of who to trust with Manager/Admin access is your organization's.
 - If you configure optional integrations (e.g., Slack webhooks), keep those webhook URLs confidential — they act as a credential.
@@ -58,6 +59,7 @@ If you believe you've found a security vulnerability in TASQ-ONE, we want to kno
 ## 8. Incident Response
 
 In the event of a security incident affecting your data, we commit to:
+
 1. Investigating and containing the issue as our top priority.
 2. Notifying affected Workspace admins within a reasonable timeframe, consistent with our obligations under Indian law (including the DPDP Act 2023) and any applicable contractual commitments.
 3. Providing a summary of the incident, its impact, and remediation steps once our investigation is complete.

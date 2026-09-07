@@ -1,11 +1,30 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
-import { Notification, NotificationPreferences } from "../entities/Notification";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
+import {
+  Notification,
+  NotificationPreferences,
+} from "../entities/Notification";
 
 export interface INotificationRepository {
   listNotifications(userId: string): Promise<Notification[]>;
   markAsRead(userId: string, targetId: string): Promise<void>;
-  getUserPreferencesAndEmail(userId: string): Promise<{ email: string; preferences: NotificationPreferences; orgId?: string | null; fullName?: string | null }>;
-  getOrgSlackSettings(orgId: string): Promise<{ name: string; slackWebhookUrl?: string | null; slackNotificationsEnabled?: boolean | null } | null>;
+  getUserPreferencesAndEmail(
+    userId: string
+  ): Promise<{
+    email: string;
+    preferences: NotificationPreferences;
+    orgId?: string | null;
+    fullName?: string | null;
+  }>;
+  getOrgSlackSettings(
+    orgId: string
+  ): Promise<{
+    name: string;
+    slackWebhookUrl?: string | null;
+    slackNotificationsEnabled?: boolean | null;
+  } | null>;
 }
 
 export class SupabaseNotificationRepository implements INotificationRepository {
@@ -16,50 +35,18 @@ export class SupabaseNotificationRepository implements INotificationRepository {
 
   async listNotifications(userId: string): Promise<Notification[]> {
     if (!this.hasSupabase()) {
-      return [
-        {
-          id: "notif-1",
-          userId,
-          type: "task.assigned",
-          payload: {
-            task_id: "task-1",
-            task_title: "Set up company workspace & review OKRs",
-            actor_name: "Jane Doe (Admin)",
-            message: "You were assigned to task: Set up company workspace & review OKRs",
-          },
-          readAt: null,
-          createdAt: new Date(Date.now() - 60000 * 15).toISOString(),
-        },
-        {
-          id: "notif-2",
-          userId,
-          type: "task.mentioned",
-          payload: {
-            task_id: "task-2",
-            task_title: "Implement Postgres RLS policy test suite",
-            actor_name: "Alex Smith",
-            message: "Alex Smith mentioned you in Implement Postgres RLS policy test suite",
-          },
-          readAt: null,
-          createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-        },
-        {
-          id: "notif-3",
-          userId,
-          type: "task.due_soon",
-          payload: {
-            task_id: "task-3",
-            task_title: "Set up Upstash Redis rate limiting bucket",
-            message: "Task is due within 24 hours: Set up Upstash Redis rate limiting bucket",
-          },
-          readAt: new Date(Date.now() - 3600000 * 5).toISOString(),
-          createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-        },
-      ];
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return [];
     }
 
     const supabaseClient: any = createClient();
-    const { data: notifications, error } = await (supabaseClient.from("notifications") as any)
+    const { data: notifications, error } = await (
+      supabaseClient.from("notifications") as any
+    )
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
@@ -69,7 +56,9 @@ export class SupabaseNotificationRepository implements INotificationRepository {
       console.warn("Notifications lookup notice:", error.message);
       try {
         const adminClient = createAdminClient();
-        const { data: adminNotifs } = await (adminClient.from("notifications") as any)
+        const { data: adminNotifs } = await (
+          adminClient.from("notifications") as any
+        )
           .select("*")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
@@ -140,7 +129,9 @@ export class SupabaseNotificationRepository implements INotificationRepository {
     if (this.hasSupabase()) {
       const supabase = createClient();
       const { data: profile } = await (supabase.from("profiles") as any)
-        .select("id, org_id, full_name, notification_preferences, auth:id (email)")
+        .select(
+          "id, org_id, full_name, notification_preferences, auth:id (email)"
+        )
         .eq("id", userId)
         .single();
 

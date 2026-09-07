@@ -1,11 +1,23 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
 import { SignupCredentials, LoginCredentials } from "../entities/AuthSession";
 
 export interface IAuthRepository {
-  signupAdmin(credentials: SignupCredentials): Promise<{ orgId: string; userId: string }>;
-  loginPassword(credentials: LoginCredentials): Promise<{ user: any; role: "admin" | "manager" | "employee" }>;
+  signupAdmin(
+    credentials: SignupCredentials
+  ): Promise<{ orgId: string; userId: string }>;
+  loginPassword(
+    credentials: LoginCredentials
+  ): Promise<{ user: any; role: "admin" | "manager" | "employee" }>;
   loginMagicLink(email: string, redirectTo: string): Promise<void>;
-  createInitialTask(orgId: string, title: string, priority: string, dueDate?: string | null): Promise<void>;
+  createInitialTask(
+    orgId: string,
+    title: string,
+    priority: string,
+    dueDate?: string | null
+  ): Promise<void>;
 }
 
 export class SupabaseAuthRepository implements IAuthRepository {
@@ -20,8 +32,15 @@ export class SupabaseAuthRepository implements IAuthRepository {
     );
   }
 
-  async signupAdmin(credentials: SignupCredentials): Promise<{ orgId: string; userId: string }> {
+  async signupAdmin(
+    credentials: SignupCredentials
+  ): Promise<{ orgId: string; userId: string }> {
     if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
       return {
         orgId: "11111111-1111-1111-1111-111111111111",
         userId: "22222222-2222-2222-2222-222222222222",
@@ -42,23 +61,30 @@ export class SupabaseAuthRepository implements IAuthRepository {
       // Path A: Use Service Role Admin Client if available (bypasses email signup restrictions)
       if (adminClient) {
         try {
-          const { data: adminAuthData, error: adminAuthError } = await adminClient.auth.admin.createUser({
-            email: credentials.email,
-            password: credentials.password || "",
-            email_confirm: true,
-            app_metadata: {
-              role: "admin",
-            },
-            user_metadata: {
-              full_name: credentials.fullName,
-              role: "admin",
-            },
-          });
+          const { data: adminAuthData, error: adminAuthError } =
+            await adminClient.auth.admin.createUser({
+              email: credentials.email,
+              password: credentials.password || "",
+              email_confirm: true,
+              app_metadata: {
+                role: "admin",
+              },
+              user_metadata: {
+                full_name: credentials.fullName,
+                role: "admin",
+              },
+            });
 
           if (adminAuthError) {
             const errMsg = adminAuthError.message.toLowerCase();
-            if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
-              throw new Error("An account with this email address already exists. Please log in instead.");
+            if (
+              errMsg.includes("already registered") ||
+              errMsg.includes("already exists") ||
+              errMsg.includes("duplicate")
+            ) {
+              throw new Error(
+                "An account with this email address already exists. Please log in instead."
+              );
             }
             // If admin createUser fails with other error, fall through to client signup
           } else if (adminAuthData?.user?.id) {
@@ -73,39 +99,59 @@ export class SupabaseAuthRepository implements IAuthRepository {
 
       // Path B: Fallback to standard Supabase client signup if Admin API was not used
       if (!userId) {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: credentials.email,
-          password: credentials.password || "",
-          options: {
-            data: {
-              full_name: credentials.fullName,
-              role: "admin",
+        const { data: authData, error: authError } = await supabase.auth.signUp(
+          {
+            email: credentials.email,
+            password: credentials.password || "",
+            options: {
+              data: {
+                full_name: credentials.fullName,
+                role: "admin",
+              },
             },
-          },
-        });
+          }
+        );
 
         if (authError) {
           const errMsg = authError.message.toLowerCase();
-          if (errMsg.includes("user not allowed") || errMsg.includes("signup is disabled")) {
+          if (
+            errMsg.includes("user not allowed") ||
+            errMsg.includes("signup is disabled")
+          ) {
             throw new Error(
               "Signups are disabled in Supabase: Please open Supabase Dashboard -> Authentication -> Providers -> Email, and turn ON 'Allow new users to sign up'."
             );
           }
-          if (errMsg.includes("already registered") || errMsg.includes("already exists") || errMsg.includes("duplicate")) {
-            throw new Error("An account with this email address already exists. Please log in instead.");
+          if (
+            errMsg.includes("already registered") ||
+            errMsg.includes("already exists") ||
+            errMsg.includes("duplicate")
+          ) {
+            throw new Error(
+              "An account with this email address already exists. Please log in instead."
+            );
           }
-          throw new Error(authError.message || "Failed to create authentication user.");
+          throw new Error(
+            authError.message || "Failed to create authentication user."
+          );
         }
 
-        if (authData?.user?.identities && authData.user.identities.length === 0) {
-          throw new Error("An account with this email address already exists. Please log in instead.");
+        if (
+          authData?.user?.identities &&
+          authData.user.identities.length === 0
+        ) {
+          throw new Error(
+            "An account with this email address already exists. Please log in instead."
+          );
         }
 
         userId = authData?.user?.id || null;
       }
 
       if (!userId) {
-        throw new Error("Failed to create authentication user. Please try again.");
+        throw new Error(
+          "Failed to create authentication user. Please try again."
+        );
       }
 
       // Initialize organization workspace
@@ -148,7 +194,10 @@ export class SupabaseAuthRepository implements IAuthRepository {
           // Ignore
         }
       } catch (insertErr) {
-        console.error("Direct insert failed, attempting RPC fallback:", insertErr);
+        console.error(
+          "Direct insert failed, attempting RPC fallback:",
+          insertErr
+        );
         // Fallback: Try RPC if available
         try {
           const { data: rpcData } = await (executorClient as any).rpc(
@@ -161,7 +210,10 @@ export class SupabaseAuthRepository implements IAuthRepository {
             }
           );
           if (rpcData) {
-            orgId = (rpcData as any)?.org_id || (Array.isArray(rpcData) && rpcData[0]?.org_id) || userId;
+            orgId =
+              (rpcData as any)?.org_id ||
+              (Array.isArray(rpcData) && rpcData[0]?.org_id) ||
+              userId;
           }
         } catch {
           // Safe fallback
@@ -213,11 +265,21 @@ export class SupabaseAuthRepository implements IAuthRepository {
     }
   }
 
-  async loginPassword(credentials: LoginCredentials): Promise<{ user: any; role: "admin" | "manager" | "employee" }> {
+  async loginPassword(
+    credentials: LoginCredentials
+  ): Promise<{ user: any; role: "admin" | "manager" | "employee" }> {
     if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
       const isEmployee = credentials.email.toLowerCase().includes("employee");
       return {
-        user: { id: "22222222-2222-2222-2222-222222222222", email: credentials.email },
+        user: {
+          id: "22222222-2222-2222-2222-222222222222",
+          email: credentials.email,
+        },
         role: isEmployee ? "employee" : "admin",
       };
     }
@@ -230,15 +292,21 @@ export class SupabaseAuthRepository implements IAuthRepository {
         try {
           const adminClient = createAdminClient();
           let targetUserId: string | null = null;
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          const uuidRegex =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
           if (uuidRegex.test(emailToUse)) {
             targetUserId = emailToUse;
           } else {
             // Clean Member Code (e.g. EMP-A1B2C3, MGR-835DCB, A1B2C3)
-            const cleanCode = emailToUse.replace(/^(emp|mgr|adm)-?/i, "").replace(/[^a-f0-9]/gi, "").slice(0, 8);
+            const cleanCode = emailToUse
+              .replace(/^(emp|mgr|adm)-?/i, "")
+              .replace(/[^a-f0-9]/gi, "")
+              .slice(0, 8);
             if (cleanCode.length >= 4) {
-              const { data: matchedProfiles } = await (adminClient.from("profiles") as any)
+              const { data: matchedProfiles } = await (
+                adminClient.from("profiles") as any
+              )
                 .select("id")
                 .ilike("id", `${cleanCode}%`)
                 .limit(1);
@@ -250,7 +318,8 @@ export class SupabaseAuthRepository implements IAuthRepository {
           }
 
           if (targetUserId) {
-            const { data: authUserData } = await adminClient.auth.admin.getUserById(targetUserId);
+            const { data: authUserData } =
+              await adminClient.auth.admin.getUserById(targetUserId);
             if (authUserData?.user?.email) {
               emailToUse = authUserData.user.email;
             }
@@ -267,15 +336,23 @@ export class SupabaseAuthRepository implements IAuthRepository {
       });
 
       // If sign-in failed due to unconfirmed email, auto-confirm and retry with adminClient
-      if (error && error.message && error.message.toLowerCase().includes("email not confirmed")) {
+      if (
+        error &&
+        error.message &&
+        error.message.toLowerCase().includes("email not confirmed")
+      ) {
         try {
           const adminClient = createAdminClient();
-          const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 200 });
+          const { data: userList } = await adminClient.auth.admin.listUsers({
+            perPage: 200,
+          });
           const target = userList?.users?.find(
             (u: any) => u.email?.toLowerCase() === emailToUse.toLowerCase()
           );
           if (target) {
-            await adminClient.auth.admin.updateUserById(target.id, { email_confirm: true });
+            await adminClient.auth.admin.updateUserById(target.id, {
+              email_confirm: true,
+            });
             const retry = await supabase.auth.signInWithPassword({
               email: emailToUse,
               password: credentials.password || "",
@@ -313,11 +390,9 @@ export class SupabaseAuthRepository implements IAuthRepository {
           orgId = profile.org_id;
         }
       } catch {
-        role = (
-          (data.user.app_metadata?.role as string) ||
+        role = ((data.user.app_metadata?.role as string) ||
           (data.user.user_metadata?.role as string) ||
-          "employee"
-        ) as "admin" | "manager" | "employee";
+          "employee") as "admin" | "manager" | "employee";
       }
 
       return {
@@ -365,7 +440,12 @@ export class SupabaseAuthRepository implements IAuthRepository {
     }
   }
 
-  async createInitialTask(orgId: string, title: string, priority: string, dueDate?: string | null): Promise<void> {
+  async createInitialTask(
+    orgId: string,
+    title: string,
+    priority: string,
+    dueDate?: string | null
+  ): Promise<void> {
     if (!this.hasSupabase()) return;
 
     const adminClient = createAdminClient();

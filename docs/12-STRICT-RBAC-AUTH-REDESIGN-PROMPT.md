@@ -51,6 +51,7 @@ Produce docs/AUTH-REDESIGN-REPORT.md listing: what already existed and passed as
 ---
 
 ## Why This Doesn't Conflict With What's Already Built
+
 - Org-signup (Prompt 6) stays — it becomes the "Register Your Company" CTA, not a new thing.
 - Admin-invite (Prompt 6/7) stays — this prompt extends it into a proper invite-acceptance flow and closes the loophole of any stray self-signup path.
 - RLS + RBAC hardening from Prompt 35 stays — this prompt adds the manager route group and 6-way cross-role test on top of that same foundation, it doesn't redo it.

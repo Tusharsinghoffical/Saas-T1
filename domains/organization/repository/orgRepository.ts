@@ -15,18 +15,21 @@ export class SupabaseOrgRepository implements IOrgRepository {
 
   async getOrgById(orgId: string): Promise<Organization | null> {
     if (!this.hasSupabase()) {
-      return {
-        id: orgId || "org-demo-1",
-        name: "Acme Corp",
-        timezone: "America/New_York",
-        slackWebhookUrl: "",
-        slackNotificationsEnabled: false,
-      };
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return null;
     }
 
     const adminClient = createAdminClient();
-    const { data: org, error } = await (adminClient.from("organizations") as any)
-      .select("id, name, timezone, slack_webhook_url, slack_notifications_enabled, logo_url, created_at")
+    const { data: org, error } = await (
+      adminClient.from("organizations") as any
+    )
+      .select(
+        "id, name, timezone, slack_webhook_url, slack_notifications_enabled, logo_url, created_at"
+      )
       .eq("id", orgId)
       .single();
 
@@ -45,30 +48,34 @@ export class SupabaseOrgRepository implements IOrgRepository {
     };
   }
 
-  async updateOrg(orgId: string, updates: OrgSettingsUpdate): Promise<Organization> {
+  async updateOrg(
+    orgId: string,
+    updates: OrgSettingsUpdate
+  ): Promise<Organization> {
     if (!this.hasSupabase()) {
-      return {
-        id: orgId || "org-demo-1",
-        name: updates.name || "Acme Corp",
-        timezone: updates.timezone || "America/New_York",
-        slackWebhookUrl: updates.slackWebhookUrl || "",
-        slackNotificationsEnabled: updates.slackNotificationsEnabled ?? false,
-      };
+      throw new Error(
+        "Cannot update organization: Supabase is not configured."
+      );
     }
 
     const adminClient = createAdminClient();
     const dbPayload: Record<string, any> = {};
     if (updates.name !== undefined) dbPayload.name = updates.name;
     if (updates.timezone !== undefined) dbPayload.timezone = updates.timezone;
-    if (updates.slackWebhookUrl !== undefined) dbPayload.slack_webhook_url = updates.slackWebhookUrl;
+    if (updates.slackWebhookUrl !== undefined)
+      dbPayload.slack_webhook_url = updates.slackWebhookUrl;
     if (updates.slackNotificationsEnabled !== undefined) {
       dbPayload.slack_notifications_enabled = updates.slackNotificationsEnabled;
     }
 
-    const { data: updatedOrg, error } = await (adminClient.from("organizations") as any)
+    const { data: updatedOrg, error } = await (
+      adminClient.from("organizations") as any
+    )
       .update(dbPayload)
       .eq("id", orgId)
-      .select("id, name, timezone, slack_webhook_url, slack_notifications_enabled, logo_url, created_at")
+      .select(
+        "id, name, timezone, slack_webhook_url, slack_notifications_enabled, logo_url, created_at"
+      )
       .single();
 
     if (error || !updatedOrg) {
@@ -88,11 +95,18 @@ export class SupabaseOrgRepository implements IOrgRepository {
 
   async listOrganizations(): Promise<{ id: string; name: string }[]> {
     if (!this.hasSupabase()) {
-      return [{ id: "org-demo-1", name: "Acme Corp" }];
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return [];
     }
 
     const adminClient = createAdminClient();
-    const { data: orgs, error } = await (adminClient.from("organizations") as any).select("id, name");
+    const { data: orgs, error } = await (
+      adminClient.from("organizations") as any
+    ).select("id, name");
     if (error || !orgs) {
       throw new Error(error?.message || "Failed to list organizations");
     }

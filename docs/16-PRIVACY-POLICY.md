@@ -19,21 +19,25 @@ TASQ-ONE ("we", "us", "our") is a multi-tenant task management Work OS operated 
 ## 2. Data We Collect
 
 ### 2.1 Account & Organization Data (provided by you)
+
 - Full name, email address, and password (stored as a salted hash — we never see or store your plaintext password) — collected at company registration (`/signup`) or when you accept a team invite (`/accept-invite`).
 - Company/organization name, and any organization settings an admin configures.
 - Role assignment (`admin`, `manager`, or `employee`) within your organization.
 
 ### 2.2 Content You Create
+
 - Tasks, task descriptions, comments, checklists, due dates, priorities, and tags.
 - File attachments you upload (stored in Cloudflare R2, tenant-isolated by organization).
 - Any text you submit to the "Enhance with AI" feature (sent to our AI provider, Groq, for processing — see Section 4).
 
 ### 2.3 Automatically Collected Data
+
 - Login timestamps, IP address, and device/browser information, for security and rate-limiting purposes (via Upstash Redis).
 - Product usage analytics (page views, feature usage events) via PostHog — configured to avoid capturing full task/comment content in analytics events.
 - Activity logs: every create/update/delete action is recorded with the actor's user ID and a timestamp, for audit and security purposes (see our Security Policy).
 
 ### 2.4 Data We Do NOT Collect
+
 - We do not require or collect payment card details at this stage (TASQ-ONE currently operates on a ₹0 Free Starter Pilot model).
 - We do not knowingly collect data from anyone under the age of 18 — TASQ-ONE is a business tool intended for working professionals (see Section 9).
 
@@ -41,14 +45,14 @@ TASQ-ONE ("we", "us", "our") is a multi-tenant task management Work OS operated 
 
 ## 3. How We Use Your Data
 
-| Purpose | Legal basis (DPDP Act 2023) |
-|---|---|
-| Provide and operate the Service (task management, dashboards, notifications) | Performance of contract with you/your organization |
-| Authenticate you and enforce role-based access control | Performance of contract |
-| Send transactional emails (task assigned, overdue reminders, invite links, weekly summaries) | Performance of contract |
-| Process your task text through Groq's AI to generate suggestions | Performance of contract, based on your organization's use of the AI feature |
-| Detect and prevent abuse, fraud, or security incidents | Legitimate interest / legal obligation |
-| Improve the Service through aggregated, privacy-conscious analytics | Legitimate interest |
+| Purpose                                                                                      | Legal basis (DPDP Act 2023)                                                 |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Provide and operate the Service (task management, dashboards, notifications)                 | Performance of contract with you/your organization                          |
+| Authenticate you and enforce role-based access control                                       | Performance of contract                                                     |
+| Send transactional emails (task assigned, overdue reminders, invite links, weekly summaries) | Performance of contract                                                     |
+| Process your task text through Groq's AI to generate suggestions                             | Performance of contract, based on your organization's use of the AI feature |
+| Detect and prevent abuse, fraud, or security incidents                                       | Legitimate interest / legal obligation                                      |
+| Improve the Service through aggregated, privacy-conscious analytics                          | Legitimate interest                                                         |
 
 We do not sell your personal data. We do not use your task content to train any public or third-party AI model.
 
@@ -58,16 +62,16 @@ We do not sell your personal data. We do not use your task content to train any 
 
 TASQ-ONE is built on the following infrastructure providers, each of which processes a limited slice of your data solely to provide the Service:
 
-| Provider | Purpose | Data they process |
-|---|---|---|
-| **Supabase** | Database, authentication | All account, organization, and task data (encrypted at rest) |
-| **Groq** | AI task-enhancement inference | Text you submit to the "Enhance with AI" / workload-suggestion features |
-| **Upstash** | Rate limiting, caching | Request metadata (IP, user ID, timestamps) — not task content |
-| **Cloudflare (R2)** | File attachment storage | Files you upload to tasks |
-| **Resend** | Transactional email delivery | Your email address, and the content of notification emails |
+| Provider                             | Purpose                       | Data they process                                                                   |
+| ------------------------------------ | ----------------------------- | ----------------------------------------------------------------------------------- |
+| **Supabase**                         | Database, authentication      | All account, organization, and task data (encrypted at rest)                        |
+| **Groq**                             | AI task-enhancement inference | Text you submit to the "Enhance with AI" / workload-suggestion features             |
+| **Upstash**                          | Rate limiting, caching        | Request metadata (IP, user ID, timestamps) — not task content                       |
+| **Cloudflare (R2)**                  | File attachment storage       | Files you upload to tasks                                                           |
+| **Resend**                           | Transactional email delivery  | Your email address, and the content of notification emails                          |
 | **Slack** (optional, org-configured) | Task-completion notifications | Task titles/summaries, only if your organization's admin configures a Slack webhook |
-| **PostHog** | Product analytics | Anonymized/pseudonymized usage events |
-| **Render** | Application hosting | All data in transit to/from the application server |
+| **PostHog**                          | Product analytics             | Anonymized/pseudonymized usage events                                               |
+| **Render**                           | Application hosting           | All data in transit to/from the application server                                  |
 
 We do not permit any sub-processor to use your data for their own purposes beyond providing their service to us. If we add or change a sub-processor in a way that materially affects how your data is processed, we will update this policy and, where required by law, notify organization admins.
 
@@ -94,6 +98,7 @@ We do not permit any sub-processor to use your data for their own purposes beyon
 ## 7. Your Rights (DPDP Act 2023 & General Principles)
 
 Subject to applicable law, you have the right to:
+
 - **Access** the personal data we hold about you.
 - **Correct** inaccurate personal data.
 - **Request erasure** of your personal data, subject to our legitimate need to retain records (e.g., audit logs, legal obligations).

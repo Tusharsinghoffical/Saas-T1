@@ -61,6 +61,7 @@ End the report with one clear verdict: "READY FOR LAUNCH" or "NOT READY — N bl
 ---
 
 ## How to Read the Result
+
 - If Prompt 33's audit report comes back with **any FAIL in Section B, C, or D** — fix those before anything else; they're structural/security issues, not cosmetic.
 - Section A PARTIALs are your real remaining backlog — treat `docs/AUDIT-REPORT.md` as the source of truth over memory of what you think you built.
 - Re-run Prompt 33 after fixes until the verdict is "READY FOR LAUNCH".

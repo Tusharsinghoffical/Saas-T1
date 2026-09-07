@@ -62,7 +62,7 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 sm:p-6">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
@@ -74,17 +74,17 @@ export function Modal({
       <div
         ref={modalRef}
         className={cn(
-          "relative w-full bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 z-10 my-6 sm:my-8 overflow-hidden transform transition-all",
+          "relative z-10 my-6 w-full transform overflow-hidden rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl transition-all dark:border-slate-800 dark:bg-slate-900 sm:my-8 sm:p-6",
           maxWidths[maxWidth]
         )}
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="flex items-start justify-between pb-3.5 sm:pb-4 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-start justify-between border-b border-slate-200 pb-3.5 dark:border-slate-800 sm:pb-4">
           <div className="flex items-center gap-3 pr-2">
             {showLogoBadge && (
-              <div className="h-8 w-auto flex items-center justify-center flex-shrink-0">
+              <div className="flex h-8 w-auto flex-shrink-0 items-center justify-center">
                 <Image
                   src="/ONE_Header.png"
                   alt="TASQ-ONE Logo"
@@ -96,7 +96,7 @@ export function Modal({
             )}
             <div>
               {title && (
-                <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold tracking-tight text-slate-900 dark:text-white sm:text-lg">
                   {title}
                 </h3>
               )}
@@ -111,14 +111,16 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="rounded-xl min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition -mr-1 -mt-1 cursor-pointer"
+            className="-mr-1 -mt-1 flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Body Content */}
-        <div className="pt-3.5 sm:pt-4 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto pr-1">{children}</div>
+        <div className="max-h-[85vh] overflow-y-auto pr-1 pt-3.5 sm:max-h-[80vh] sm:pt-4">
+          {children}
+        </div>
       </div>
     </div>
   );

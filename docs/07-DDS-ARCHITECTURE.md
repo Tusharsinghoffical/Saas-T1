@@ -66,6 +66,7 @@ All external behavior, API contracts, and user interfaces remain strictly unchan
 TASQ-ONE is partitioned into six core domain packages located in `domains/`:
 
 ### 1. `domains/auth/`
+
 - **Responsibilities**: User authentication, organization creation, onboarding completion, password & magic link authentication.
 - **Subfolders**:
   - `entities/`: `AuthSession.ts`, `UserCredentials.ts`
@@ -74,6 +75,7 @@ TASQ-ONE is partitioned into six core domain packages located in `domains/`:
   - `api/`: `authController.ts`
 
 ### 2. `domains/organization/`
+
 - **Responsibilities**: Organization settings, timezone, Slack notification preferences, Stripe subscriptions & billing webhook handling.
 - **Subfolders**:
   - `entities/`: `Organization.ts`, `OrgSettings.ts`, `Subscription.ts`
@@ -82,6 +84,7 @@ TASQ-ONE is partitioned into six core domain packages located in `domains/`:
   - `api/`: `orgController.ts`, `billingController.ts`
 
 ### 3. `domains/users/`
+
 - **Responsibilities**: User profiles, team members, member invitation, role management.
 - **Subfolders**:
   - `entities/`: `UserProfile.ts`, `Team.ts`
@@ -90,6 +93,7 @@ TASQ-ONE is partitioned into six core domain packages located in `domains/`:
   - `api/`: `userController.ts`
 
 ### 4. `domains/tasks/`
+
 - **Responsibilities**: Task CRUD, task status transitions, dependency validation, assignees, comments, attachments, AI enhancement, AI workload recommendation, weekly executive summaries, admin KPI & employee personal dashboards.
 - **Subfolders**:
   - `entities/`: `Task.ts` (Pure business rules for dependency completion, assignee status permissions, and priority validations), `Comment.ts`, `Attachment.ts`
@@ -98,6 +102,7 @@ TASQ-ONE is partitioned into six core domain packages located in `domains/`:
   - `api/`: `taskController.ts`, `commentController.ts`, `attachmentController.ts`, `aiController.ts`, `dashboardController.ts`
 
 ### 5. `domains/notifications/`
+
 - **Responsibilities**: In-app notifications list & mark-read, transactional notification email dispatching via Resend.
 - **Subfolders**:
   - `entities/`: `Notification.ts`, `NotificationPreferences.ts`
@@ -106,6 +111,7 @@ TASQ-ONE is partitioned into six core domain packages located in `domains/`:
   - `api/`: `notificationController.ts`
 
 ### 6. `domains/activity/`
+
 - **Responsibilities**: System and user audit logs, paginated activity query, CSV export generation, immutable event recording.
 - **Subfolders**:
   - `entities/`: `ActivityLog.ts`

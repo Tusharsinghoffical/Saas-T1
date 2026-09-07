@@ -14,14 +14,19 @@ import { loginWithMagicLinkUseCase } from "../usecases/loginWithMagicLink";
 import { completeOnboardingUseCase } from "../usecases/completeOnboarding";
 import { ValidationError, RateLimitError } from "@/shared/errors/domainErrors";
 import { checkRateLimit } from "@/infrastructure/redis/redisClient";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 import { headers as nextHeaders } from "next/headers";
 
-// ── Rate limit configuration (FAIL 1 remediation) ─────────────────────────
-// Key: ip:email composite — limits per (source IP + email) pair.
-// 5 attempts per 5-minute window for password login and magic-link requests.
+// ── Rate limit configuration ──────────────────────────────────────────────
+// Login: strict 5 attempts per 5-minute window for password login and magic link.
 // Uses Upstash Redis when configured; falls back to in-process memory for dev.
 const AUTH_RATE_LIMIT = 5;
 const AUTH_RATE_WINDOW_SECONDS = 300; // 5 minutes
+
+// Signup: generous ceiling (100 signups/hr per IP) combined with Cloudflare
+// Turnstile anti-bot verification to prevent spam without blocking legitimate test/demo signups.
+const SIGNUP_RATE_LIMIT = 100;
+const SIGNUP_RATE_WINDOW_SECONDS = 3600; // 1 hour
 
 async function getClientIp(): Promise<string> {
   try {
@@ -44,6 +49,28 @@ export class AuthController {
         validated.error.issues[0]?.message || "Invalid signup input"
       );
     }
+
+    const ip = await getClientIp();
+
+    // 1. Cloudflare Turnstile anti-bot verification
+    await verifyTurnstileToken(validated.data.turnstileToken, ip);
+
+    // 2. Generous IP-based rate limiting (100 signups per hour per IP)
+    const rateLimitKey = `ratelimit:signup:${ip}`;
+    const rl = await checkRateLimit(
+      rateLimitKey,
+      SIGNUP_RATE_LIMIT,
+      SIGNUP_RATE_WINDOW_SECONDS
+    );
+    if (!rl.success) {
+      throw new RateLimitError(
+        `Too many organization registration attempts from this network. Please retry in ${Math.ceil(
+          rl.resetInSeconds / 60
+        )} minute(s).`,
+        rl.resetInSeconds
+      );
+    }
+
     return await signupOrgUseCase(validated.data);
   }
 
@@ -60,7 +87,11 @@ export class AuthController {
     // by rotating IP alone. Limits to 5 attempts per 5 minutes.
     const ip = await getClientIp();
     const rateLimitKey = `auth:login:${ip}:${validated.data.email}`;
-    const rl = await checkRateLimit(rateLimitKey, AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_SECONDS);
+    const rl = await checkRateLimit(
+      rateLimitKey,
+      AUTH_RATE_LIMIT,
+      AUTH_RATE_WINDOW_SECONDS
+    );
 
     if (!rl.success) {
       throw new RateLimitError(
@@ -84,7 +115,11 @@ export class AuthController {
     // Magic-link endpoint must also be rate-limited; previously unlimited.
     const ip = await getClientIp();
     const rateLimitKey = `auth:magic:${ip}:${validated.data.email}`;
-    const rl = await checkRateLimit(rateLimitKey, AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_SECONDS);
+    const rl = await checkRateLimit(
+      rateLimitKey,
+      AUTH_RATE_LIMIT,
+      AUTH_RATE_WINDOW_SECONDS
+    );
 
     if (!rl.success) {
       throw new RateLimitError(
@@ -93,7 +128,10 @@ export class AuthController {
       );
     }
 
-    const baseUrl = appUrl || process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com";
+    const baseUrl =
+      appUrl ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://tasq-one.onrender.com";
     const redirectTo = `${baseUrl}/auth/callback`;
     return await loginWithMagicLinkUseCase(validated.data.email, redirectTo);
   }

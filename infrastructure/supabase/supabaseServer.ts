@@ -10,7 +10,9 @@ import { Database } from "./database.types";
  */
 export function createClient() {
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
-  const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "").trim();
+  const supabaseAnonKey = (
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+  ).trim();
 
   return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -40,7 +42,11 @@ export function createAdminClient() {
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").trim();
   const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
 
-  if (!serviceRoleKey || serviceRoleKey.includes("dummy") || serviceRoleKey.length < 20) {
+  if (
+    !serviceRoleKey ||
+    serviceRoleKey.includes("dummy") ||
+    serviceRoleKey.length < 20
+  ) {
     throw new Error(
       "SUPABASE_SERVICE_ROLE_KEY is required for administrative operations."
     );

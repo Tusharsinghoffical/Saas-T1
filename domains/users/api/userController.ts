@@ -2,8 +2,14 @@ import { requireAuth, requireRole } from "@/shared/middleware/rbacGuard";
 import { listOrgMembersUseCase } from "../usecases/listOrgMembers";
 import { getUserProfileUseCase } from "../usecases/getUserProfile";
 import { inviteUserUseCase, InviteUserInput } from "../usecases/inviteUser";
-import { createEmployeeUserUseCase, CreateEmployeeInput } from "../usecases/createEmployeeUser";
-import { updateUserRoleUseCase, UpdateUserRoleInput } from "../usecases/updateUserRole";
+import {
+  createEmployeeUserUseCase,
+  CreateEmployeeInput,
+} from "../usecases/createEmployeeUser";
+import {
+  updateUserRoleUseCase,
+  UpdateUserRoleInput,
+} from "../usecases/updateUserRole";
 import { acceptInviteUseCase } from "../usecases/acceptInvite";
 import { removeUserUseCase } from "../usecases/removeUser";
 import { checkRateLimit } from "@/infrastructure/redis/redisClient";
@@ -63,7 +69,11 @@ export class UserController {
 
   async updateMember(
     userId: string,
-    updates: { role?: "admin" | "manager" | "employee"; teamId?: string; teamName?: string }
+    updates: {
+      role?: "admin" | "manager" | "employee";
+      teamId?: string;
+      teamName?: string;
+    }
   ) {
     const auth = await requireRole(["admin", "manager"]);
     const { userRepository } = await import("../repository/userRepository");
@@ -82,9 +92,8 @@ export class UserController {
 
     if (!resolvedTeamId && updates.teamName) {
       // Look up or create team by name in the org
-      const { createAdminClient } = await import(
-        "@/infrastructure/supabase/supabaseServer"
-      );
+      const { createAdminClient } =
+        await import("@/infrastructure/supabase/supabaseServer");
       const adminClient = createAdminClient();
       const clientToUse = adminClient;
 
@@ -116,7 +125,6 @@ export class UserController {
 
     return { success: true };
   }
-
 
   async inviteMember(input: InviteUserInput) {
     const auth = await requireAuth();

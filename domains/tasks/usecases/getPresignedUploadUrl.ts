@@ -1,6 +1,9 @@
 import { RequestContext } from "@/shared/types/context";
 import { PresignedUrlRequestDTO } from "../entities/Attachment";
-import { getR2PresignedPutUrl, MAX_FILE_SIZE_BYTES } from "@/infrastructure/storage/r2Storage";
+import {
+  getR2PresignedPutUrl,
+  MAX_FILE_SIZE_BYTES,
+} from "@/infrastructure/storage/r2Storage";
 import { ValidationError, NotFoundError } from "@/shared/errors/domainErrors";
 import { taskRepository, ITaskRepository } from "../repository/taskRepository";
 
@@ -29,7 +32,11 @@ export async function getPresignedUploadUrlUseCase(
     throw new NotFoundError("Task not found in your organization.");
   }
 
-  if (data.fileSize === undefined || data.fileSize === null || data.fileSize <= 0) {
+  if (
+    data.fileSize === undefined ||
+    data.fileSize === null ||
+    data.fileSize <= 0
+  ) {
     throw new ValidationError("File size must be greater than 0 bytes.");
   }
 

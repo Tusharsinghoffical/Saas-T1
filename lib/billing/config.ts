@@ -26,7 +26,8 @@ export const BILLING_PLANS: BillingPlan[] = [
     id: "free",
     name: "Starter (₹0 Free Tier)",
     priceMonthly: 0,
-    description: "Everything a growing Indian SMB needs to organize tasks and boost team productivity.",
+    description:
+      "Everything a growing Indian SMB needs to organize tasks and boost team productivity.",
     features: [
       "Up to 10 Team Members",
       "Interactive Sprint Kanban Board with Real-Time Sync",
@@ -41,7 +42,8 @@ export const BILLING_PLANS: BillingPlan[] = [
     id: "pro",
     name: "SMB Pro",
     priceMonthly: 999,
-    description: "Advanced AI acceleration, unlimited team members, and executive reporting.",
+    description:
+      "Advanced AI acceleration, unlimited team members, and executive reporting.",
     features: [
       "Unlimited Organization Members",
       "Unlimited Tasks & Subtasks",
@@ -58,7 +60,8 @@ export const BILLING_PLANS: BillingPlan[] = [
     id: "enterprise",
     name: "Enterprise",
     priceMonthly: 2499,
-    description: "Dedicated support, custom retention, and high-volume workloads with Indian data residency.",
+    description:
+      "Dedicated support, custom retention, and high-volume workloads with Indian data residency.",
     features: [
       "Everything in SMB Pro",
       "Unlimited Cloudflare R2 Storage",

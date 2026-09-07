@@ -1,4 +1,7 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
 import { logger } from "@/infrastructure/logger/logger";
 import { UserProfile } from "../entities/UserProfile";
 import { ValidationError } from "@/shared/errors/domainErrors";
@@ -8,7 +11,11 @@ export interface IUserRepository {
   listOrgMembers(orgId: string): Promise<UserProfile[]>;
   softDeleteUser(userId: string, orgId: string): Promise<boolean>;
   ensureDefaultTeam(orgId: string): Promise<string>;
-  assignUserToTeam(userId: string, orgId: string, teamId?: string | null): Promise<string>;
+  assignUserToTeam(
+    userId: string,
+    orgId: string,
+    teamId?: string | null
+  ): Promise<string>;
   createUserWithPassword(
     orgId: string,
     email: string,
@@ -75,7 +82,9 @@ export class SupabaseUserRepository implements IUserRepository {
 
     const supabase = this.getClient();
     const { data: profile, error } = await (supabase.from("profiles") as any)
-      .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+      .select(
+        "id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at"
+      )
       .eq("id", userId)
       .single();
 
@@ -129,7 +138,11 @@ export class SupabaseUserRepository implements IUserRepository {
     return newTeam.id;
   }
 
-  async assignUserToTeam(userId: string, orgId: string, teamId?: string | null): Promise<string> {
+  async assignUserToTeam(
+    userId: string,
+    orgId: string,
+    teamId?: string | null
+  ): Promise<string> {
     if (!this.hasSupabase()) {
       return teamId || "team-default-1";
     }
@@ -158,11 +171,12 @@ export class SupabaseUserRepository implements IUserRepository {
 
   async listOrgMembers(orgId: string): Promise<UserProfile[]> {
     if (!this.hasSupabase()) {
-      return [
-        { id: "mem-1", orgId, fullName: "Jane Doe (Admin)", email: "jane@acme.com", role: "admin", teamId: "team-1", teamName: "Leadership", avatarUrl: null, deletedAt: null },
-        { id: "mem-2", orgId, fullName: "Alex Smith (Lead)", email: "alex@acme.com", role: "manager", teamId: "team-2", teamName: "Engineering", avatarUrl: null, deletedAt: null },
-        { id: "mem-3", orgId, fullName: "Rohan Patel (Dev)", email: "rohan@acme.com", role: "employee", teamId: "team-2", teamName: "Engineering", avatarUrl: null, deletedAt: null },
-      ];
+      if (process.env.NODE_ENV === "production") {
+        throw new ValidationError(
+          "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return [];
     }
 
     // SECURITY: Use cookie-scoped client enforcing PostgreSQL Row-Level Security
@@ -170,7 +184,9 @@ export class SupabaseUserRepository implements IUserRepository {
 
     // 1. Query profiles strictly within caller's organization
     const { data: profiles, error } = await (client.from("profiles") as any)
-      .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+      .select(
+        "id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at"
+      )
       .eq("org_id", orgId)
       .is("deleted_at", null)
       .order("created_at", { ascending: true });
@@ -180,8 +196,12 @@ export class SupabaseUserRepository implements IUserRepository {
       try {
         const adminClient = this.getAdminClient();
         if (adminClient) {
-          const { data: fallbackProfiles } = await (adminClient.from("profiles") as any)
-            .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+          const { data: fallbackProfiles } = await (
+            adminClient.from("profiles") as any
+          )
+            .select(
+              "id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at"
+            )
             .eq("org_id", orgId)
             .is("deleted_at", null)
             .order("created_at", { ascending: true });
@@ -198,7 +218,7 @@ export class SupabaseUserRepository implements IUserRepository {
             }));
           }
         }
-      } catch { }
+      } catch {}
       return [];
     }
 
@@ -212,8 +232,12 @@ export class SupabaseUserRepository implements IUserRepository {
             .update({ org_id: orgId })
             .is("org_id", null);
 
-          const { data: adminProfiles } = await (adminClient.from("profiles") as any)
-            .select("id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at")
+          const { data: adminProfiles } = await (
+            adminClient.from("profiles") as any
+          )
+            .select(
+              "id, org_id, full_name, role, avatar_url, notification_preferences, created_at, deleted_at"
+            )
             .eq("org_id", orgId)
             .is("deleted_at", null)
             .order("created_at", { ascending: true });
@@ -240,7 +264,9 @@ export class SupabaseUserRepository implements IUserRepository {
     try {
       const adminClient = this.getAdminClient();
       if (adminClient?.auth?.admin) {
-        const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 200 });
+        const { data: userList } = await adminClient.auth.admin.listUsers({
+          perPage: 200,
+        });
         const users = userList?.users || [];
         for (const u of users) {
           // Never inject users from other orgs — only map emails for verified members of this org
@@ -254,9 +280,12 @@ export class SupabaseUserRepository implements IUserRepository {
     }
 
     // 3. Team memberships strictly for verified profile IDs in this org
-    const teamMemberMap: Record<string, { teamId: string; teamName: string }> = {};
+    const teamMemberMap: Record<string, { teamId: string; teamName: string }> =
+      {};
     try {
-      const { data: teamMemberships } = await (client.from("team_members") as any)
+      const { data: teamMemberships } = await (
+        client.from("team_members") as any
+      )
         .select(`user_id, team_id, teams:team_id (id, name)`)
         .in("user_id", profileIdList);
 
@@ -299,6 +328,11 @@ export class SupabaseUserRepository implements IUserRepository {
     teamId?: string | null
   ): Promise<{ user: any; profile: UserProfile }> {
     if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new ValidationError(
+          "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
       const mockId = "mock-" + Date.now();
       return {
         user: { id: mockId, email },
@@ -329,7 +363,9 @@ export class SupabaseUserRepository implements IUserRepository {
     // 1. Check if user with this email already exists in Supabase Auth
     if (adminClient?.auth?.admin) {
       try {
-        const { data: userList } = await adminClient.auth.admin.listUsers({ perPage: 500 });
+        const { data: userList } = await adminClient.auth.admin.listUsers({
+          perPage: 500,
+        });
         const existingUser = userList?.users?.find(
           (u: any) => u.email?.toLowerCase() === normalizedEmail
         );
@@ -350,7 +386,11 @@ export class SupabaseUserRepository implements IUserRepository {
             deleted_at: null,
           });
 
-          const assignedTeamId = await this.assignUserToTeam(existingUser.id, orgId, teamId);
+          const assignedTeamId = await this.assignUserToTeam(
+            existingUser.id,
+            orgId,
+            teamId
+          );
 
           return {
             user: existingUser,
@@ -376,35 +416,40 @@ export class SupabaseUserRepository implements IUserRepository {
     let authUser: any = null;
 
     if (adminClient?.auth?.admin) {
-      const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
-        email: normalizedEmail,
-        password,
-        email_confirm: true,
-        app_metadata: { role, org_id: orgId },
-        user_metadata: { full_name: fullName, role, org_id: orgId },
-      });
+      const { data: createData, error: createError } =
+        await adminClient.auth.admin.createUser({
+          email: normalizedEmail,
+          password,
+          email_confirm: true,
+          app_metadata: { role, org_id: orgId },
+          user_metadata: { full_name: fullName, role, org_id: orgId },
+        });
 
       if (!createError && createData?.user) {
         authUser = createData.user;
       } else if (createError) {
-        console.warn("admin.createUser error, trying client signUp fallback:", createError.message);
+        console.warn(
+          "admin.createUser error, trying client signUp fallback:",
+          createError.message
+        );
       }
     }
 
     // 3. Fallback: Client signUp
     if (!authUser) {
       const supabase = this.getClient();
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role,
-            org_id: orgId,
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email: normalizedEmail,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              role,
+              org_id: orgId,
+            },
           },
-        },
-      });
+        });
 
       if (!signUpError && signUpData?.user) {
         authUser = signUpData.user;
@@ -415,12 +460,17 @@ export class SupabaseUserRepository implements IUserRepository {
               app_metadata: { role, org_id: orgId },
               user_metadata: { full_name: fullName, role, org_id: orgId },
             });
-          } catch { }
+          } catch {}
         }
       } else if (signUpError) {
         const errMsg = signUpError.message.toLowerCase();
-        if (errMsg.includes("already registered") || errMsg.includes("already exists")) {
-          throw new ValidationError("An account with this email address already exists. Try another email or log in.");
+        if (
+          errMsg.includes("already registered") ||
+          errMsg.includes("already exists")
+        ) {
+          throw new ValidationError(
+            "An account with this email address already exists. Try another email or log in."
+          );
         }
         if (errMsg.includes("rate limit") || errMsg.includes("rate_limit")) {
           logger.error({
@@ -432,11 +482,15 @@ export class SupabaseUserRepository implements IUserRepository {
             "Unable to create user account right now. Please try again shortly or contact support."
           );
         }
-        if (errMsg.includes("user not allowed") || errMsg.includes("disabled")) {
+        if (
+          errMsg.includes("user not allowed") ||
+          errMsg.includes("disabled")
+        ) {
           logger.error({
             event: "user_create_disabled",
             error: signUpError.message,
-            diagnostic: "Email provider is disabled or service role auth credentials failed.",
+            diagnostic:
+              "Email provider is disabled or service role auth credentials failed.",
           });
           throw new ValidationError(
             "Unable to create user account. Please contact support."
@@ -446,7 +500,9 @@ export class SupabaseUserRepository implements IUserRepository {
           event: "user_create_failed",
           error: signUpError.message,
         });
-        throw new ValidationError("Unable to create user account. Please try again or contact support.");
+        throw new ValidationError(
+          "Unable to create user account. Please try again or contact support."
+        );
       }
     }
 
@@ -455,14 +511,18 @@ export class SupabaseUserRepository implements IUserRepository {
         event: "user_create_missing_auth_user",
         diagnostic: "Supabase auth failed to produce a valid user record.",
       });
-      throw new ValidationError("Unable to create user account. Please contact support.");
+      throw new ValidationError(
+        "Unable to create user account. Please contact support."
+      );
     }
 
     const userId = authUser.id;
     const dbClient = adminClient || createClient();
 
     // 4. Upsert profile in profiles table
-    const { error: profileError } = await (dbClient.from("profiles") as any).upsert({
+    const { error: profileError } = await (
+      dbClient.from("profiles") as any
+    ).upsert({
       id: userId,
       org_id: orgId,
       full_name: fullName,
@@ -511,7 +571,9 @@ export class SupabaseUserRepository implements IUserRepository {
       .eq("org_id", orgId);
 
     if (dbError) {
-      throw new Error(dbError.message || "Failed to update member role in database.");
+      throw new Error(
+        dbError.message || "Failed to update member role in database."
+      );
     }
 
     // 2. Update auth user claims
@@ -565,20 +627,25 @@ export class SupabaseUserRepository implements IUserRepository {
     teamId?: string | null
   ): Promise<{ success: boolean; message: string }> {
     if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new ValidationError(
+          "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
       return { success: true, message: `Mock invite sent to ${email}` };
     }
 
     const adminClient = createAdminClient();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com";
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com";
     const redirectTo = `${appUrl}/accept-invite`;
 
     // Ensure default team if teamId not passed
     const targetTeamId = teamId || (await this.ensureDefaultTeam(orgId));
 
     // Send single-use invite link via Supabase Auth Admin API
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-      email,
-      {
+    const { data: inviteData, error: inviteError } =
+      await adminClient.auth.admin.inviteUserByEmail(email, {
         redirectTo,
         data: {
           org_id: orgId,
@@ -586,11 +653,12 @@ export class SupabaseUserRepository implements IUserRepository {
           team_id: targetTeamId,
           invited_by: inviterId,
         },
-      }
-    );
+      });
 
     if (inviteError) {
-      throw new Error(inviteError.message || "Failed to dispatch employee invitation.");
+      throw new Error(
+        inviteError.message || "Failed to dispatch employee invitation."
+      );
     }
 
     if (inviteData?.user) {
@@ -606,7 +674,10 @@ export class SupabaseUserRepository implements IUserRepository {
       await this.assignUserToTeam(inviteData.user.id, orgId, targetTeamId);
     }
 
-    return { success: true, message: `Invite dispatched successfully to ${email}` };
+    return {
+      success: true,
+      message: `Invite dispatched successfully to ${email}`,
+    };
   }
 
   async acceptInvite(password: string): Promise<{ success: boolean }> {
@@ -625,8 +696,12 @@ export class SupabaseUserRepository implements IUserRepository {
 
     // Ensure team assignment on acceptance
     if (userData?.user?.id) {
-      const orgId = userData.user.user_metadata?.org_id || userData.user.app_metadata?.org_id;
-      const teamId = userData.user.user_metadata?.team_id || userData.user.app_metadata?.team_id;
+      const orgId =
+        userData.user.user_metadata?.org_id ||
+        userData.user.app_metadata?.org_id;
+      const teamId =
+        userData.user.user_metadata?.team_id ||
+        userData.user.app_metadata?.team_id;
       if (orgId) {
         await this.assignUserToTeam(userData.user.id, orgId, teamId);
       }

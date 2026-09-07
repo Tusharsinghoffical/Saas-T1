@@ -1,6 +1,9 @@
 import { RequestContext } from "@/shared/types/context";
 import { redisGet, redisSet } from "@/infrastructure/redis/redisClient";
-import { IDashboardRepository, dashboardRepository } from "../repository/dashboardRepository";
+import {
+  IDashboardRepository,
+  dashboardRepository,
+} from "../repository/dashboardRepository";
 import { userRepository } from "@/domains/users/repository/userRepository";
 
 export async function getAdminDashboardUseCase(
@@ -17,9 +20,9 @@ export async function getAdminDashboardUseCase(
   try {
     const [profile, orgSettings] = await Promise.all([
       userRepository.getProfileById(context.userId).catch(() => null),
-      import("@/domains/organization/repository/orgRepository").then(m => 
-        m.orgRepository.getOrgById(context.orgId)
-      ).catch(() => null),
+      import("@/domains/organization/repository/orgRepository")
+        .then((m) => m.orgRepository.getOrgById(context.orgId))
+        .catch(() => null),
     ]);
 
     if (profile) {
@@ -51,9 +54,12 @@ export async function getAdminDashboardUseCase(
       new Date(t.due_date).getTime() < nowMs
   ).length;
 
-  const completedTasks = tasks.filter((t: any) => t.status === "completed").length;
+  const completedTasks = tasks.filter(
+    (t: any) => t.status === "completed"
+  ).length;
   const totalTasks = tasks.length;
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const completionRate =
+    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // 2. Fetch or compute expensive 30-day historical chart data with 60s Redis cache
   let timeline = await redisGet(chartCacheKey);
@@ -79,7 +85,10 @@ export async function getAdminDashboardUseCase(
 
       timeline.push({
         date: dateStr,
-        label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        label: d.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
         completed: completedCount,
         created: createdCount,
       });
@@ -88,16 +97,24 @@ export async function getAdminDashboardUseCase(
     await redisSet(chartCacheKey, timeline, 60);
   }
 
-  const completedTaskItems = tasks.filter((t: any) => t.status === "completed" && t.created_at && t.updated_at);
-  const totalCompletionDurationDays = completedTaskItems.reduce((acc: number, t: any) => {
-    const created = new Date(t.created_at).getTime();
-    const updated = new Date(t.updated_at).getTime();
-    const diffDays = Math.max(0, (updated - created) / (1000 * 60 * 60 * 24));
-    return acc + diffDays;
-  }, 0);
-  const teamVelocityDays = completedTaskItems.length > 0
-    ? Math.round((totalCompletionDurationDays / completedTaskItems.length) * 10) / 10
-    : 0;
+  const completedTaskItems = tasks.filter(
+    (t: any) => t.status === "completed" && t.created_at && t.updated_at
+  );
+  const totalCompletionDurationDays = completedTaskItems.reduce(
+    (acc: number, t: any) => {
+      const created = new Date(t.created_at).getTime();
+      const updated = new Date(t.updated_at).getTime();
+      const diffDays = Math.max(0, (updated - created) / (1000 * 60 * 60 * 24));
+      return acc + diffDays;
+    },
+    0
+  );
+  const teamVelocityDays =
+    completedTaskItems.length > 0
+      ? Math.round(
+          (totalCompletionDurationDays / completedTaskItems.length) * 10
+        ) / 10
+      : 0;
 
   const aggregateData = {
     adminProfile,
@@ -115,4 +132,3 @@ export async function getAdminDashboardUseCase(
 
   return { data: aggregateData, source: chartSource };
 }
-

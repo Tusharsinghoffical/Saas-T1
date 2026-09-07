@@ -1,6 +1,12 @@
 import { RequestContext } from "@/shared/types/context";
-import { IDashboardRepository, dashboardRepository } from "../repository/dashboardRepository";
-import { IUserRepository, userRepository } from "@/domains/users/repository/userRepository";
+import {
+  IDashboardRepository,
+  dashboardRepository,
+} from "../repository/dashboardRepository";
+import {
+  IUserRepository,
+  userRepository,
+} from "@/domains/users/repository/userRepository";
 
 export async function getEmployeeDashboardUseCase(
   context: RequestContext,
@@ -31,7 +37,11 @@ export async function getEmployeeDashboardUseCase(
   recentlyCompleted: any[];
 }> {
   const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  ).getTime();
   const endOfToday = startOfToday + 86400000;
   const sevenDaysFromNow = now.getTime() + 7 * 86400000;
   const sevenDaysAgo = now.getTime() - 7 * 86400000;
@@ -53,7 +63,10 @@ export async function getEmployeeDashboardUseCase(
     }
   }
 
-  const employeeCode = `EMP-${(context.userId || "0000").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase()}`;
+  const employeeCode = `EMP-${(context.userId || "0000")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 6)
+    .toUpperCase()}`;
   const fullName = profileData?.fullName || "Employee";
   const email = profileData?.email || context.email || "employee@workspace.com";
   const teamName = profileData?.teamName || "General";
@@ -72,10 +85,16 @@ export async function getEmployeeDashboardUseCase(
   let completedCount = 0;
 
   tasks.forEach((t: any) => {
-    const dueTime = t.due_date ? new Date(t.due_date).getTime() : (t.dueDate ? new Date(t.dueDate).getTime() : null);
+    const dueTime = t.due_date
+      ? new Date(t.due_date).getTime()
+      : t.dueDate
+        ? new Date(t.dueDate).getTime()
+        : null;
     const updatedTime = t.updated_at
       ? new Date(t.updated_at).getTime()
-      : (t.created_at ? new Date(t.created_at).getTime() : now.getTime());
+      : t.created_at
+        ? new Date(t.created_at).getTime()
+        : now.getTime();
 
     const formattedTask = {
       id: t.id,
@@ -94,7 +113,10 @@ export async function getEmployeeDashboardUseCase(
             fullName: a.profiles?.full_name || "Assignee",
             avatarUrl: a.profiles?.avatar_url,
           })),
-      dependencyTaskIds: t.dependency_task_ids || (t.task_dependencies || []).map((d: any) => d.depends_on_task_id) || [],
+      dependencyTaskIds:
+        t.dependency_task_ids ||
+        (t.task_dependencies || []).map((d: any) => d.depends_on_task_id) ||
+        [],
       created_by: t.created_by,
       created_at: t.created_at,
       updated_at: t.updated_at,
@@ -111,7 +133,11 @@ export async function getEmployeeDashboardUseCase(
     } else {
       if (dueTime && dueTime >= startOfToday && dueTime <= endOfToday) {
         dueToday.push(formattedTask);
-      } else if (dueTime && dueTime > endOfToday && dueTime <= sevenDaysFromNow) {
+      } else if (
+        dueTime &&
+        dueTime > endOfToday &&
+        dueTime <= sevenDaysFromNow
+      ) {
         upcoming.push(formattedTask);
       } else {
         if (dueTime && dueTime < startOfToday) {
@@ -124,7 +150,8 @@ export async function getEmployeeDashboardUseCase(
   });
 
   const totalAssigned = tasks.length;
-  const completionRate = totalAssigned > 0 ? Math.round((completedCount / totalAssigned) * 100) : 0;
+  const completionRate =
+    totalAssigned > 0 ? Math.round((completedCount / totalAssigned) * 100) : 0;
 
   return {
     profile: {

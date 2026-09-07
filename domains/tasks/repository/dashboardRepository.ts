@@ -1,10 +1,20 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
 
 export interface IDashboardRepository {
   getAdminDashboardTasks(orgId: string, teamId?: string | null): Promise<any[]>;
-  getManagerDashboardTasks(orgId: string, managerUserId: string, teamId?: string | null): Promise<any[]>;
+  getManagerDashboardTasks(
+    orgId: string,
+    managerUserId: string,
+    teamId?: string | null
+  ): Promise<any[]>;
   getEmployeeTasks(orgId: string, userId: string): Promise<any[]>;
-  getStatusCounts(orgId: string, teamId?: string | null): Promise<Record<string, number>>;
+  getStatusCounts(
+    orgId: string,
+    teamId?: string | null
+  ): Promise<Record<string, number>>;
 }
 
 export class SupabaseDashboardRepository implements IDashboardRepository {
@@ -17,42 +27,24 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
     return createClient();
   }
 
-  async getAdminDashboardTasks(orgId: string, teamId?: string | null): Promise<any[]> {
+  async getAdminDashboardTasks(
+    orgId: string,
+    teamId?: string | null
+  ): Promise<any[]> {
     if (!this.hasSupabase()) {
-      return [
-        {
-          id: "task-1",
-          status: "completed",
-          priority: "high",
-          due_date: new Date(Date.now() - 86400000).toISOString(),
-          created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-          updated_at: new Date(Date.now() - 86400000).toISOString(),
-          team_id: teamId || null,
-        },
-        {
-          id: "task-2",
-          status: "in_progress",
-          priority: "urgent",
-          due_date: new Date(Date.now() + 86400000 * 2).toISOString(),
-          created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-          updated_at: new Date().toISOString(),
-          team_id: teamId || null,
-        },
-        {
-          id: "task-3",
-          status: "pending",
-          priority: "medium",
-          due_date: new Date(Date.now() - 86400000 * 2).toISOString(), // Overdue
-          created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-          updated_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-          team_id: teamId || null,
-        },
-      ];
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return [];
     }
 
     const client = this.getClient();
     let query = (client.from("tasks") as any)
-      .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+      .select(
+        "id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by"
+      )
       .eq("org_id", orgId)
       .order("created_at", { ascending: false });
 
@@ -66,7 +58,9 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       try {
         const adminClient = createAdminClient();
         const { data: adminTasks } = await (adminClient.from("tasks") as any)
-          .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+          .select(
+            "id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by"
+          )
           .eq("org_id", orgId)
           .order("created_at", { ascending: false });
         if (adminTasks && adminTasks.length > 0) {
@@ -76,13 +70,21 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       return [];
     }
 
-    if ((!rawTasks || rawTasks.length === 0) && !teamId) {
+    // Auto-seed sample workspace tasks only in non-production environments
+    if (
+      process.env.NODE_ENV !== "production" &&
+      (!rawTasks || rawTasks.length === 0) &&
+      !teamId
+    ) {
       try {
-        const { seedWorkspaceDataUseCase } = await import("../usecases/seedWorkspaceData");
+        const { seedWorkspaceDataUseCase } =
+          await import("../usecases/seedWorkspaceData");
         const seedResult = await seedWorkspaceDataUseCase(orgId);
         if (seedResult.success && seedResult.tasksCount > 0) {
           const { data: seeded } = await (client.from("tasks") as any)
-            .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+            .select(
+              "id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by"
+            )
             .eq("org_id", orgId)
             .order("created_at", { ascending: false });
           if (seeded && seeded.length > 0) return seeded;
@@ -96,7 +98,9 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       try {
         const adminClient = createAdminClient();
         const { data: adminTasks } = await (adminClient.from("tasks") as any)
-          .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+          .select(
+            "id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by"
+          )
           .eq("org_id", orgId)
           .order("created_at", { ascending: false });
         if (adminTasks && adminTasks.length > 0) {
@@ -114,26 +118,12 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
     teamId?: string | null
   ): Promise<any[]> {
     if (!this.hasSupabase()) {
-      return [
-        {
-          id: "mgr-task-1",
-          status: "in_progress",
-          priority: "high",
-          due_date: new Date(Date.now() + 86400000).toISOString(),
-          created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-          updated_at: new Date().toISOString(),
-          team_id: teamId || "team-default",
-        },
-        {
-          id: "mgr-task-2",
-          status: "completed",
-          priority: "medium",
-          due_date: new Date(Date.now() - 86400000).toISOString(),
-          created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
-          updated_at: new Date(Date.now() - 86400000).toISOString(),
-          team_id: teamId || "team-default",
-        },
-      ];
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return [];
     }
 
     const client = this.getClient();
@@ -156,14 +146,18 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
     const validTeamIds = Array.from(managedIds);
 
     let query = (client.from("tasks") as any)
-      .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+      .select(
+        "id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by"
+      )
       .eq("org_id", orgId)
       .order("created_at", { ascending: false });
 
     if (teamId) {
       query = query.eq("team_id", teamId);
     } else if (validTeamIds.length > 0) {
-      query = query.or(`team_id.in.(${validTeamIds.join(",")}),created_by.eq.${managerUserId}`);
+      query = query.or(
+        `team_id.in.(${validTeamIds.join(",")}),created_by.eq.${managerUserId}`
+      );
     }
 
     const { data: rawTasks, error } = await query;
@@ -173,7 +167,9 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       try {
         const adminClient = createAdminClient();
         const { data: adminTasks } = await (adminClient.from("tasks") as any)
-          .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+          .select(
+            "id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by"
+          )
           .eq("org_id", orgId)
           .order("created_at", { ascending: false });
         if (adminTasks && adminTasks.length > 0) return adminTasks;
@@ -185,7 +181,9 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       try {
         const adminClient = createAdminClient();
         const { data: adminTasks } = await (adminClient.from("tasks") as any)
-          .select("id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by")
+          .select(
+            "id, title, description, status, priority, due_date, created_at, updated_at, team_id, created_by"
+          )
           .eq("org_id", orgId)
           .order("created_at", { ascending: false });
         if (adminTasks && adminTasks.length > 0) return adminTasks;
@@ -197,67 +195,12 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
 
   async getEmployeeTasks(orgId: string, userId: string): Promise<any[]> {
     if (!this.hasSupabase()) {
-      return [
-        {
-          id: "task-emp-1",
-          title: "Audit customer onboarding telemetry & events",
-          description: "Review PostHog funnel metrics and ensure events are firing properly.",
-          status: "in_progress",
-          priority: "urgent",
-          due_date: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          tags: ["telemetry", "posthog"],
-          subtasks: [{ id: "st-1", title: "Check signup funnel", completed: true }],
-        },
-        {
-          id: "task-emp-2",
-          title: "Prepare Sprint review presentation slides",
-          description: "Summarize completed tickets and upcoming sprint velocity.",
-          status: "pending",
-          priority: "high",
-          due_date: new Date(Date.now() + 3600000 * 4).toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          tags: ["sprint"],
-          subtasks: [],
-        },
-        {
-          id: "task-emp-3",
-          title: "Implement Groq AI streaming prompt templates",
-          description: "Setup Llama 3.3 70B Versatile client in Phase 4.",
-          status: "pending",
-          priority: "medium",
-          due_date: new Date(Date.now() + 86400000 * 3).toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          tags: ["ai", "groq"],
-          subtasks: [],
-        },
-        {
-          id: "task-emp-4",
-          title: "Test PWA service worker offline caching",
-          description: "Verify IndexedDB background sync on mobile devices.",
-          status: "pending",
-          priority: "low",
-          due_date: new Date(Date.now() + 86400000 * 5).toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          tags: ["pwa", "mobile"],
-          subtasks: [],
-        },
-        {
-          id: "task-emp-5",
-          title: "Set up Tailwind CSS tokens & dark mode toggle",
-          description: "Configured primary #4F46E5, urgent #EF4444, and success #22C55E.",
-          status: "completed",
-          priority: "medium",
-          due_date: new Date(Date.now() - 86400000).toISOString(),
-          created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-          updated_at: new Date(Date.now() - 3600000 * 12).toISOString(),
-          tags: ["ui"],
-        },
-      ];
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return [];
     }
 
     const client = this.getClient();
@@ -268,13 +211,15 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
         .select("task_id")
         .eq("user_id", userId),
       (client.from("tasks") as any)
-        .select(`
+        .select(
+          `
           *,
           task_assignees (
             user_id,
             profiles:user_id (id, full_name, avatar_url)
           )
-        `)
+        `
+        )
         .eq("org_id", orgId)
         .eq("created_by", userId)
         .order("created_at", { ascending: false }),
@@ -293,13 +238,15 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
 
       if (missingIds.length > 0) {
         const { data: assignedTasks } = await (client.from("tasks") as any)
-          .select(`
+          .select(
+            `
             *,
             task_assignees (
               user_id,
               profiles:user_id (id, full_name, avatar_url)
             )
-          `)
+          `
+          )
           .eq("org_id", orgId)
           .in("id", missingIds)
           .order("created_at", { ascending: false });
@@ -319,35 +266,43 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
             .select("task_id")
             .eq("user_id", userId),
           (adminClient.from("tasks") as any)
-            .select(`
+            .select(
+              `
               *,
               task_assignees (
                 user_id,
                 profiles:user_id (id, full_name, avatar_url)
               )
-            `)
+            `
+            )
             .eq("org_id", orgId)
             .eq("created_by", userId)
             .order("created_at", { ascending: false }),
         ]);
 
         let fallbackTasks: any[] = adminCreated.data || [];
-        const fallbackAssignedIds: string[] = ((adminAssigned.data as any[]) || [])
+        const fallbackAssignedIds: string[] = (
+          (adminAssigned.data as any[]) || []
+        )
           .map((a: any) => a.task_id)
           .filter(Boolean);
 
         if (fallbackAssignedIds.length > 0) {
           const existingIds = new Set(fallbackTasks.map((t: any) => t.id));
-          const missingIds = fallbackAssignedIds.filter((id) => !existingIds.has(id));
+          const missingIds = fallbackAssignedIds.filter(
+            (id) => !existingIds.has(id)
+          );
           if (missingIds.length > 0) {
             const { data: moreTasks } = await (adminClient.from("tasks") as any)
-              .select(`
+              .select(
+                `
                 *,
                 task_assignees (
                   user_id,
                   profiles:user_id (id, full_name, avatar_url)
                 )
-              `)
+              `
+              )
               .eq("org_id", orgId)
               .in("id", missingIds)
               .order("created_at", { ascending: false });
@@ -366,9 +321,17 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
     return rawTasks;
   }
 
-  async getStatusCounts(orgId: string, teamId?: string | null): Promise<Record<string, number>> {
+  async getStatusCounts(
+    orgId: string,
+    teamId?: string | null
+  ): Promise<Record<string, number>> {
     if (!this.hasSupabase()) {
-      return { completed: 2, in_progress: 2, pending: 3 };
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return {};
     }
 
     const client = this.getClient();
@@ -385,10 +348,13 @@ export class SupabaseDashboardRepository implements IDashboardRepository {
       return {};
     }
 
-    return (data as Array<{ status: string }>).reduce((acc: Record<string, number>, row) => {
-      acc[row.status] = (acc[row.status] || 0) + 1;
-      return acc;
-    }, {});
+    return (data as Array<{ status: string }>).reduce(
+      (acc: Record<string, number>, row) => {
+        acc[row.status] = (acc[row.status] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
   }
 }
 

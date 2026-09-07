@@ -6,9 +6,11 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") || "/admin/dashboard";
 
-  const forwardedHost = request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const forwardedHost =
+    request.headers.get("x-forwarded-host") || request.headers.get("host");
   const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-  const defaultAppUrl = process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com";
+  const defaultAppUrl =
+    process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com";
 
   let safeOrigin = defaultAppUrl;
   if (
@@ -71,5 +73,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${safeOrigin}/login?error=Authentication%20failed`);
+  return NextResponse.redirect(
+    `${safeOrigin}/login?error=Authentication%20failed`
+  );
 }

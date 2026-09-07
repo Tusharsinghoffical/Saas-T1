@@ -21,10 +21,15 @@ describe("Domain-Driven Structure: Task Business Rules & Invariant Tests", () =>
   });
 
   it("blocks transition to 'in_progress' or 'completed' if dependencies are incomplete", () => {
-    const incompleteDeps: { id: string; title: string; status: TaskStatus }[] = [
-      { id: "dep-1", title: "API Backend Implementation", status: "completed" },
-      { id: "dep-2", title: "Security Review", status: "in_progress" },
-    ];
+    const incompleteDeps: { id: string; title: string; status: TaskStatus }[] =
+      [
+        {
+          id: "dep-1",
+          title: "API Backend Implementation",
+          status: "completed",
+        },
+        { id: "dep-2", title: "Security Review", status: "in_progress" },
+      ];
 
     const completedDeps: { id: string; title: string; status: TaskStatus }[] = [
       { id: "dep-1", title: "API Backend Implementation", status: "completed" },
@@ -32,23 +37,37 @@ describe("Domain-Driven Structure: Task Business Rules & Invariant Tests", () =>
     ];
 
     // Attempting to move to in_progress with incomplete dependencies
-    const resultInProgress = validateDependencyPrerequisites("in_progress", incompleteDeps);
+    const resultInProgress = validateDependencyPrerequisites(
+      "in_progress",
+      incompleteDeps
+    );
     expect(resultInProgress.allowed).toBe(false);
     expect(resultInProgress.blockingDependencies.length).toBe(1);
-    expect(resultInProgress.blockingDependencies[0].title).toBe("Security Review");
+    expect(resultInProgress.blockingDependencies[0].title).toBe(
+      "Security Review"
+    );
 
     // Attempting to move to completed with incomplete dependencies
-    const resultCompleted = validateDependencyPrerequisites("completed", incompleteDeps);
+    const resultCompleted = validateDependencyPrerequisites(
+      "completed",
+      incompleteDeps
+    );
     expect(resultCompleted.allowed).toBe(false);
     expect(resultCompleted.blockingDependencies[0].id).toBe("dep-2");
 
     // All dependencies complete
-    const allowedResult = validateDependencyPrerequisites("completed", completedDeps);
+    const allowedResult = validateDependencyPrerequisites(
+      "completed",
+      completedDeps
+    );
     expect(allowedResult.allowed).toBe(true);
     expect(allowedResult.blockingDependencies.length).toBe(0);
 
     // Moving to pending is always allowed regardless of dependencies
-    const pendingResult = validateDependencyPrerequisites("pending", incompleteDeps);
+    const pendingResult = validateDependencyPrerequisites(
+      "pending",
+      incompleteDeps
+    );
     expect(pendingResult.allowed).toBe(true);
   });
 
@@ -56,7 +75,7 @@ describe("Domain-Driven Structure: Task Business Rules & Invariant Tests", () =>
     const mockRepo: ITaskRepository = {
       listTasks: async () => ({ tasks: [], total: 0 }),
       getTaskById: async () => null,
-      createTask: async () => ({} as any),
+      createTask: async () => ({}) as any,
       updateTask: async (id, orgId, updates) => ({
         id,
         orgId,
@@ -128,7 +147,7 @@ describe("Domain-Driven Structure: Task Business Rules & Invariant Tests", () =>
     const mockRepo: ITaskRepository = {
       listTasks: async () => ({ tasks: [], total: 0 }),
       getTaskById: async () => null,
-      createTask: async () => ({} as any),
+      createTask: async () => ({}) as any,
       updateTask: async (id, orgId, updates) => ({
         id,
         orgId,

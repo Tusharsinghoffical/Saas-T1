@@ -15,7 +15,9 @@ export async function updateUserRoleUseCase(
 ): Promise<{ success: boolean; message: string }> {
   // 1. Only admins can modify user roles
   if (context.role !== "admin") {
-    throw new ForbiddenError("Only workspace administrators can modify member roles.");
+    throw new ForbiddenError(
+      "Only workspace administrators can modify member roles."
+    );
   }
 
   if (!input.userId) {

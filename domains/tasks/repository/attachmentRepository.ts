@@ -1,9 +1,16 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
 import { Attachment, CreateAttachmentDTO } from "../entities/Attachment";
 
 export interface IAttachmentRepository {
   listAttachments(taskId: string): Promise<Attachment[]>;
-  saveAttachment(taskId: string, userId: string, data: CreateAttachmentDTO): Promise<Attachment>;
+  saveAttachment(
+    taskId: string,
+    userId: string,
+    data: CreateAttachmentDTO
+  ): Promise<Attachment>;
   deleteAttachment(attachmentId: string, taskId: string): Promise<boolean>;
 }
 
@@ -19,35 +26,37 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
 
   async listAttachments(taskId: string): Promise<Attachment[]> {
     if (!this.hasSupabase()) {
-      return [
-        {
-          id: "att-1",
-          taskId,
-          fileName: "Project Architecture & Requirements",
-          fileUrl: "https://docs.google.com/document/d/example",
-          fileSize: 0,
-          fileType: "link",
-          createdAt: new Date().toISOString(),
-        },
-      ];
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return [];
     }
 
     try {
       const client = this.getClient();
-      const { data: attachments, error } = await (client.from("task_attachments") as any)
+      const { data: attachments, error } = await (
+        client.from("task_attachments") as any
+      )
         .select("id, task_id, file_name, file_url, created_at")
         .eq("task_id", taskId)
         .order("created_at", { ascending: false });
 
       if (error) {
         console.warn("[listAttachments Error, trying select *]", error.message);
-        const { data: fallbackAtts, error: fallbackErr } = await (client.from("task_attachments") as any)
+        const { data: fallbackAtts, error: fallbackErr } = await (
+          client.from("task_attachments") as any
+        )
           .select("*")
           .eq("task_id", taskId)
           .order("created_at", { ascending: false });
 
         if (fallbackErr) {
-          console.error("[listAttachments Fallback Error]", fallbackErr.message);
+          console.error(
+            "[listAttachments Fallback Error]",
+            fallbackErr.message
+          );
           return [];
         }
         return (fallbackAtts || []).map((a: any) => ({
@@ -78,8 +87,17 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
     }
   }
 
-  async saveAttachment(taskId: string, userId: string, data: CreateAttachmentDTO): Promise<Attachment> {
+  async saveAttachment(
+    taskId: string,
+    userId: string,
+    data: CreateAttachmentDTO
+  ): Promise<Attachment> {
     if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
       return {
         id: `att-${Date.now()}`,
         taskId,
@@ -102,14 +120,19 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
         file_url: data.fileUrl,
       };
 
-      let { data: attachment, error } = await (client.from("task_attachments") as any)
+      let { data: attachment, error } = await (
+        client.from("task_attachments") as any
+      )
         .insert(insertPayload)
         .select("id, task_id, file_name, file_url, created_at")
         .single();
 
       // If select failed or insert needed fallback, try select *
       if (error) {
-        console.warn("[saveAttachment error with explicit select, retrying with select *]:", error.message);
+        console.warn(
+          "[saveAttachment error with explicit select, retrying with select *]:",
+          error.message
+        );
         const retry = await (client.from("task_attachments") as any)
           .insert(insertPayload)
           .select()
@@ -117,7 +140,9 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
 
         if (retry.error || !retry.data) {
           console.error("[saveAttachment Retry Failed]", retry.error?.message);
-          throw new Error(retry.error?.message || "Failed to save attachment link in database");
+          throw new Error(
+            retry.error?.message || "Failed to save attachment link in database"
+          );
         }
         attachment = retry.data;
       }
@@ -138,7 +163,10 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
     }
   }
 
-  async deleteAttachment(attachmentId: string, taskId: string): Promise<boolean> {
+  async deleteAttachment(
+    attachmentId: string,
+    taskId: string
+  ): Promise<boolean> {
     if (!this.hasSupabase()) {
       return true;
     }

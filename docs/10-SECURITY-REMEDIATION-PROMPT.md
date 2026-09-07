@@ -4,13 +4,13 @@ Continues numbering from `09-SECURITY-AUDIT-PROMPT.md` (Prompt 34 = audit, alrea
 
 ## Findings Being Fixed (from your audit output)
 
-| # | Issue | File | Risk |
-|---|---|---|---|
-| 1 | `profiles_update_policy` lets a user update their own `role`/`org_id` → self-promotion to admin | `supabase/migrations/0002_rls.sql:44-59` | **Critical** |
-| 2 | Slack test-webhook handler checks `if (test)` before role/auth check → SSRF + unauthorized webhook probing | `domains/organization/api/orgController.ts:17-19` | High |
-| 3 | Weekly-summary cron endpoint logs invalid token but still proceeds instead of returning 401 → unauthenticated Groq quota exhaustion | `domains/tasks/api/aiController.ts:19-27` | High |
-| 4 | Admin dashboard API sets `Cache-Control: public, s-maxage=60` on tenant-private data → CDN cross-tenant cache risk | `app/api/v1/dashboard/admin/route.ts:17` | High |
-| 5 | R2 presigned upload keys aren't prefixed with `org_id`, and task ownership isn't verified before issuing the URL → cross-tenant file access/overwrite | `domains/tasks/usecases/getPresignedUploadUrl.ts:16` | Critical |
+| #   | Issue                                                                                                                                                 | File                                                 | Risk         |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------ |
+| 1   | `profiles_update_policy` lets a user update their own `role`/`org_id` → self-promotion to admin                                                       | `supabase/migrations/0002_rls.sql:44-59`             | **Critical** |
+| 2   | Slack test-webhook handler checks `if (test)` before role/auth check → SSRF + unauthorized webhook probing                                            | `domains/organization/api/orgController.ts:17-19`    | High         |
+| 3   | Weekly-summary cron endpoint logs invalid token but still proceeds instead of returning 401 → unauthenticated Groq quota exhaustion                   | `domains/tasks/api/aiController.ts:19-27`            | High         |
+| 4   | Admin dashboard API sets `Cache-Control: public, s-maxage=60` on tenant-private data → CDN cross-tenant cache risk                                    | `app/api/v1/dashboard/admin/route.ts:17`             | High         |
+| 5   | R2 presigned upload keys aren't prefixed with `org_id`, and task ownership isn't verified before issuing the URL → cross-tenant file access/overwrite | `domains/tasks/usecases/getPresignedUploadUrl.ts:16` | Critical     |
 
 Plus: the remaining un-detailed fails in **Login & Brute-Force (2)**, **Signup & Verification (2)**, **Error Handling (1)**, and **Logging (1)** categories that the report counted but didn't detail in the top-5 — Prompt 35 forces those into the open too.
 
@@ -45,5 +45,6 @@ Do not mark anything fixed unless you have a passing test or a direct re-inspect
 ---
 
 ## After This Runs
+
 - If the corrected total is still below a score you're comfortable with, or any Critical/High remains open, re-run **Prompt 35 again** (it's idempotent — safe to re-run, Step 1–2 will just confirm what's already fixed).
 - Once Backend & API Security and Login & Brute-Force both come back clean, re-run **Prompt 33** (Final Verification) once more end-to-end before considering TASQ-ONE launch-ready — a security fix pass can occasionally break an unrelated acceptance-criteria flow (e.g., the cron auth fix breaking the actual scheduled job if CRON_SECRET isn't set in the deploy environment — verify that too).

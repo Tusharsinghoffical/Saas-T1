@@ -10,7 +10,9 @@ export async function acceptInviteUseCase(
   }
 
   if (!/[A-Z]/.test(password)) {
-    throw new ValidationError("Password must contain at least one uppercase letter.");
+    throw new ValidationError(
+      "Password must contain at least one uppercase letter."
+    );
   }
 
   if (!/[0-9]/.test(password)) {

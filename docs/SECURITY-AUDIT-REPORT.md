@@ -13,12 +13,14 @@
 TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing Supabase (PostgreSQL), Edge/Node.js runtimes, Upstash Redis, Cloudflare R2, Groq LLM inference, and Resend transactional email.
 
 ### Key Strengths Observed
+
 1. **Multi-Tenant Row-Level Security (RLS)**: Core tenant isolation in `supabase/migrations/0002_rls.sql` is enforced at the database level utilizing JWT claims (`auth.jwt() ->> 'org_id'`).
 2. **Server-Side Secret Isolation**: Service-role keys (`SUPABASE_SERVICE_ROLE_KEY`), AI keys (`GROQ_API_KEY`), and storage secrets are strictly confined to server-side infrastructure (`infrastructure/` and `lib/env.ts`) with zero client bundle leakage (`NEXT_PUBLIC_` isolation).
 3. **No Direct SQL String Concatenation**: Database interactions use parameterized queries through the Supabase PostgREST client and PostgreSQL RPC stored procedures (`supabase/migrations/0004_signup_rpc.sql`).
 4. **Zero `dangerouslySetInnerHTML` in Application Code**: React's built-in JSX contextual encoding protects against reflected and stored Cross-Site Scripting (XSS) across task titles, markdown descriptions, checklists, and comments.
 
 ### Critical & High Vulnerabilities Requiring Immediate Remediation
+
 1. **Critical Privilege Escalation in RLS (`supabase/migrations/0002_rls.sql:44-59`)**: The `profiles_update_policy` allows any user (`id = auth.uid()`) to update their own row without restricting the `role` or `org_id` column. A malicious employee can update `role = 'admin'` on their own profile, which is subsequently injected into their JWT by `custom_access_token_hook`.
 2. **Critical Unauthenticated SSRF in Org Settings (`domains/organization/api/orgController.ts:17-19`)**: The `PATCH /api/v1/org/settings` handler processes `{ test: true, slack_webhook_url: "..." }` before performing authentication or role verification, allowing unauthenticated attackers to trigger server-side HTTP requests to internal network services.
 3. **High Risk Missing Rate Limiting on Auth Endpoints (`app/(auth)/actions.ts`)**: Server action auth routes (`signupOrganization`, `loginWithPassword`, `loginWithMagicLink`) lack Upstash Redis rate limiting, relying only on client-side state in `sessionStorage`.
@@ -34,33 +36,19 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 1: Login & Brute-Force Protection
 
 #### 1.1 Upstash Redis Rate Limiting on Auth Endpoints (`/api/v1/auth/*` & Server Actions)
-- **Status**: **FAIL**
-- **Inspected Location**: `app/(auth)/actions.ts:18-96`, `domains/auth/api/authController.ts:17-59`, `infrastructure/redis/redisClient.ts:139-189`
-- **Risk Level**: **High**
-- **Analysis**: While `checkRateLimit` is fully implemented in `infrastructure/redis/redisClient.ts`, it is never invoked in `authController.ts` or `app/(auth)/actions.ts`. Rate limiting on login is currently tracked only in browser `sessionStorage` (`app/(auth)/login/page.tsx:44-60`), which can be bypassed trivially by any script or curl command sending requests directly to Server Actions or API endpoints.
-- **Concrete Fix**:
-  Integrate `checkRateLimit` into `authController.ts` or `app/(auth)/actions.ts` keyed by client IP and email:
-  ```typescript
-  // domains/auth/api/authController.ts
-  import { checkRateLimit } from "@/infrastructure/redis/redisClient";
-  import { RateLimitError } from "@/shared/errors/domainErrors";
 
-  export class AuthController {
-    async loginWithPassword(rawInput: LoginInput, clientIp: string = "unknown") {
-      const rateKey = `ratelimit:auth:login:${clientIp}:${rawInput.email.toLowerCase()}`;
-      const { success, resetInSeconds } = await checkRateLimit(rateKey, 5, 300); // 5 attempts per 5 mins
-      if (!success) {
-        throw new RateLimitError(`Too many login attempts. Please retry in ${resetInSeconds} seconds.`);
-      }
-      // ... continue login flow
-    }
-  }
-  ```
-- **Modern Best Practice**: OWASP ASVS v4.0 §2.2.1 — Implement server-side anti-automation rate limiting on all authentication entry points.
+- **Status**: **PASS (Remediated & Refined)**
+- **Inspected Location**: `app/(auth)/actions.ts`, `domains/auth/api/authController.ts`, `infrastructure/redis/redisClient.ts`, `lib/security/turnstile.ts`
+- **Risk Level**: **Remediated**
+- **Architecture & Policy Distinction (Login vs. Signup)**:
+  - **Login (`/api/v1/auth/login`, `loginWithPassword`, `loginWithMagicLink`)**: Strictly rate-limited to 5 attempts per 5 minutes per IP+email composite key via Upstash Redis. Login is the primary brute-force and credential-stuffing attack surface and must never be relaxed.
+  - **Company Registration (`/auth/signup-org`, `signupOrganization`)**: Reworked intentionally to eliminate legitimate tester/demo user friction (previously blocked after 5 attempts). Replaced with a generous ceiling of 100 signups/hr per IP combined with mandatory **Cloudflare Turnstile** CAPTCHA verification (`lib/security/turnstile.ts`) and database-level admin email uniqueness (one admin email = one org founder). Headless bot scripts are blocked by Turnstile without locking out legitimate human users.
+  - **Invite Acceptance (`/accept-invite`)**: Remains self-limiting as it requires a valid, single-use, admin-issued cryptographically secure invite token.
 
 ---
 
 #### 1.2 Password Hashing & Plain-Text Storage
+
 - **Status**: **PASS**
 - **Inspected Location**: `domains/auth/repository/authRepository.ts:28-36, 74-77`, `supabase/migrations/0001_init.sql`
 - **Risk Level**: N/A
@@ -70,6 +58,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 1.3 Progressive Account Delays & Lockout
+
 - **Status**: **FAIL**
 - **Inspected Location**: `app/(auth)/login/page.tsx:25-27, 52-60`, `domains/auth/usecases/loginWithPassword.ts:4-16`
 - **Risk Level**: **Medium**
@@ -86,6 +75,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 1.4 CAPTCHA Integration (Cloudflare Turnstile)
+
 - **Status**: **NOT-YET-IMPLEMENTED**
 - **Inspected Location**: `app/(auth)/login/page.tsx`, `app/(auth)/signup/page.tsx`
 - **Risk Level**: **Medium** (Acceptable for Pilot with Redis Rate Limiting; Recommended for Public Launch)
@@ -99,6 +89,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 2: Signup, Verification & Input Validation
 
 #### 2.1 Email Verification Enforcement
+
 - **Status**: **FAIL**
 - **Inspected Location**: `middleware.ts:47-75`, `shared/middleware/rbacGuard.ts:38-69`
 - **Risk Level**: **High**
@@ -107,7 +98,11 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
   Update `middleware.ts` and `rbacGuard.ts` to require email verification:
   ```typescript
   // middleware.ts
-  if (user && !user.email_confirmed_at && process.env.NODE_ENV === "production") {
+  if (
+    user &&
+    !user.email_confirmed_at &&
+    process.env.NODE_ENV === "production"
+  ) {
     return NextResponse.redirect(new URL("/auth/verify-email", request.url));
   }
   ```
@@ -116,6 +111,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 2.2 Zod Strict Validation & Password Complexity
+
 - **Status**: **FAIL**
 - **Inspected Location**: `lib/validators/auth.ts:3-19`, `lib/validators/task.ts:6-26`
 - **Risk Level**: **Medium**
@@ -125,22 +121,25 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 - **Concrete Fix**:
   ```typescript
   // lib/validators/auth.ts
-  export const signupSchema = z.object({
-    orgName: z.string().trim().min(2).max(100),
-    fullName: z.string().trim().min(2).max(100),
-    email: z.string().trim().toLowerCase().email(),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-      .regex(/[0-9]/, "Password must contain at least one number"),
-  }).strict();
+  export const signupSchema = z
+    .object({
+      orgName: z.string().trim().min(2).max(100),
+      fullName: z.string().trim().min(2).max(100),
+      email: z.string().trim().toLowerCase().email(),
+      password: z
+        .string()
+        .min(8, "Password must be at least 8 characters")
+        .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+        .regex(/[0-9]/, "Password must contain at least one number"),
+    })
+    .strict();
   ```
 - **Modern Best Practice**: OWASP ASVS v4.0 §5.1.1 — Validate all input data using strict schemas and reject unexpected attributes.
 
 ---
 
 #### 2.3 Organization Creation Abuse & Rate Limiting
+
 - **Status**: **PASS** (with Minor Recommendation)
 - **Inspected Location**: `supabase/migrations/0004_signup_rpc.sql:1-49`, `domains/auth/repository/authRepository.ts:44-56`
 - **Risk Level**: Low
@@ -150,6 +149,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 2.4 Cross-Site Scripting (XSS) Prevention
+
 - **Status**: **PASS**
 - **Inspected Location**: `components/dashboard/`, `components/tasks/`, `app/page.tsx`
 - **Risk Level**: N/A
@@ -161,6 +161,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 3: Session & Token Security
 
 #### 3.1 JWT Expiration & Token Rotation
+
 - **Status**: **PASS**
 - **Inspected Location**: `middleware.ts:21-45`, `supabase/migrations/0003_auth_hook.sql:8-46`
 - **Risk Level**: N/A
@@ -170,6 +171,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 3.2 Session Cookies Security (`httpOnly`, `Secure`, `SameSite`)
+
 - **Status**: **PASS**
 - **Inspected Location**: `middleware.ts:21-45`, `infrastructure/supabase/supabaseServer.ts:16-36`
 - **Risk Level**: N/A
@@ -179,6 +181,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 3.3 Session Fixation Protection
+
 - **Status**: **PASS**
 - **Inspected Location**: `domains/auth/repository/authRepository.ts:74-82`
 - **Risk Level**: N/A
@@ -188,6 +191,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 3.4 Server-Side Global Session Revocation on Logout
+
 - **Status**: **PASS**
 - **Inspected Location**: `infrastructure/supabase/supabaseServer.ts`, `node_modules/@supabase/auth-js`
 - **Risk Level**: N/A
@@ -199,6 +203,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 4: Error Handling & Information Leakage
 
 #### 4.1 Database & Stack Trace Leakage in API Responses
+
 - **Status**: **FAIL**
 - **Inspected Location**: `shared/middleware/rbacGuard.ts:92-111`
 - **Risk Level**: **Medium**
@@ -225,9 +230,10 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
     return NextResponse.json(
       {
         success: false,
-        error: process.env.NODE_ENV === "production" 
-          ? "Internal server error. Please contact support." 
-          : (error as Error)?.message || "Internal server error",
+        error:
+          process.env.NODE_ENV === "production"
+            ? "Internal server error. Please contact support."
+            : (error as Error)?.message || "Internal server error",
       },
       { status: 500 }
     );
@@ -238,6 +244,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 4.2 Centralized Error Handling Pipeline
+
 - **Status**: **PASS**
 - **Inspected Location**: `shared/errors/domainErrors.ts:1-55`, `shared/middleware/rbacGuard.ts:92-111`
 - **Risk Level**: N/A
@@ -247,6 +254,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 4.3 Client Bundle Secret Leakage Prevention
+
 - **Status**: **PASS**
 - **Inspected Location**: `lib/env.ts:4-56`, `.env.local.example:1-30`
 - **Risk Level**: N/A
@@ -258,6 +266,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 5: Password Reset Flow
 
 #### 5.1 Single-Use Token Expiration & Invalidation
+
 - **Status**: **PASS**
 - **Inspected Location**: `domains/auth/repository/authRepository.ts:95-111`, `app/auth/callback/route.ts:4-30`
 - **Risk Level**: N/A
@@ -267,6 +276,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 5.2 User Enumeration Defense
+
 - **Status**: **PASS**
 - **Inspected Location**: `app/(auth)/actions.ts:79-95`, `domains/auth/api/authController.ts:38-48`
 - **Risk Level**: N/A
@@ -278,6 +288,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 6: Multi-Factor Authentication (MFA)
 
 #### 6.1 TOTP-Based MFA Readiness
+
 - **Status**: **NOT-YET-IMPLEMENTED**
 - **Inspected Location**: `domains/auth/`
 - **Risk Level**: **Low** (Targeted for Phase 2 Enterprise Tier)
@@ -292,6 +303,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 7: Backend & API Security
 
 #### 7.1 RBAC Enforcement Across All API Routes
+
 - **Status**: **PASS**
 - **Inspected Location**: `app/api/v1/**`, `shared/middleware/rbacGuard.ts:75-87`, `domains/tasks/api/taskController.ts:43-87`
 - **Risk Level**: N/A
@@ -305,6 +317,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 7.2 Insecure Direct Object Reference (IDOR) Protection
+
 - **Status**: **PASS** (with Defense-in-Depth Recommendation on Attachments)
 - **Inspected Location**: `domains/tasks/repository/taskRepository.ts:79, 166, 326, 376`, `supabase/migrations/0002_rls.sql:139-179`
 - **Risk Level**: Low
@@ -317,6 +330,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 7.3 Privilege Escalation via User Profile Updates
+
 - **Status**: **FAIL**
 - **Inspected Location**: `supabase/migrations/0002_rls.sql:44-59`, `supabase/migrations/0003_auth_hook.sql:26-38`
 - **Risk Level**: **Critical**
@@ -358,7 +372,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
   )
   with check (
     (
-      id = auth.uid() 
+      id = auth.uid()
       and role = (select p.role from profiles p where p.id = auth.uid())
       and org_id = (select p.org_id from profiles p where p.id = auth.uid())
     )
@@ -373,6 +387,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 7.4 SQL Injection Protection
+
 - **Status**: **PASS**
 - **Inspected Location**: `domains/**/repository/*.ts`
 - **Risk Level**: N/A
@@ -382,6 +397,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 7.5 Cloudflare R2 Presigned Upload URL Scoping & Tenant Isolation
+
 - **Status**: **FAIL**
 - **Inspected Location**: `domains/tasks/usecases/getPresignedUploadUrl.ts:16`, `infrastructure/storage/r2Storage.ts:13, 37`
 - **Risk Level**: **High**
@@ -429,6 +445,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 7.6 AI Prompt Injection & Indirect Prompt Attacks
+
 - **Status**: **PASS** (with Hardening Recommendation)
 - **Inspected Location**: `infrastructure/ai/promptTemplates.ts:14-97`, `infrastructure/ai/groqClient.ts:22-161`
 - **Risk Level**: Low
@@ -442,6 +459,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 7.7 Unauthenticated SSRF in Org Settings Slack Test Endpoint
+
 - **Status**: **FAIL**
 - **Inspected Location**: `domains/organization/api/orgController.ts:14-22`, `infrastructure/slack/slackClient.ts:15-57`
 - **Risk Level**: **Critical**
@@ -471,7 +489,9 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
   ```typescript
   // infrastructure/slack/slackClient.ts
   if (!webhookUrl.startsWith("https://hooks.slack.com/services/")) {
-    throw new ValidationError("Invalid Slack webhook URL. Must start with https://hooks.slack.com/services/");
+    throw new ValidationError(
+      "Invalid Slack webhook URL. Must start with https://hooks.slack.com/services/"
+    );
   }
   ```
 - **Modern Best Practice**: OWASP Top 10 A10:2021-Server-Side Request Forgery (SSRF) Prevention.
@@ -479,6 +499,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 7.8 Unauthenticated Execution / Resource Depletion on AI Cron Route
+
 - **Status**: **FAIL**
 - **Inspected Location**: `domains/tasks/api/aiController.ts:19-27`, `app/api/v1/ai/weekly-summary/route.ts:9-25`
 - **Risk Level**: **High**
@@ -515,6 +536,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 7.9 Public CDN Caching on Private Multi-Tenant Data
+
 - **Status**: **FAIL**
 - **Inspected Location**: `app/api/v1/dashboard/admin/route.ts:17`
 - **Risk Level**: **High**
@@ -537,6 +559,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 8: Logging & Monitoring
 
 #### 8.1 Security Event Logging (Logins, Failed Logins, Role Changes)
+
 - **Status**: **FAIL**
 - **Inspected Location**: `domains/activity/usecases/recordActivityLog.ts`, `domains/auth/usecases/loginWithPassword.ts`
 - **Risk Level**: **Medium**
@@ -548,6 +571,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 8.2 Audit Log Context & Sensitive Data Scrubbing
+
 - **Status**: **PASS**
 - **Inspected Location**: `domains/activity/repository/activityRepository.ts:1-68`, `supabase/migrations/0002_rls.sql:370-385`
 - **Risk Level**: N/A
@@ -557,6 +581,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 8.3 Telemetry & Analytics PII Protection
+
 - **Status**: **PASS**
 - **Inspected Location**: `lib/env.ts:12-20`
 - **Risk Level**: N/A
@@ -568,6 +593,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ### Section 9: Authorization / RBAC / Tenant Isolation Deep Pass
 
 #### 9.1 Supabase Row-Level Security Policy Invariants
+
 - **Status**: **PASS** (Zero Indiscriminate `USING (true)` Policies)
 - **Inspected Location**: `supabase/migrations/0002_rls.sql:1-385`
 - **Risk Level**: N/A
@@ -582,6 +608,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 9.2 Manager Team-Scoping Isolation
+
 - **Status**: **PASS**
 - **Inspected Location**: `domains/tasks/api/dashboardController.ts:7-12`, `domains/tasks/repository/dashboardRepository.ts:32-47`
 - **Risk Level**: N/A
@@ -591,6 +618,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 9.3 Custom Auth Hook Integrity
+
 - **Status**: **PASS**
 - **Inspected Location**: `supabase/migrations/0003_auth_hook.sql:8-55`
 - **Risk Level**: N/A
@@ -603,6 +631,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 ---
 
 #### 9.4 Domain-Driven Architecture Boundary Encapsulation
+
 - **Status**: **PASS**
 - **Inspected Location**: `domains/tasks/`, `domains/organization/`, `domains/auth/`, `domains/notifications/`
 - **Risk Level**: N/A
@@ -613,13 +642,13 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 
 ## 3. Top 5 Pre-Launch Remediation Priorities
 
-| Priority | Vulnerability & File Location | Severity | Action Required |
-| :--- | :--- | :--- | :--- |
-| **1** | **Privilege Escalation in `profiles_update_policy`**<br>`supabase/migrations/0002_rls.sql:44-59` | **CRITICAL** | Deploy migration `0008` restricting `profiles` updates so users cannot alter their own `role` or `org_id`. |
-| **2** | **Unauthenticated SSRF in Slack Test Webhook**<br>`domains/organization/api/orgController.ts:17-19` | **CRITICAL** | Enforce `requireRole(["admin"])` prior to checking `if (test)` and restrict webhook URLs strictly to `https://hooks.slack.com/services/`. |
-| **3** | **Unauthenticated AI Weekly Summary Cron**<br>`domains/tasks/api/aiController.ts:19-27` | **HIGH** | Return `401 Unauthorized` immediately if `authHeader !== Bearer ${cronSecret}` and not Vercel Cron. |
-| **4** | **Public CDN Cache-Control on Private Dashboard**<br>`app/api/v1/dashboard/admin/route.ts:17` | **HIGH** | Replace `public, s-maxage=60` with `private, no-cache, no-store, must-revalidate`. |
-| **5** | **Storage Key Cross-Tenant Isolation in R2**<br>`domains/tasks/usecases/getPresignedUploadUrl.ts:16` | **HIGH** | Validate `taskId` belongs to `context.orgId` and prefix all R2 keys with `${context.orgId}/${taskId}/...`. |
+| Priority | Vulnerability & File Location                                                                        | Severity     | Action Required                                                                                                                           |
+| :------- | :--------------------------------------------------------------------------------------------------- | :----------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
+| **1**    | **Privilege Escalation in `profiles_update_policy`**<br>`supabase/migrations/0002_rls.sql:44-59`     | **CRITICAL** | Deploy migration `0008` restricting `profiles` updates so users cannot alter their own `role` or `org_id`.                                |
+| **2**    | **Unauthenticated SSRF in Slack Test Webhook**<br>`domains/organization/api/orgController.ts:17-19`  | **CRITICAL** | Enforce `requireRole(["admin"])` prior to checking `if (test)` and restrict webhook URLs strictly to `https://hooks.slack.com/services/`. |
+| **3**    | **Unauthenticated AI Weekly Summary Cron**<br>`domains/tasks/api/aiController.ts:19-27`              | **HIGH**     | Return `401 Unauthorized` immediately if `authHeader !== Bearer ${cronSecret}` and not Vercel Cron.                                       |
+| **4**    | **Public CDN Cache-Control on Private Dashboard**<br>`app/api/v1/dashboard/admin/route.ts:17`        | **HIGH**     | Replace `public, s-maxage=60` with `private, no-cache, no-store, must-revalidate`.                                                        |
+| **5**    | **Storage Key Cross-Tenant Isolation in R2**<br>`domains/tasks/usecases/getPresignedUploadUrl.ts:16` | **HIGH**     | Validate `taskId` belongs to `context.orgId` and prefix all R2 keys with `${context.orgId}/${taskId}/...`.                                |
 
 ---
 
@@ -655,7 +684,7 @@ TASQ-ONE is designed around a multi-tenant, domain-driven architecture utilizing
 
 **Pass Date**: 2026-08-29  
 **Engineer**: Security Agent (AI)  
-**Verification**: `npx tsc --noEmit` → 0 errors | `npx vitest run` → 14/14 tests pass  
+**Verification**: `npx tsc --noEmit` → 0 errors | `npx vitest run` → 14/14 tests pass
 
 ### FAIL Count Correction
 
@@ -663,43 +692,49 @@ The executive summary originally stated **8 FAILs** in the Total row. The per-ca
 
 ### All 10 FAILs — Remediation Status
 
-| # | Category | Finding | Severity | File(s) Changed | Status |
-|:--|:---------|:--------|:---------|:----------------|:-------|
-| 1 | Login & Brute-Force | Missing rate limit on loginWithPassword & loginWithMagicLink | High | `domains/auth/api/authController.ts` | ✅ FIXED |
-| 2 | Login & Brute-Force | Server-side account lockout client-only | Medium | `domains/auth/usecases/loginWithPassword.ts` | ✅ FIXED (via controller-layer rate limit) |
-| 3 | Signup & Verification | Email verification not enforced | High | `middleware.ts` | ✅ FIXED |
-| 4 | Signup & Verification | Password min 6, no complexity, no .strict() | Medium | `lib/validators/auth.ts` | ✅ FIXED |
-| 5 | Error Handling | DB stack trace leakage in handleAuthError | Medium | `shared/middleware/rbacGuard.ts` | ✅ FIXED |
-| 6 | Backend & API | Privilege escalation via profiles_update_policy | Critical | `supabase/migrations/0008_fix_privilege_escalation.sql` | ✅ FIXED |
-| 7 | Backend & API | R2 storage key cross-tenant isolation | High | `domains/tasks/usecases/getPresignedUploadUrl.ts` | ✅ FIXED |
-| 8 | Backend & API | Unauthenticated SSRF in Org Settings / Slack test | Critical | `domains/organization/api/orgController.ts`, `usecases/testSlackWebhook.ts`, `infrastructure/slack/slackClient.ts` | ✅ FIXED |
-| 9 | Backend & API | AI cron proceeds on invalid token | High | `domains/tasks/api/aiController.ts` | ✅ FIXED |
-| 10 | Backend & API | Public CDN cache on private dashboard | High | `app/api/v1/dashboard/admin/route.ts` | ✅ FIXED |
-| 11 | Logging & Monitoring | No security event logging for login success/failure | Medium | `domains/auth/usecases/loginWithPassword.ts` | ✅ FIXED |
+| #   | Category              | Finding                                                      | Severity | File(s) Changed                                                                                                    | Status                                     |
+| :-- | :-------------------- | :----------------------------------------------------------- | :------- | :----------------------------------------------------------------------------------------------------------------- | :----------------------------------------- |
+| 1   | Login & Brute-Force   | Missing rate limit on loginWithPassword & loginWithMagicLink | High     | `domains/auth/api/authController.ts`                                                                               | ✅ FIXED                                   |
+| 2   | Login & Brute-Force   | Server-side account lockout client-only                      | Medium   | `domains/auth/usecases/loginWithPassword.ts`                                                                       | ✅ FIXED (via controller-layer rate limit) |
+| 3   | Signup & Verification | Email verification not enforced                              | High     | `middleware.ts`                                                                                                    | ✅ FIXED                                   |
+| 4   | Signup & Verification | Password min 6, no complexity, no .strict()                  | Medium   | `lib/validators/auth.ts`                                                                                           | ✅ FIXED                                   |
+| 5   | Error Handling        | DB stack trace leakage in handleAuthError                    | Medium   | `shared/middleware/rbacGuard.ts`                                                                                   | ✅ FIXED                                   |
+| 6   | Backend & API         | Privilege escalation via profiles_update_policy              | Critical | `supabase/migrations/0008_fix_privilege_escalation.sql`                                                            | ✅ FIXED                                   |
+| 7   | Backend & API         | R2 storage key cross-tenant isolation                        | High     | `domains/tasks/usecases/getPresignedUploadUrl.ts`                                                                  | ✅ FIXED                                   |
+| 8   | Backend & API         | Unauthenticated SSRF in Org Settings / Slack test            | Critical | `domains/organization/api/orgController.ts`, `usecases/testSlackWebhook.ts`, `infrastructure/slack/slackClient.ts` | ✅ FIXED                                   |
+| 9   | Backend & API         | AI cron proceeds on invalid token                            | High     | `domains/tasks/api/aiController.ts`                                                                                | ✅ FIXED                                   |
+| 10  | Backend & API         | Public CDN cache on private dashboard                        | High     | `app/api/v1/dashboard/admin/route.ts`                                                                              | ✅ FIXED                                   |
+| 11  | Logging & Monitoring  | No security event logging for login success/failure          | Medium   | `domains/auth/usecases/loginWithPassword.ts`                                                                       | ✅ FIXED                                   |
 
 ### Fix Details
 
 #### FAIL 1 — Rate Limiting on Auth Endpoints
+
 - **File**: `domains/auth/api/authController.ts`
 - **Fix**: Added `checkRateLimit()` from Upstash Redis at top of `loginWithPassword` and `loginWithMagicLink`. Key: `auth:login:${ip}:${email}`. Limit: 5 per 300 seconds. Throws `RateLimitError(429)` with retry-after hint on breach.
 
 #### FAIL 2 — Server-Side Account Lockout
+
 - **File**: `domains/auth/api/authController.ts` (controller-layer)
 - **Fix**: The rate limiter in FAIL 1 fix is keyed per IP:email composite and enforced server-side. This supersedes the purely client-side sessionStorage lockout.
 
 #### FAIL 3 — Email Verification Not Enforced
+
 - **File**: `middleware.ts`
 - **Fix**: Added `!user.email_confirmed_at` check after `getUser()`. Unverified users accessing `/admin/*` or `/employee/*` are redirected to `/auth/verify-email`. API routes are excluded so verification-resend endpoints remain accessible.
 
 #### FAIL 4 — Weak Password Policy & Missing .strict()
+
 - **File**: `lib/validators/auth.ts`
 - **Fix**: `signupSchema` password raised from `.min(6)` to `.min(8)` plus uppercase and digit regex. `.strict()` added to `signupSchema`, `loginSchema`, `magicLinkSchema`.
 
 #### FAIL 5 — Stack Trace Leakage
+
 - **File**: `shared/middleware/rbacGuard.ts` → `handleAuthError()`
 - **Fix**: Non-DomainError catches now return `"Internal server error. Please contact support."` in production. Full error logged server-side via `console.error`. Dev environments retain `_debug` field.
 
 #### FAIL 6 — Privilege Escalation via profiles_update_policy (Critical)
+
 - **File**: `supabase/migrations/0008_fix_privilege_escalation.sql` (NEW)
 - **Fix**: Drops `profiles_update_policy`. Creates two new policies:
   - `profiles_self_update_policy`: `USING (id = auth.uid())` WITH CHECK that re-reads `role` and `org_id` from DB and rejects any attempt to change them.
@@ -707,22 +742,27 @@ The executive summary originally stated **8 FAILs** in the Total row. The per-ca
 - **Tests**: Added 2 new tests in `tests/rls/multi_tenant_isolation.test.ts` — migration content assertions and simulated engine test verifying employees cannot self-promote or change org.
 
 #### FAIL 7 — R2 Storage Cross-Tenant Key
+
 - **File**: `domains/tasks/usecases/getPresignedUploadUrl.ts`
 - **Fix**: (a) Added `repo.getTaskById(taskId, context.orgId)` verification — throws `NotFoundError` if task doesn't belong to the requesting org. (b) Changed R2 key from `tasks/${taskId}/...` to `${context.orgId}/${taskId}/...`.
 
 #### FAIL 8 — Unauthenticated SSRF in Slack Webhook
+
 - **Files**: `domains/organization/api/orgController.ts`, `domains/organization/usecases/testSlackWebhook.ts`, `infrastructure/slack/slackClient.ts`
 - **Fix**: (a) Moved `requireRole(["admin"])` to first line of `updateSettings()`, before body destructuring and `if (test)`. (b) Added URL allowlist in usecase: must start with `https://hooks.slack.com/services/`. (c) Added secondary guard in slackClient infrastructure layer. Dual-layer defense.
 
 #### FAIL 9 — AI Cron Invalid Token Continues Execution
+
 - **File**: `domains/tasks/api/aiController.ts`
 - **Fix**: Changed `console.warn` + continue to `throw new UnauthorizedError(...)`. Execution aborts before any Groq or Resend call on invalid/missing CRON_SECRET.
 
 #### FAIL 10 — Public Cache-Control on Private Dashboard
+
 - **File**: `app/api/v1/dashboard/admin/route.ts`
 - **Fix**: Replaced `"Cache-Control": "public, s-maxage=60, stale-while-revalidate=30"` with `"private, no-cache, no-store, must-revalidate"` + `Pragma: no-cache` + `Expires: 0`.
 
 #### FAIL 11 — No Security Event Logging
+
 - **File**: `domains/auth/usecases/loginWithPassword.ts`
 - **Fix**: Added `recordActivityLogUseCase()` calls:
   - On success: `auth.login_success` with userId, role, method.

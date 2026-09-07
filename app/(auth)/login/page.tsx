@@ -6,7 +6,11 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loginWithPassword, loginWithMagicLink } from "@/app/(auth)/actions";
-import { loginSchema, magicLinkSchema, type LoginInput } from "@/lib/validators/auth";
+import {
+  loginSchema,
+  magicLinkSchema,
+  type LoginInput,
+} from "@/lib/validators/auth";
 import {
   Mail,
   Lock,
@@ -27,7 +31,9 @@ const LOGIN_COOLDOWN_SECONDS = 60;
 
 export default function LoginPage() {
   const router = useRouter();
-  const [authMode, setAuthMode] = useState<"password" | "magic-link">("password");
+  const [authMode, setAuthMode] = useState<"password" | "magic-link">(
+    "password"
+  );
 
   const [formData, setFormData] = useState<LoginInput>({
     email: "",
@@ -46,7 +52,9 @@ export default function LoginPage() {
   const [lockoutRemaining, setLockoutRemaining] = useState(0);
 
   // Legal Modal State
-  const [legalModal, setLegalModal] = useState<"privacy" | "terms" | null>(null);
+  const [legalModal, setLegalModal] = useState<"privacy" | "terms" | null>(
+    null
+  );
 
   // Load lockout state on mount
   useEffect(() => {
@@ -57,7 +65,9 @@ export default function LoginPage() {
         setFailedAttempts(parseInt(storedAttempts, 10) || 0);
       }
       if (storedLockout) {
-        const remaining = Math.ceil((parseInt(storedLockout, 10) - Date.now()) / 1000);
+        const remaining = Math.ceil(
+          (parseInt(storedLockout, 10) - Date.now()) / 1000
+        );
         if (remaining > 0) {
           setLockoutRemaining(remaining);
         } else {
@@ -99,7 +109,10 @@ export default function LoginPage() {
     if (nextAttempts >= MAX_LOGIN_ATTEMPTS) {
       const lockoutUntil = Date.now() + LOGIN_COOLDOWN_SECONDS * 1000;
       try {
-        sessionStorage.setItem("tasq_login_lockout_until", lockoutUntil.toString());
+        sessionStorage.setItem(
+          "tasq_login_lockout_until",
+          lockoutUntil.toString()
+        );
       } catch {}
       setLockoutRemaining(LOGIN_COOLDOWN_SECONDS);
     }
@@ -175,7 +188,10 @@ export default function LoginPage() {
     const sanitizedEmail = magicLinkEmail.trim().toLowerCase();
     const validation = magicLinkSchema.safeParse({ email: sanitizedEmail });
     if (!validation.success) {
-      setErrors({ magicEmail: validation.error.issues[0]?.message || "Invalid email address." });
+      setErrors({
+        magicEmail:
+          validation.error.issues[0]?.message || "Invalid email address.",
+      });
       return;
     }
 
@@ -208,21 +224,21 @@ export default function LoginPage() {
   return (
     <div>
       {/* Header */}
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-3">
-          <ShieldCheck className="w-3.5 h-3.5" />
+      <div className="mb-6 text-center">
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+          <ShieldCheck className="h-3.5 w-3.5" />
           <span>Team Workspace Portal</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+        <h2 className="text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
           Employee &amp; Team Login
         </h2>
-        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5">
+        <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 sm:text-sm">
           Sign in with your organization credentials or secure magic link.
         </p>
       </div>
 
       {/* Auth Mode Toggle Tabs */}
-      <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 mb-5 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+      <div className="mb-5 flex rounded-xl border border-slate-200 bg-slate-100 p-1 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800/80">
         <button
           type="button"
           onClick={() => {
@@ -230,9 +246,9 @@ export default function LoginPage() {
             setServerError(null);
             setErrors({});
           }}
-          className={`flex-1 py-2 rounded-lg transition-all ${
+          className={`flex-1 rounded-lg py-2 transition-all ${
             authMode === "password"
-              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold"
+              ? "bg-white font-bold text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
@@ -245,26 +261,30 @@ export default function LoginPage() {
             setServerError(null);
             setErrors({});
           }}
-          className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${
             authMode === "magic-link"
-              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm font-bold"
+              ? "bg-white font-bold text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-primary" />
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
           <span>Magic Link</span>
         </button>
       </div>
 
       {/* Security Lockout Banner */}
       {lockoutRemaining > 0 && (
-        <div className="mb-5 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 flex items-start gap-3 text-xs animate-shake">
-          <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />
+        <div className="animate-shake mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
+          <ShieldAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-600" />
           <div>
-            <span className="font-bold block">Security Lockout Active</span>
+            <span className="block font-bold">Security Lockout Active</span>
             <p className="mt-0.5 text-[11px] leading-relaxed">
               Too many failed login attempts. Form is locked for{" "}
-              <strong className="font-bold underline">{lockoutRemaining}s</strong> to prevent brute-force attacks. You can switch to the Magic Link tab for instant verified access.
+              <strong className="font-bold underline">
+                {lockoutRemaining}s
+              </strong>{" "}
+              to prevent brute-force attacks. You can switch to the Magic Link
+              tab for instant verified access.
             </p>
           </div>
         </div>
@@ -272,23 +292,30 @@ export default function LoginPage() {
 
       {/* Server Error Banner */}
       {serverError && lockoutRemaining === 0 && (
-        <div className="mb-5 p-3.5 rounded-2xl bg-urgent/10 border border-urgent/20 flex items-start gap-2.5 text-xs text-urgent font-medium animate-fade-in">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <div className="animate-fade-in mb-5 flex items-start gap-2.5 rounded-2xl border border-urgent/20 bg-urgent/10 p-3.5 text-xs font-medium text-urgent">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>{serverError}</span>
         </div>
       )}
 
       {/* Password Login Form */}
       {authMode === "password" && (
-        <form className="space-y-4 animate-fade-in" onSubmit={handlePasswordSubmit} noValidate>
+        <form
+          className="animate-fade-in space-y-4"
+          onSubmit={handlePasswordSubmit}
+          noValidate
+        >
           {/* Work Email */}
           <div>
-            <label htmlFor="login-email" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+            <label
+              htmlFor="login-email"
+              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200"
+            >
               Work Email or Member ID
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Mail className="w-4 h-4" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <Mail className="h-4 w-4" />
               </div>
               <input
                 id="login-email"
@@ -301,38 +328,44 @@ export default function LoginPage() {
                 value={formData.email}
                 onChange={(e) => {
                   setFormData({ ...formData, email: e.target.value });
-                  if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                  if (errors.email)
+                    setErrors((prev) => ({ ...prev, email: "" }));
                 }}
                 placeholder="you@company.com or EMP-XXXXXX"
-                className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border ${
+                className={`w-full rounded-xl border py-2.5 pl-10 pr-3.5 ${
                   errors.email
                     ? "border-urgent focus:ring-urgent"
-                    : "border-slate-300 dark:border-slate-700 focus:ring-primary focus:border-primary"
-                } bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 text-sm transition placeholder:text-slate-400 disabled:opacity-50`}
+                    : "border-slate-300 focus:border-primary focus:ring-primary dark:border-slate-700"
+                } bg-slate-50/50 text-sm text-slate-900 transition placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:opacity-50 dark:bg-slate-900 dark:text-white`}
               />
             </div>
             {errors.email && (
-              <p className="mt-1 text-xs text-urgent font-medium">{errors.email}</p>
+              <p className="mt-1 text-xs font-medium text-urgent">
+                {errors.email}
+              </p>
             )}
           </div>
 
           {/* Password + Show/Hide Toggle */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label htmlFor="login-password" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label
+                htmlFor="login-password"
+                className="block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200"
+              >
                 Password
               </label>
               <button
                 type="button"
                 onClick={() => setAuthMode("magic-link")}
-                className="text-xs text-primary hover:text-primary-700 font-semibold hover:underline cursor-pointer"
+                className="cursor-pointer text-xs font-semibold text-primary hover:text-primary-700 hover:underline"
               >
                 Forgot password?
               </button>
             </div>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Lock className="w-4 h-4" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <Lock className="h-4 w-4" />
               </div>
               <input
                 id="login-password"
@@ -342,30 +375,33 @@ export default function LoginPage() {
                 value={formData.password}
                 onChange={(e) => {
                   setFormData({ ...formData, password: e.target.value });
-                  if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
+                  if (errors.password)
+                    setErrors((prev) => ({ ...prev, password: "" }));
                 }}
                 placeholder="•••••••••••"
-                className={`w-full pl-10 pr-11 py-2.5 rounded-xl border ${
+                className={`w-full rounded-xl border py-2.5 pl-10 pr-11 ${
                   errors.password
                     ? "border-urgent focus:ring-urgent"
-                    : "border-slate-300 dark:border-slate-700 focus:ring-primary focus:border-primary"
-                } bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 text-sm transition placeholder:text-slate-400 disabled:opacity-50`}
+                    : "border-slate-300 focus:border-primary focus:ring-primary dark:border-slate-700"
+                } bg-slate-50/50 text-sm text-slate-900 transition placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:opacity-50 dark:bg-slate-900 dark:text-white`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none transition cursor-pointer"
+                className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3.5 text-slate-400 transition hover:text-slate-600 focus:outline-none dark:hover:text-slate-200"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
+                  <EyeOff className="h-4 w-4" />
                 ) : (
-                  <Eye className="w-4 h-4" />
+                  <Eye className="h-4 w-4" />
                 )}
               </button>
             </div>
             {errors.password && (
-              <p className="mt-1 text-xs text-urgent font-medium">{errors.password}</p>
+              <p className="mt-1 text-xs font-medium text-urgent">
+                {errors.password}
+              </p>
             )}
           </div>
 
@@ -373,11 +409,11 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading || lockoutRemaining > 0}
-            className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary-700 text-white font-bold text-sm shadow-md shadow-primary/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 mt-2 cursor-pointer"
+            className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md shadow-primary/25 transition-all hover:scale-[1.01] hover:bg-primary-700 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Signing in...</span>
               </>
             ) : lockoutRemaining > 0 ? (
@@ -385,20 +421,23 @@ export default function LoginPage() {
             ) : (
               <>
                 <span>Sign In to Workspace</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>
 
           {/* Unified Role Guidance Box */}
-          <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+          <div className="border-t border-slate-200 pt-4 text-center dark:border-slate-800">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-left dark:border-slate-800 dark:bg-slate-900">
+              <div className="mb-1 flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
                 <span>Smart Multi-Tenant Sign In</span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                Log in with your registered work email. Your role (<strong>Admin / Founder</strong> or <strong>Team Employee</strong>) is automatically verified against your company workspace.
+              <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                Log in with your registered work email. Your role (
+                <strong>Admin / Founder</strong> or{" "}
+                <strong>Team Employee</strong>) is automatically verified
+                against your company workspace.
               </p>
             </div>
           </div>
@@ -407,35 +446,48 @@ export default function LoginPage() {
 
       {/* Magic Link Form */}
       {authMode === "magic-link" && (
-        <form className="space-y-4 animate-fade-in" onSubmit={handleMagicLinkSubmit} noValidate>
+        <form
+          className="animate-fade-in space-y-4"
+          onSubmit={handleMagicLinkSubmit}
+          noValidate
+        >
           {magicLinkSuccess ? (
-            <div className="p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-2.5">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5" />
+            <div className="space-y-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center dark:border-emerald-800 dark:bg-emerald-950/40">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/50 dark:text-emerald-400">
+                <CheckCircle2 className="h-5 w-5" />
               </div>
-              <h4 className="text-sm font-bold text-slate-950 dark:text-white">Check your email</h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400">{magicLinkSuccess}</p>
+              <h4 className="text-sm font-bold text-slate-950 dark:text-white">
+                Check your email
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                {magicLinkSuccess}
+              </p>
               <button
                 type="button"
                 onClick={() => setMagicLinkSuccess(null)}
-                className="mt-2 text-xs font-bold text-primary hover:underline cursor-pointer"
+                className="mt-2 cursor-pointer text-xs font-bold text-primary hover:underline"
               >
                 Send another link
               </button>
             </div>
           ) : (
             <>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Enter your work email address and we&apos;ll send you a passwordless sign-in link with instant cryptographic verification.
+              <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                Enter your work email address and we&apos;ll send you a
+                passwordless sign-in link with instant cryptographic
+                verification.
               </p>
 
               <div>
-                <label htmlFor="magic-email" className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+                <label
+                  htmlFor="magic-email"
+                  className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200"
+                >
                   Work Email
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Mail className="w-4 h-4" />
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <Mail className="h-4 w-4" />
                   </div>
                   <input
                     id="magic-email"
@@ -448,31 +500,33 @@ export default function LoginPage() {
                       if (errors.magicEmail) setErrors({});
                     }}
                     placeholder="you@company.com"
-                    className={`w-full pl-10 pr-3.5 py-2.5 rounded-xl border ${
+                    className={`w-full rounded-xl border py-2.5 pl-10 pr-3.5 ${
                       errors.magicEmail
                         ? "border-urgent focus:ring-urgent"
-                        : "border-slate-300 dark:border-slate-700 focus:ring-primary focus:border-primary"
-                    } bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 text-sm transition placeholder:text-slate-400 disabled:opacity-50`}
+                        : "border-slate-300 focus:border-primary focus:ring-primary dark:border-slate-700"
+                    } bg-slate-50/50 text-sm text-slate-900 transition placeholder:text-slate-400 focus:outline-none focus:ring-2 disabled:opacity-50 dark:bg-slate-900 dark:text-white`}
                   />
                 </div>
                 {errors.magicEmail && (
-                  <p className="mt-1 text-xs text-urgent font-medium">{errors.magicEmail}</p>
+                  <p className="mt-1 text-xs font-medium text-urgent">
+                    {errors.magicEmail}
+                  </p>
                 )}
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary-700 text-white font-bold text-sm shadow-md shadow-primary/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 mt-2 cursor-pointer"
+                className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md shadow-primary/25 transition-all hover:scale-[1.01] hover:bg-primary-700 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     <span>Sending Magic Link...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="h-4 w-4" />
                     <span>Send Magic Sign-In Link</span>
                   </>
                 )}
@@ -490,14 +544,20 @@ export default function LoginPage() {
         description="Last updated: January 2026"
         maxWidth="2xl"
       >
-        <div className="space-y-4 text-xs text-slate-600 dark:text-slate-300 max-h-[60vh] overflow-y-auto pr-2">
-          <h4 className="font-bold text-slate-900 dark:text-white">1. Multi-Tenant Organization Account</h4>
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-2 text-xs text-slate-600 dark:text-slate-300">
+          <h4 className="font-bold text-slate-900 dark:text-white">
+            1. Multi-Tenant Organization Account
+          </h4>
           <p>
-            By signing in, you access your organization&apos;s multi-tenant partition secured by PostgreSQL Row-Level Security.
+            By signing in, you access your organization&apos;s multi-tenant
+            partition secured by PostgreSQL Row-Level Security.
           </p>
-          <h4 className="font-bold text-slate-900 dark:text-white">2. Acceptable Use</h4>
+          <h4 className="font-bold text-slate-900 dark:text-white">
+            2. Acceptable Use
+          </h4>
           <p>
-            You agree not to attempt unauthorized access to other tenant organizations or overload system endpoints.
+            You agree not to attempt unauthorized access to other tenant
+            organizations or overload system endpoints.
           </p>
         </div>
       </Modal>
@@ -509,10 +569,13 @@ export default function LoginPage() {
         description="Last updated: January 2026"
         maxWidth="2xl"
       >
-        <div className="space-y-4 text-xs text-slate-600 dark:text-slate-300 max-h-[60vh] overflow-y-auto pr-2">
-          <h4 className="font-bold text-slate-900 dark:text-white">1. Data Isolation</h4>
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-2 text-xs text-slate-600 dark:text-slate-300">
+          <h4 className="font-bold text-slate-900 dark:text-white">
+            1. Data Isolation
+          </h4>
           <p>
-            All employee and admin records are isolated by organization ID and encrypted with 256-bit TLS in transit.
+            All employee and admin records are isolated by organization ID and
+            encrypted with 256-bit TLS in transit.
           </p>
         </div>
       </Modal>

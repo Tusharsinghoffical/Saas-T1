@@ -1,9 +1,16 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
 import { Comment, CreateCommentDTO } from "../entities/Comment";
 
 export interface ICommentRepository {
   listComments(taskId: string): Promise<Comment[]>;
-  addComment(taskId: string, userId: string, data: CreateCommentDTO): Promise<Comment>;
+  addComment(
+    taskId: string,
+    userId: string,
+    data: CreateCommentDTO
+  ): Promise<Comment>;
 }
 
 export class SupabaseCommentRepository implements ICommentRepository {
@@ -18,27 +25,19 @@ export class SupabaseCommentRepository implements ICommentRepository {
 
   async listComments(taskId: string): Promise<Comment[]> {
     if (!this.hasSupabase()) {
-      return [
-        {
-          id: "com-1",
-          taskId,
-          content: "Hey @Jane Doe, please review the latest designs.",
-          author: { id: "22222222-2222-2222-2222-222222222222", fullName: "Alex Smith", avatarUrl: null },
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: "com-2",
-          taskId,
-          content: "Looks great! We will proceed with implementation.",
-          author: { id: "mem-1", fullName: "Jane Doe", avatarUrl: null },
-          createdAt: new Date(Date.now() - 1800000).toISOString(),
-        },
-      ];
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return [];
     }
 
     try {
       const client = this.getClient();
-      const { data: rawComments, error } = await (client.from("task_comments") as any)
+      const { data: rawComments, error } = await (
+        client.from("task_comments") as any
+      )
         .select("id, task_id, user_id, body, created_at")
         .eq("task_id", taskId)
         .order("created_at", { ascending: true });
@@ -53,7 +52,15 @@ export class SupabaseCommentRepository implements ICommentRepository {
         new Set(commentsList.map((c: any) => c.user_id).filter(Boolean))
       );
 
-      const profileMap = new Map<string, { id: string; fullName: string; full_name: string; avatarUrl: string | null }>();
+      const profileMap = new Map<
+        string,
+        {
+          id: string;
+          fullName: string;
+          full_name: string;
+          avatarUrl: string | null;
+        }
+      >();
 
       if (userIds.length > 0) {
         try {
@@ -102,8 +109,17 @@ export class SupabaseCommentRepository implements ICommentRepository {
     }
   }
 
-  async addComment(taskId: string, userId: string, data: CreateCommentDTO): Promise<Comment> {
+  async addComment(
+    taskId: string,
+    userId: string,
+    data: CreateCommentDTO
+  ): Promise<Comment> {
     if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
       return {
         id: `com-${Date.now()}`,
         taskId,
@@ -115,7 +131,9 @@ export class SupabaseCommentRepository implements ICommentRepository {
 
     try {
       const client = this.getClient();
-      const { data: comment, error } = await (client.from("task_comments") as any)
+      const { data: comment, error } = await (
+        client.from("task_comments") as any
+      )
         .insert({
           task_id: taskId,
           user_id: userId,
@@ -126,7 +144,9 @@ export class SupabaseCommentRepository implements ICommentRepository {
 
       if (error || !comment) {
         console.error("[addComment Insert Error]", error?.message);
-        throw new Error(error?.message || "Failed to create comment in database");
+        throw new Error(
+          error?.message || "Failed to create comment in database"
+        );
       }
 
       // Fetch author profile

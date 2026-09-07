@@ -21,18 +21,24 @@ export async function requestOrgDeletionUseCase(
   customClient?: any
 ): Promise<DeletionRequestResult> {
   if (context.role !== "admin") {
-    throw new ForbiddenError("Only organization admins can request organization deletion.");
+    throw new ForbiddenError(
+      "Only organization admins can request organization deletion."
+    );
   }
 
   if (!confirmOrgName || typeof confirmOrgName !== "string") {
-    throw new ValidationError("You must re-type your organization name to confirm deletion.");
+    throw new ValidationError(
+      "You must re-type your organization name to confirm deletion."
+    );
   }
 
   const client = customClient || createClient();
   const orgId = context.orgId;
 
   // 1. Fetch organization to verify name
-  const { data: org, error: orgError } = await (client.from("organizations") as any)
+  const { data: org, error: orgError } = await (
+    client.from("organizations") as any
+  )
     .select("id, name")
     .eq("id", orgId)
     .maybeSingle();

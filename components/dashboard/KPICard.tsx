@@ -9,7 +9,13 @@ export interface KPICardProps {
   variant?: "default" | "urgent" | "success";
 }
 
-export function KPICard({ title, value, subtitle, icon, variant = "default" }: KPICardProps) {
+export function KPICard({
+  title,
+  value,
+  subtitle,
+  icon,
+  variant = "default",
+}: KPICardProps) {
   const textColors = {
     default: "text-slate-900 dark:text-white",
     urgent: "text-urgent",
@@ -17,13 +23,17 @@ export function KPICard({ title, value, subtitle, icon, variant = "default" }: K
   };
 
   return (
-    <div className="p-5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-slate-500">{title}</span>
         {icon && <div className="text-slate-400">{icon}</div>}
       </div>
-      <div className={cn("mt-3 text-3xl font-extrabold", textColors[variant])}>{value}</div>
-      {subtitle && <div className="mt-1 text-xs text-slate-500">{subtitle}</div>}
+      <div className={cn("mt-3 text-3xl font-extrabold", textColors[variant])}>
+        {value}
+      </div>
+      {subtitle && (
+        <div className="mt-1 text-xs text-slate-500">{subtitle}</div>
+      )}
     </div>
   );
 }

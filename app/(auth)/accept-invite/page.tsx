@@ -34,9 +34,26 @@ export default function AcceptInvitePage() {
     if (/[A-Z]/.test(pwd) || /[0-9]/.test(pwd)) score++;
     if (/[^A-Za-z0-9]/.test(pwd) && pwd.length >= 8) score++;
 
-    if (score === 1) return { score: 1, label: "Weak", color: "bg-rose-500", text: "text-rose-500" };
-    if (score === 2) return { score: 2, label: "Good", color: "bg-amber-500", text: "text-amber-500" };
-    return { score: 3, label: "Strong", color: "bg-emerald-500", text: "text-emerald-500" };
+    if (score === 1)
+      return {
+        score: 1,
+        label: "Weak",
+        color: "bg-rose-500",
+        text: "text-rose-500",
+      };
+    if (score === 2)
+      return {
+        score: 2,
+        label: "Good",
+        color: "bg-amber-500",
+        text: "text-amber-500",
+      };
+    return {
+      score: 3,
+      label: "Strong",
+      color: "bg-emerald-500",
+      text: "text-emerald-500",
+    };
   };
 
   const strength = getPasswordStrength(password);
@@ -59,7 +76,10 @@ export default function AcceptInvitePage() {
     try {
       const response = await acceptInviteAction(password);
       if (!response.success) {
-        setError(response.error || "Failed to set account password. Link may have expired.");
+        setError(
+          response.error ||
+            "Failed to set account password. Link may have expired."
+        );
         setIsLoading(false);
         return;
       }
@@ -77,34 +97,36 @@ export default function AcceptInvitePage() {
   return (
     <div>
       {/* Header */}
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-semibold mb-3">
-          <Sparkles className="w-3.5 h-3.5" />
+      <div className="mb-6 text-center">
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-700">
+          <Sparkles className="h-3.5 w-3.5" />
           <span>Team Invitation Verified</span>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+        <h2 className="text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white sm:text-3xl">
           Accept Invite &amp; Set Password
         </h2>
-        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1.5">
+        <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-400 sm:text-sm">
           Choose a secure password to activate your workspace profile.
         </p>
       </div>
 
       {/* Success Notification */}
       {isSuccess && (
-        <div className="mb-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-xs animate-fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+        <div className="animate-fade-in mb-5 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
           <div>
-            <span className="font-bold block">Account Activated!</span>
-            <p className="text-[11px] text-emerald-700">Redirecting you to your team dashboard...</p>
+            <span className="block font-bold">Account Activated!</span>
+            <p className="text-[11px] text-emerald-700">
+              Redirecting you to your team dashboard...
+            </p>
           </div>
         </div>
       )}
 
       {/* Error Alert */}
       {error && !isSuccess && (
-        <div className="mb-5 p-3.5 rounded-2xl bg-urgent/10 border border-urgent/20 flex items-start gap-2.5 text-xs text-urgent font-medium animate-fade-in">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+        <div className="animate-fade-in mb-5 flex items-start gap-2.5 rounded-2xl border border-urgent/20 bg-urgent/10 p-3.5 text-xs font-medium text-urgent">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -114,12 +136,12 @@ export default function AcceptInvitePage() {
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {/* Password */}
           <div>
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               New Password
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Lock className="w-4 h-4" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <Lock className="h-4 w-4" />
               </div>
               <input
                 type={showPassword ? "text" : "password"}
@@ -130,14 +152,18 @@ export default function AcceptInvitePage() {
                   if (error) setError(null);
                 }}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 focus:ring-primary focus:border-primary bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 text-sm transition placeholder:text-slate-400 disabled:opacity-50"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-10 pr-10 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition"
+                className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 transition hover:text-slate-600"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
               </button>
             </div>
 
@@ -146,12 +172,20 @@ export default function AcceptInvitePage() {
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-slate-500">Password strength:</span>
-                  <span className={`font-bold ${strength.text}`}>{strength.label}</span>
+                  <span className={`font-bold ${strength.text}`}>
+                    {strength.label}
+                  </span>
                 </div>
-                <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden flex gap-1">
-                  <div className={`h-full flex-1 rounded-full ${strength.score >= 1 ? strength.color : "bg-transparent"}`} />
-                  <div className={`h-full flex-1 rounded-full ${strength.score >= 2 ? strength.color : "bg-transparent"}`} />
-                  <div className={`h-full flex-1 rounded-full ${strength.score >= 3 ? strength.color : "bg-transparent"}`} />
+                <div className="flex h-1.5 w-full gap-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div
+                    className={`h-full flex-1 rounded-full ${strength.score >= 1 ? strength.color : "bg-transparent"}`}
+                  />
+                  <div
+                    className={`h-full flex-1 rounded-full ${strength.score >= 2 ? strength.color : "bg-transparent"}`}
+                  />
+                  <div
+                    className={`h-full flex-1 rounded-full ${strength.score >= 3 ? strength.color : "bg-transparent"}`}
+                  />
                 </div>
               </div>
             )}
@@ -159,12 +193,12 @@ export default function AcceptInvitePage() {
 
           {/* Confirm Password */}
           <div>
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               Confirm Password
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Lock className="w-4 h-4" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                <Lock className="h-4 w-4" />
               </div>
               <input
                 type={showPassword ? "text" : "password"}
@@ -175,7 +209,7 @@ export default function AcceptInvitePage() {
                   if (error) setError(null);
                 }}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 focus:ring-primary focus:border-primary bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 text-sm transition placeholder:text-slate-400 disabled:opacity-50"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-10 pr-10 text-sm text-slate-900 transition placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
             </div>
           </div>
@@ -184,17 +218,17 @@ export default function AcceptInvitePage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 px-4 rounded-xl bg-primary hover:bg-primary-700 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md transition-all hover:bg-primary-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Activating Account...</span>
               </>
             ) : (
               <>
                 <span>Activate Workspace Access</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>
@@ -202,8 +236,8 @@ export default function AcceptInvitePage() {
       )}
 
       {/* Security Footer Note */}
-      <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 text-slate-400 text-xs">
-        <ShieldCheck className="w-4 h-4 text-emerald-500" />
+      <div className="mt-6 flex items-center justify-center gap-2 border-t border-slate-100 pt-5 text-xs text-slate-400 dark:border-slate-800">
+        <ShieldCheck className="h-4 w-4 text-emerald-500" />
         <span>Enterprise TLS Encrypted • 100% Isolated Data</span>
       </div>
     </div>

@@ -5,7 +5,11 @@ export interface LogPayload {
   [key: string]: any;
 }
 
-function writeLog(level: LogLevel, payload: LogPayload | string, meta?: Record<string, any>) {
+function writeLog(
+  level: LogLevel,
+  payload: LogPayload | string,
+  meta?: Record<string, any>
+) {
   const timestamp = new Date().toISOString();
   const entry =
     typeof payload === "string"
@@ -21,8 +25,12 @@ function writeLog(level: LogLevel, payload: LogPayload | string, meta?: Record<s
 }
 
 export const logger = {
-  debug: (payload: LogPayload | string, meta?: Record<string, any>) => writeLog("debug", payload, meta),
-  info: (payload: LogPayload | string, meta?: Record<string, any>) => writeLog("info", payload, meta),
-  warn: (payload: LogPayload | string, meta?: Record<string, any>) => writeLog("warn", payload, meta),
-  error: (payload: LogPayload | string, meta?: Record<string, any>) => writeLog("error", payload, meta),
+  debug: (payload: LogPayload | string, meta?: Record<string, any>) =>
+    writeLog("debug", payload, meta),
+  info: (payload: LogPayload | string, meta?: Record<string, any>) =>
+    writeLog("info", payload, meta),
+  warn: (payload: LogPayload | string, meta?: Record<string, any>) =>
+    writeLog("warn", payload, meta),
+  error: (payload: LogPayload | string, meta?: Record<string, any>) =>
+    writeLog("error", payload, meta),
 };

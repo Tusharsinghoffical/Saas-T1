@@ -49,23 +49,23 @@
 
 ## 2. Technology Stack (Final — No AWS)
 
-| Layer | Technology | Why |
-|---|---|---|
-| Frontend Framework | Next.js 14 (App Router) | SSR + edge support, free hosting on Vercel |
-| Styling | Tailwind CSS | Fast, matches Stitch-exported design tokens |
-| State Mgmt | Zustand | Lightweight vs Redux, less boilerplate |
-| UI Design Source | **Google Stitch** | Generate UI mockups/screens → export to code/Tailwind reference |
-| Hosting (Frontend) | Vercel free tier (or Cloudflare Pages) | $0, edge CDN |
-| Backend/API | Next.js Route Handlers (Edge Runtime) | No separate backend server needed |
-| Database | **Supabase Postgres** | Free tier, built-in Auth + Realtime + RLS |
-| Auth | Supabase Auth (JWT) | RBAC via custom claims |
-| Cache/Queue/Rate-limit | Upstash Redis | Serverless Redis, free tier, REST-based |
-| File Storage | Cloudflare R2 | S3-compatible API but free egress, replaces AWS S3 |
-| Email | Resend | Free tier transactional email |
-| AI/LLM | **Groq API** (Llama 3.1/3.3, Mixtral) | Fast inference, free/cheap tier, replaces OpenAI |
-| CI/CD | GitHub Actions | Free for public/private repos (within limits) |
-| Analytics | PostHog | Free tier, self-serve product analytics |
-| Dev Environment | **Google Antigravity IDE** | Primary build environment for this project |
+| Layer                  | Technology                             | Why                                                             |
+| ---------------------- | -------------------------------------- | --------------------------------------------------------------- |
+| Frontend Framework     | Next.js 14 (App Router)                | SSR + edge support, free hosting on Vercel                      |
+| Styling                | Tailwind CSS                           | Fast, matches Stitch-exported design tokens                     |
+| State Mgmt             | Zustand                                | Lightweight vs Redux, less boilerplate                          |
+| UI Design Source       | **Google Stitch**                      | Generate UI mockups/screens → export to code/Tailwind reference |
+| Hosting (Frontend)     | Vercel free tier (or Cloudflare Pages) | $0, edge CDN                                                    |
+| Backend/API            | Next.js Route Handlers (Edge Runtime)  | No separate backend server needed                               |
+| Database               | **Supabase Postgres**                  | Free tier, built-in Auth + Realtime + RLS                       |
+| Auth                   | Supabase Auth (JWT)                    | RBAC via custom claims                                          |
+| Cache/Queue/Rate-limit | Upstash Redis                          | Serverless Redis, free tier, REST-based                         |
+| File Storage           | Cloudflare R2                          | S3-compatible API but free egress, replaces AWS S3              |
+| Email                  | Resend                                 | Free tier transactional email                                   |
+| AI/LLM                 | **Groq API** (Llama 3.1/3.3, Mixtral)  | Fast inference, free/cheap tier, replaces OpenAI                |
+| CI/CD                  | GitHub Actions                         | Free for public/private repos (within limits)                   |
+| Analytics              | PostHog                                | Free tier, self-serve product analytics                         |
+| Dev Environment        | **Google Antigravity IDE**             | Primary build environment for this project                      |
 
 > AWS is fully removed. Cloudflare R2 replaces S3. Vercel/Cloudflare Pages replaces CloudFront+S3 static hosting. No Lambda — using Next.js Edge Functions / Cloudflare Workers instead. No RDS — Supabase Postgres instead.
 
@@ -201,21 +201,21 @@ Indexes to add: `tasks(org_id, status)`, `tasks(org_id, due_date)`, `notificatio
 
 Base: `/api/v1`
 
-| Endpoint | Method | Purpose | Role Guard |
-|---|---|---|---|
-| `/auth/signup-org` | POST | Create org + first admin user | Public |
-| `/auth/invite` | POST | Invite user to org | Admin/Manager |
-| `/tasks` | GET/POST | List / create tasks | Auth'd |
-| `/tasks/:id` | GET/PATCH/DELETE | Task detail / update / delete | Role-checked |
-| `/tasks/:id/comments` | GET/POST | Comments thread | Auth'd |
-| `/tasks/:id/attachments` | POST | Upload to R2, save ref | Auth'd |
-| `/dashboard/admin` | GET | KPI aggregate | Admin/Manager |
-| `/dashboard/me` | GET | Personal dashboard | Auth'd |
-| `/notifications` | GET/PATCH | List / mark read | Auth'd |
-| `/ai/enhance-task` | POST | Groq: rewrite task description | Auth'd |
-| `/ai/workload-suggestion` | POST | Groq: suggest assignee | Manager/Admin |
-| `/ai/weekly-summary` | GET | Groq: generate summary (cron-triggered) | Admin |
-| `/activity-logs` | GET | Audit trail | Admin/Manager |
+| Endpoint                  | Method           | Purpose                                 | Role Guard    |
+| ------------------------- | ---------------- | --------------------------------------- | ------------- |
+| `/auth/signup-org`        | POST             | Create org + first admin user           | Public        |
+| `/auth/invite`            | POST             | Invite user to org                      | Admin/Manager |
+| `/tasks`                  | GET/POST         | List / create tasks                     | Auth'd        |
+| `/tasks/:id`              | GET/PATCH/DELETE | Task detail / update / delete           | Role-checked  |
+| `/tasks/:id/comments`     | GET/POST         | Comments thread                         | Auth'd        |
+| `/tasks/:id/attachments`  | POST             | Upload to R2, save ref                  | Auth'd        |
+| `/dashboard/admin`        | GET              | KPI aggregate                           | Admin/Manager |
+| `/dashboard/me`           | GET              | Personal dashboard                      | Auth'd        |
+| `/notifications`          | GET/PATCH        | List / mark read                        | Auth'd        |
+| `/ai/enhance-task`        | POST             | Groq: rewrite task description          | Auth'd        |
+| `/ai/workload-suggestion` | POST             | Groq: suggest assignee                  | Manager/Admin |
+| `/ai/weekly-summary`      | GET              | Groq: generate summary (cron-triggered) | Admin         |
+| `/activity-logs`          | GET              | Audit trail                             | Admin/Manager |
 
 All routes: JWT verified → `org_id`/`role` extracted → RLS handles data scoping as a second layer of defense (defense-in-depth).
 
@@ -288,15 +288,16 @@ tasq-one/
 
 ## 9. Scalability Path (Phase 1 → 3)
 
-| Phase | Trigger | Change |
-|---|---|---|
-| Phase 1 (MVP) | 0–20 orgs | Fully as above, $0 |
-| Phase 2 (Growth) | Free-tier limits approached (DB rows, Redis ops, function invocations) | Move API layer to Render paid tier if needed; add background job queue (Upstash QStash) |
-| Phase 3 (Scale) | Revenue-justified | Split into microservices, dedicated Postgres cluster (still not AWS — Supabase paid tier / Neon), add mobile apps, Stripe billing |
+| Phase            | Trigger                                                                | Change                                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 1 (MVP)    | 0–20 orgs                                                              | Fully as above, $0                                                                                                                |
+| Phase 2 (Growth) | Free-tier limits approached (DB rows, Redis ops, function invocations) | Move API layer to Render paid tier if needed; add background job queue (Upstash QStash)                                           |
+| Phase 3 (Scale)  | Revenue-justified                                                      | Split into microservices, dedicated Postgres cluster (still not AWS — Supabase paid tier / Neon), add mobile apps, Stripe billing |
 
 ---
 
 ## 10. Security Checklist
+
 - [ ] RLS enabled + tested on every table
 - [ ] JWT `org_id`/`role` claims verified server-side, never trusted from client alone
 - [ ] All inputs validated with zod before DB write

@@ -11,7 +11,9 @@ export async function testSlackWebhookUseCase(
   orgName?: string
 ): Promise<{ success: boolean; message: string }> {
   if (!webhookUrl) {
-    throw new ValidationError("Please provide a valid Slack Webhook URL to test.");
+    throw new ValidationError(
+      "Please provide a valid Slack Webhook URL to test."
+    );
   }
 
   // ── SECURITY FIX (SSRF — FAIL 7.7): Enforce strict domain allowlist.
@@ -32,7 +34,9 @@ export async function testSlackWebhookUseCase(
   });
 
   if (!testRes.success) {
-    throw new ValidationError(testRes.error || "Failed to deliver message to Slack.");
+    throw new ValidationError(
+      testRes.error || "Failed to deliver message to Slack."
+    );
   }
 
   return {

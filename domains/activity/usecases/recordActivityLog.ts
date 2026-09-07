@@ -1,5 +1,8 @@
 import { ActivityLogInput } from "../entities/ActivityLog";
-import { IActivityRepository, activityRepository } from "../repository/activityRepository";
+import {
+  IActivityRepository,
+  activityRepository,
+} from "../repository/activityRepository";
 
 export async function recordActivityLogUseCase(
   input: ActivityLogInput,

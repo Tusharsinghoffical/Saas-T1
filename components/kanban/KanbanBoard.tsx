@@ -2,13 +2,19 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { TaskCard, type KanbanTaskItem } from "@/components/tasks/TaskCard";
-import { TaskFormModal, type OrgMember } from "@/components/tasks/TaskFormModal";
+import {
+  TaskFormModal,
+  type OrgMember,
+} from "@/components/tasks/TaskFormModal";
 import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useTaskStore } from "@/store/useTaskStore";
-import { useRealtimeTasks, broadcastTaskChange } from "@/lib/supabase/useRealtimeTasks";
+import {
+  useRealtimeTasks,
+  broadcastTaskChange,
+} from "@/lib/supabase/useRealtimeTasks";
 import { captureEvent } from "@/lib/analytics/posthog";
 import {
   Plus,
@@ -19,7 +25,8 @@ import {
   Radio,
 } from "lucide-react";
 
-export type KanbanColumnId = "pending" | "in_progress" | "in_review" | "completed";
+export type KanbanColumnId =
+  "pending" | "in_progress" | "in_review" | "completed";
 
 export interface KanbanColumn {
   id: KanbanColumnId;
@@ -28,10 +35,28 @@ export interface KanbanColumn {
 }
 
 export const KANBAN_COLUMNS: KanbanColumn[] = [
-  { id: "pending", title: "Pending", badgeColor: "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300" },
-  { id: "in_progress", title: "In Progress", badgeColor: "bg-primary/15 text-primary border-primary/20" },
-  { id: "in_review", title: "In Review", badgeColor: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20" },
-  { id: "completed", title: "Completed", badgeColor: "bg-success/15 text-success border-success/20" },
+  {
+    id: "pending",
+    title: "Pending",
+    badgeColor:
+      "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300",
+  },
+  {
+    id: "in_progress",
+    title: "In Progress",
+    badgeColor: "bg-primary/15 text-primary border-primary/20",
+  },
+  {
+    id: "in_review",
+    title: "In Review",
+    badgeColor:
+      "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
+  },
+  {
+    id: "completed",
+    title: "Completed",
+    badgeColor: "bg-success/15 text-success border-success/20",
+  },
 ];
 
 export interface KanbanBoardProps {
@@ -81,7 +106,8 @@ export function KanbanBoard({
           setMembersList(
             json.data.map((m: any) => ({
               id: m.id || m.user_id,
-              fullName: m.fullName || m.full_name || m.name || m.email || "Team Member",
+              fullName:
+                m.fullName || m.full_name || m.name || m.email || "Team Member",
               role: m.role || "employee",
               avatarUrl: m.avatarUrl || m.avatar_url || null,
             }))
@@ -92,17 +118,21 @@ export function KanbanBoard({
   }, []);
 
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<KanbanColumnId | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<KanbanColumnId | null>(
+    null
+  );
   const [toastError, setToastError] = useState<string | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<KanbanTaskItem | null>(null);
-  const [defaultColumnForNewTask, setDefaultColumnForNewTask] = useState<KanbanColumnId>("pending");
+  const [defaultColumnForNewTask, setDefaultColumnForNewTask] =
+    useState<KanbanColumnId>("pending");
 
   // Task Detail & Comments Modal State
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedDetailTask, setSelectedDetailTask] = useState<KanbanTaskItem | null>(null);
+  const [selectedDetailTask, setSelectedDetailTask] =
+    useState<KanbanTaskItem | null>(null);
 
   // Filter Bar State
   const [searchQuery, setSearchQuery] = useState("");
@@ -135,7 +165,8 @@ export function KanbanBoard({
           ) ||
           task.task_assignees?.some(
             (a: any) =>
-              (a.profiles?.full_name && a.profiles.full_name.toLowerCase().includes(q)) ||
+              (a.profiles?.full_name &&
+                a.profiles.full_name.toLowerCase().includes(q)) ||
               (a.user_id && a.user_id.toLowerCase().includes(q))
           );
         if (!matchesTitle && !matchesDesc && !matchesAssignee) return false;
@@ -180,7 +211,14 @@ export function KanbanBoard({
 
       return true;
     });
-  }, [tasks, searchQuery, priorityFilter, assigneeFilter, tagFilter, dueDateFilter]);
+  }, [
+    tasks,
+    searchQuery,
+    priorityFilter,
+    assigneeFilter,
+    tagFilter,
+    dueDateFilter,
+  ]);
 
   const hasActiveFilters =
     searchQuery ||
@@ -216,7 +254,10 @@ export function KanbanBoard({
     setDragOverColumn(null);
   };
 
-  const handleDrop = async (e: React.DragEvent, targetColumn: KanbanColumnId) => {
+  const handleDrop = async (
+    e: React.DragEvent,
+    targetColumn: KanbanColumnId
+  ) => {
     e.preventDefault();
     setDragOverColumn(null);
     const taskId = e.dataTransfer.getData("text/plain") || draggedTaskId;
@@ -235,7 +276,9 @@ export function KanbanBoard({
       );
 
       if (incompletePrereqs.length > 0) {
-        const blockerNames = incompletePrereqs.map((p) => `"${p.title}"`).join(", ");
+        const blockerNames = incompletePrereqs
+          .map((p) => `"${p.title}"`)
+          .join(", ");
         setToastError(
           `⚠️ Move Blocked: "${taskToMove.title}" cannot be moved to ${
             targetColumn === "in_progress" ? "In Progress" : "Completed"
@@ -250,7 +293,10 @@ export function KanbanBoard({
 
     // 1. Optimistic update in Zustand store
     updateTaskStatusOptimistic(taskId, targetColumn);
-    broadcastTaskChange(orgId, "UPSERT_TASK", { ...taskToMove, status: targetColumn });
+    broadcastTaskChange(orgId, "UPSERT_TASK", {
+      ...taskToMove,
+      status: targetColumn,
+    });
 
     if (onTaskUpdated) {
       onTaskUpdated({ ...taskToMove, status: targetColumn });
@@ -313,14 +359,14 @@ export function KanbanBoard({
     <div className="space-y-4">
       {/* Toast Error Alert */}
       {toastError && (
-        <div className="p-3.5 rounded-xl bg-urgent/10 border border-urgent/20 flex items-center justify-between text-xs text-urgent font-medium animate-fade-in">
+        <div className="animate-fade-in flex items-center justify-between rounded-xl border border-urgent/20 bg-urgent/10 p-3.5 text-xs font-medium text-urgent">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
             <span>{toastError}</span>
           </div>
           <button
             onClick={() => setToastError(null)}
-            className="text-urgent font-bold hover:underline"
+            className="font-bold text-urgent hover:underline"
           >
             Dismiss
           </button>
@@ -328,30 +374,30 @@ export function KanbanBoard({
       )}
 
       {/* Filter Bar & Live Sync Status */}
-      <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
           {/* Keyword Search Input */}
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter tasks by title or keywords..."
-              className="pl-10 h-9 text-xs"
+              className="h-9 pl-10 text-xs"
             />
           </div>
 
           <div className="flex items-center gap-2">
             {/* Live Sync Status Indicator */}
             <div
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border ${
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
                 isConnected
-                  ? "bg-success/10 text-success border-success/20"
-                  : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                  ? "border-success/20 bg-success/10 text-success"
+                  : "border-amber-500/20 bg-amber-500/10 text-amber-500"
               }`}
             >
               <Radio
-                className={`w-3 h-3 ${isConnected ? "animate-pulse text-success" : "text-amber-500"}`}
+                className={`h-3 w-3 ${isConnected ? "animate-pulse text-success" : "text-amber-500"}`}
               />
               <span className="text-[11px]">
                 {isConnected ? "Realtime Sync" : "Connecting..."}
@@ -362,9 +408,9 @@ export function KanbanBoard({
             <Button
               size="sm"
               onClick={() => handleOpenCreateModal("pending")}
-              className="gap-1.5 whitespace-nowrap h-9 text-xs font-semibold"
+              className="h-9 gap-1.5 whitespace-nowrap text-xs font-semibold"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="h-4 w-4" />
               <span>New Task</span>
             </Button>
           </div>
@@ -372,8 +418,8 @@ export function KanbanBoard({
 
         {/* Filters Row */}
         <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
-          <div className="flex items-center gap-1.5 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
-            <Filter className="w-3 h-3" />
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <Filter className="h-3 w-3" />
             Filters:
           </div>
 
@@ -382,7 +428,7 @@ export function KanbanBoard({
             <Select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="h-8 text-xs py-1"
+              className="h-8 py-1 text-xs"
             >
               <option value="all">All Priorities</option>
               <option value="urgent">Urgent</option>
@@ -397,7 +443,7 @@ export function KanbanBoard({
             <Select
               value={assigneeFilter}
               onChange={(e) => setAssigneeFilter(e.target.value)}
-              className="h-8 text-xs py-1"
+              className="h-8 py-1 text-xs"
             >
               <option value="all">All Assignees</option>
               {membersList.map((m) => (
@@ -414,7 +460,7 @@ export function KanbanBoard({
               <Select
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
-                className="h-8 text-xs py-1"
+                className="h-8 py-1 text-xs"
               >
                 <option value="all">All Tags</option>
                 {allTags.map((tag) => (
@@ -431,7 +477,7 @@ export function KanbanBoard({
             <Select
               value={dueDateFilter}
               onChange={(e) => setDueDateFilter(e.target.value)}
-              className="h-8 text-xs py-1"
+              className="h-8 py-1 text-xs"
             >
               <option value="all">All Dates</option>
               <option value="today">Due Today</option>
@@ -444,23 +490,29 @@ export function KanbanBoard({
           {hasActiveFilters && (
             <button
               onClick={handleResetFilters}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-slate-500 hover:text-urgent hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-urgent dark:hover:bg-slate-800"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="h-3 w-3" />
               Reset
             </button>
           )}
 
-          <div className="ml-auto text-xs text-slate-400 font-medium">
-            Showing <span className="font-bold text-slate-700 dark:text-slate-300">{filteredTasks.length}</span> of {tasks.length} tasks
+          <div className="ml-auto text-xs font-medium text-slate-400">
+            Showing{" "}
+            <span className="font-bold text-slate-700 dark:text-slate-300">
+              {filteredTasks.length}
+            </span>{" "}
+            of {tasks.length} tasks
           </div>
         </div>
       </div>
 
       {/* 4 Kanban Columns (Horizontal Snap Scroll on Mobile, 4-Col Grid on Desktop) */}
-      <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 md:grid md:grid-cols-4 md:overflow-x-visible items-start">
+      <div className="flex snap-x snap-mandatory items-start gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-4 md:overflow-x-visible">
         {KANBAN_COLUMNS.map((column) => {
-          const columnTasks = filteredTasks.filter((t) => t.status === column.id);
+          const columnTasks = filteredTasks.filter(
+            (t) => t.status === column.id
+          );
           const isOver = dragOverColumn === column.id;
 
           return (
@@ -469,20 +521,20 @@ export function KanbanBoard({
               onDragOver={(e) => handleDragOver(e, column.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, column.id)}
-              className={`min-w-[280px] sm:min-w-[320px] md:min-w-0 snap-center rounded-2xl p-3.5 transition-all duration-200 flex flex-col min-h-[520px] ${
+              className={`flex min-h-[520px] min-w-[280px] snap-center flex-col rounded-2xl p-3.5 transition-all duration-200 sm:min-w-[320px] md:min-w-0 ${
                 isOver
-                  ? "bg-primary/10 border-2 border-dashed border-primary shadow-lg ring-4 ring-primary/10"
-                  : "bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80"
+                  ? "border-2 border-dashed border-primary bg-primary/10 shadow-lg ring-4 ring-primary/10"
+                  : "border border-slate-200/80 bg-slate-50/80 dark:border-slate-800/80 dark:bg-slate-900/60"
               }`}
             >
               {/* Column Header */}
-              <div className="flex items-center justify-between mb-3 px-1">
+              <div className="mb-3 flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                     {column.title}
                   </h3>
                   <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${column.badgeColor}`}
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${column.badgeColor}`}
                   >
                     {columnTasks.length}
                   </span>
@@ -492,9 +544,9 @@ export function KanbanBoard({
                   type="button"
                   onClick={() => handleOpenCreateModal(column.id)}
                   title={`Add task to ${column.title}`}
-                  className="p-1 rounded-md text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 transition"
+                  className="rounded-md p-1 text-slate-400 transition hover:bg-white hover:text-primary dark:hover:bg-slate-800"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="h-4 w-4" />
                 </button>
               </div>
 
@@ -517,9 +569,9 @@ export function KanbanBoard({
                 {columnTasks.length === 0 && (
                   <div
                     onClick={() => handleOpenCreateModal(column.id)}
-                    className="flex flex-col items-center justify-center h-32 border border-dashed border-slate-300 dark:border-slate-750 rounded-xl text-xs text-slate-400 hover:border-primary hover:text-primary transition cursor-pointer gap-1.5"
+                    className="dark:border-slate-750 flex h-32 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 text-xs text-slate-400 transition hover:border-primary hover:text-primary"
                   >
-                    <Plus className="w-4 h-4 opacity-70" />
+                    <Plus className="h-4 w-4 opacity-70" />
                     <span>Drop here or add task</span>
                   </div>
                 )}
@@ -529,9 +581,9 @@ export function KanbanBoard({
               <button
                 type="button"
                 onClick={() => handleOpenCreateModal(column.id)}
-                className="mt-3 w-full py-2 rounded-xl text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition flex items-center justify-center gap-1.5 shadow-none hover:shadow-sm"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-transparent py-2 text-xs font-semibold text-slate-500 shadow-none transition hover:border-slate-200 hover:bg-white hover:text-primary hover:shadow-sm dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-800"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="h-3.5 w-3.5" />
                 <span>Add Task</span>
               </button>
             </div>

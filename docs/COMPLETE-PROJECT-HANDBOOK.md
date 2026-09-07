@@ -11,6 +11,7 @@
 ---
 
 ## 📑 Table of Contents
+
 1. [Executive Summary (Yeh Project Kya Hai?)](#1-executive-summary-yeh-project-kya-hai)
 2. [The Core Problem (Yeh Kyu Banaya Gaya?)](#2-the-core-problem-yeh-kyu-banaya-gaya)
 3. [The Solution & Unique Value Proposition](#3-the-solution--unique-value-proposition)
@@ -29,12 +30,13 @@
 
 ## 1. 💡 Executive Summary (Yeh Project Kya Hai?)
 
-**TASQ-ONE** ek modern, enterprise-grade **Intelligent Task Operating System (Work OS)** hai. 
+**TASQ-ONE** ek modern, enterprise-grade **Intelligent Task Operating System (Work OS)** hai.
 
 Yeh software fast-growing startups, software engineering teams, marketing agencies aur SMBs (Small-Medium Businesses) ke liye banaya gaya hai taaki wo apne team deliverables, client projects aur daily tasks ko bina kisi confusion ke track kar sakein.
 
 ### Ek Line Me Pitch:
-> *"Stop Managing Tasks in WhatsApp Group Chats & Messy Spreadsheets. TASQ-ONE converts vague instructions into verified deliverables with instant AI decomposition, automated Slack alerts, and zero status meetings."*
+
+> _"Stop Managing Tasks in WhatsApp Group Chats & Messy Spreadsheets. TASQ-ONE converts vague instructions into verified deliverables with instant AI decomposition, automated Slack alerts, and zero status meetings."_
 
 ---
 
@@ -45,9 +47,9 @@ India aur worldwide me 90% se zyada growing companies apna daily task coordinati
 1. **Information Black Hole (WhatsApp Chaos):**
    - WhatsApp me 50 messages ke baad task kho jaata hai. Kisne kya kaam karna tha, kab tak dena tha, koi record nahi rehta.
 2. **Endless Follow-up Meetings & Micromanagement:**
-   - Managers ko har roz 1 se 2 ghante sirf yeh puchne me lag jaate hain: *"Rohan, us client ki file ka kya hua?"*, *"Priya, design ready hai kya?"*.
+   - Managers ko har roz 1 se 2 ghante sirf yeh puchne me lag jaate hain: _"Rohan, us client ki file ka kya hua?"_, _"Priya, design ready hai kya?"_.
 3. **Vague Instructions & Rework:**
-   - Founder ya Manager bolte hain: *"Diwali campaign bana do"*. Employee ko samajh nahi aata ki actual deliverables, acceptance criteria aur deadline kya hai. Result = galat kaam aur project delay.
+   - Founder ya Manager bolte hain: _"Diwali campaign bana do"_. Employee ko samajh nahi aata ki actual deliverables, acceptance criteria aur deadline kya hai. Result = galat kaam aur project delay.
 4. **Heavy Enterprise Software Bloat (Jira/Asana Complexity):**
    - Jira ya Asana jaise tools itne complex aur expensive hote hain ki non-technical staff unhe use hi nahi kar paate aur wapas WhatsApp par shift ho jaate hain.
 
@@ -57,7 +59,7 @@ India aur worldwide me 90% se zyada growing companies apna daily task coordinati
 
 TASQ-ONE in sabhi problems ko single-click smart workflows se solve karta hai:
 
-- 🧠 **Instant AI Deliverable Decomposer (Groq Llama 3.3 70B):** Ek simple sentence type karo (e.g. *"Launch UPI AutoPay Checkout"*), aur AI sub-second me 4-point technical acceptance criteria, time estimates aur assignees generate kar deta hai.
+- 🧠 **Instant AI Deliverable Decomposer (Groq Llama 3.3 70B):** Ek simple sentence type karo (e.g. _"Launch UPI AutoPay Checkout"_), aur AI sub-second me 4-point technical acceptance criteria, time estimates aur assignees generate kar deta hai.
 - 📋 **Distraction-Free "Due Today" Focus Mode:** Employees ke samne 500 tasks ka pahad nahi hota. Subah aate hi unhe sirf unke **aaj ke tasks** dikhte hain with single-click status toggles.
 - 🔒 **Task Dependency DAG (Directed Acyclic Graph):** Task tab tak "Completed" nahi ho sakta jab tak uske dependent blocker tasks approve aur merge na ho jaayein.
 - 📢 **Automated Async Slack & Email Broadcasts:** Jab bhi koi task complete hota hai, team ke Slack channel par automatically rich notification card chala jaata hai. Managers ko 1 bhi call ya meeting karne ki zaroorat nahi padti.
@@ -67,24 +69,26 @@ TASQ-ONE in sabhi problems ko single-click smart workflows se solve karta hai:
 
 ## 4. 👥 Target Audience & Who Benefits (Kisko Kya Fayda?)
 
-| Target Role | Problem Faced | TASQ-ONE Solution & Benefit |
-| :--- | :--- | :--- |
-| **Founders & CEOs** | Din bhar status updates chase karte hain aur vision par focus nahi kar paate. | 5 second me organization-wide high-level dashboard dekh kar 10+ hours/week bacha sakte hain. |
-| **Project & Engineering Managers** | Sprints delay hote hain, blockers late pata chalte hain. | Visual Kanban board, AI Acceptance criteria, aur automated DAG blocker warnings. |
-| **Software & Design Engineers** | Vague requirements aur bar-bar distraction meetings. | Clear checklist, acceptance criteria, aur distraction-free morning dashboard. |
-| **Marketing & Client Agencies** | Multiple client deadlines mix ho jaate hain, assets miss hote hain. | Multi-client sprint separation, Cloudflare R2 file attachments, instant deliverable cards. |
-| **Operations & SMB Branches** | Daily branch compliance aur vendor bills follow-up miss hote hain. | Daily recurring checklists, audit logs, and branch-level task segregation. |
+| Target Role                        | Problem Faced                                                                 | TASQ-ONE Solution & Benefit                                                                  |
+| :--------------------------------- | :---------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |
+| **Founders & CEOs**                | Din bhar status updates chase karte hain aur vision par focus nahi kar paate. | 5 second me organization-wide high-level dashboard dekh kar 10+ hours/week bacha sakte hain. |
+| **Project & Engineering Managers** | Sprints delay hote hain, blockers late pata chalte hain.                      | Visual Kanban board, AI Acceptance criteria, aur automated DAG blocker warnings.             |
+| **Software & Design Engineers**    | Vague requirements aur bar-bar distraction meetings.                          | Clear checklist, acceptance criteria, aur distraction-free morning dashboard.                |
+| **Marketing & Client Agencies**    | Multiple client deadlines mix ho jaate hain, assets miss hote hain.           | Multi-client sprint separation, Cloudflare R2 file attachments, instant deliverable cards.   |
+| **Operations & SMB Branches**      | Daily branch compliance aur vendor bills follow-up miss hote hain.            | Daily recurring checklists, audit logs, and branch-level task segregation.                   |
 
 ---
 
 ## 5. 🧩 Core Features & Modules Breakdown
 
 ### 1. 🗂️ Live Sprint Delivery Kanban Board
+
 - Drag-and-Drop column transitions: **To Do**, **In Progress**, **Review**, **Completed**.
 - Color-coded urgency badges (`Urgent`, `High`, `Medium`, `Low`).
 - Real-time assignee avatars, due date countdowns, and quick search filters.
 
 ### 2. ⚡ Instant AI Task Decomposer (Powered by Groq Cloud)
+
 - **Model:** Llama 3.3 70B Versatile.
 - **Inference Speed:** < 1 second.
 - Vague ideas ko 4-part structured tickets me convert karta hai:
@@ -94,23 +98,28 @@ TASQ-ONE in sabhi problems ko single-click smart workflows se solve karta hai:
   4. Realistic Time & Capacity Estimation
 
 ### 3. 🎯 "Due Today" Employee Morning Focus Mode
+
 - Employees ke liye simplified view.
 - Subah aate hi direct checklist dikhti hai jo aaj deliver karni hai.
 - Single-click progress updates jisse context switching zero ho jaata hai.
 
 ### 4. 🔗 Hard Dependency DAG (Blocking Logic)
+
 - Parent-Child task mapping.
 - Agar Task B, Task A par dependent hai, toh system Task B ko complete mark karne se hard-block kar deta hai jab tak Task A verified na ho.
 
 ### 5. 📁 Secure Asset Management (Cloudflare R2)
+
 - Zero-egress fee high-speed object storage.
 - Screenshots, PRDs, client invoices, aur design assets secure tenant-isolated folders me upload hote hain (`${orgId}/${taskId}/...`).
 
 ### 6. 📢 Automated Async Alerts (Slack & Resend Email)
+
 - Completed deliverables automatically Slack channels me format hokar broadcast hoti hain.
 - Managers aur client leads ko real-time progress update milta hai.
 
 ### 7. 📱 Progressive Web App (PWA) & Offline Viewing
+
 - Desktop (Chrome, Edge, Brave) aur Mobile (Android, iOS) par installable software ki tarah chalta hai.
 
 ---
@@ -129,6 +138,7 @@ graph TD
 ```
 
 ### Flow A: Company Registration & Onboarding
+
 1. Founder `https://tasq-one.onrender.com/signup` par jaata hai.
 2. Company Name, Admin Full Name, Email, Password enter karta hai.
 3. System database me:
@@ -137,11 +147,13 @@ graph TD
    - Admin automatically `/admin/dashboard` par redirect hota hai.
 
 ### Flow B: Team Member Invitation
+
 1. Admin/Manager dashboard se employee email aur role (`manager` ya `employee`) select karke invite bhejta hai.
 2. Supabase Auth Admin API ek secure expiring token generate karti hai.
 3. Employee invite link open karta hai (`/accept-invite?token=...`), apna password set karta hai aur direct apne respective dashboard par land karta hai.
 
 ### Flow C: Task Execution & Delivery
+
 1. Manager task create karta hai aur "Enhance with AI" click karta hai.
 2. Groq AI sub-second me complete ticket generate karta hai.
 3. Assignee employee ko task allocate hota hai.
@@ -179,22 +191,22 @@ TASQ-ONE enterprise security standard follow karta hai jisme har role strictly i
 
 ## 8. 💻 Complete Technology Stack
 
-| Layer | Technology | Version | Purpose in TASQ-ONE |
-| :--- | :--- | :---: | :--- |
-| **Frontend UI** | **Next.js (App Router)** | `14.2.35` | SSR, React Server Components, Fast Navigation |
-| **Language** | **TypeScript** | `5.x` | Strict type safety, domain-driven contracts |
-| **Styling** | **Tailwind CSS** | `3.4.1` | Custom SaaS design tokens, Glassmorphism, Responsive |
-| **Icons & UI** | **Lucide React** | `^0.359.0` | Modern vector UI icons |
-| **Database** | **Supabase (PostgreSQL)** | `15.x` | Relational ACID engine, Row-Level Security (RLS) |
-| **Auth & JWT** | **Supabase Auth + Custom Hook** | `v2` | Session management with custom JWT claims (`org_id`, `role`) |
-| **AI Inference** | **Groq Cloud (Llama 3.3 70B)** | Latest | Ultra-fast sub-second task decomposition |
-| **Caching & Limits** | **Upstash Redis** | Serverless | Distributed token-bucket rate limiting on Auth routes |
-| **File Storage** | **Cloudflare R2** | S3 API | Zero-egress fee encrypted attachment storage |
-| **Async Alerts** | **Slack Incoming Webhooks** | REST | Real-time automated deliverable notification cards |
-| **Email Gateway** | **Resend** | REST | Transactional invite emails and weekly executive digests |
-| **Containerization** | **Docker** | Multi-Stage | Production `node:22-alpine` optimized container |
-| **Cloud Hosting** | **Render Web Service** | Free/Pro | Live Docker deployment with automated CI/CD |
-| **Testing** | **Vitest** | `4.1.11` | Automated test runner (30/30 passing security & unit tests) |
+| Layer                | Technology                      |   Version   | Purpose in TASQ-ONE                                          |
+| :------------------- | :------------------------------ | :---------: | :----------------------------------------------------------- |
+| **Frontend UI**      | **Next.js (App Router)**        |  `14.2.35`  | SSR, React Server Components, Fast Navigation                |
+| **Language**         | **TypeScript**                  |    `5.x`    | Strict type safety, domain-driven contracts                  |
+| **Styling**          | **Tailwind CSS**                |   `3.4.1`   | Custom SaaS design tokens, Glassmorphism, Responsive         |
+| **Icons & UI**       | **Lucide React**                | `^0.359.0`  | Modern vector UI icons                                       |
+| **Database**         | **Supabase (PostgreSQL)**       |   `15.x`    | Relational ACID engine, Row-Level Security (RLS)             |
+| **Auth & JWT**       | **Supabase Auth + Custom Hook** |    `v2`     | Session management with custom JWT claims (`org_id`, `role`) |
+| **AI Inference**     | **Groq Cloud (Llama 3.3 70B)**  |   Latest    | Ultra-fast sub-second task decomposition                     |
+| **Caching & Limits** | **Upstash Redis**               | Serverless  | Distributed token-bucket rate limiting on Auth routes        |
+| **File Storage**     | **Cloudflare R2**               |   S3 API    | Zero-egress fee encrypted attachment storage                 |
+| **Async Alerts**     | **Slack Incoming Webhooks**     |    REST     | Real-time automated deliverable notification cards           |
+| **Email Gateway**    | **Resend**                      |    REST     | Transactional invite emails and weekly executive digests     |
+| **Containerization** | **Docker**                      | Multi-Stage | Production `node:22-alpine` optimized container              |
+| **Cloud Hosting**    | **Render Web Service**          |  Free/Pro   | Live Docker deployment with automated CI/CD                  |
+| **Testing**          | **Vitest**                      |  `4.1.11`   | Automated test runner (30/30 passing security & unit tests)  |
 
 ---
 
@@ -246,6 +258,7 @@ TASQ-ONE ko bank-grade security standards par architect kiya gaya hai:
 ## 11. 💰 Pricing Model & Business ROI Calculator
 
 ### Active Pricing Model (Launch Phase):
+
 - **₹0 Free Starter Pilot:**
   - Up to 5 Team Members
   - Unlimited Tasks & Kanban Boards
@@ -254,10 +267,12 @@ TASQ-ONE ko bank-grade security standards par architect kiya gaya hai:
   - Zero lock-in, no credit card or UPI mandate required.
 
 ### Business ROI Calculation Formula:
+
 > **Weekly Hours Saved:** $\text{Team Size} \times \text{Hours Wasted on Follow-ups} \times 0.70$  
 > **Monthly Value Reclaimed (₹ INR):** $\text{Total Hours Saved} \times ₹1,200/\text{hr (Indian tech baseline)}$
 
-*Example for an 8-person team:*
+_Example for an 8-person team:_
+
 - 8 members wasting 4 hrs/week = 32 hours lost weekly.
 - TASQ-ONE reclaims **134+ hours every month**.
 - Monthly business capacity reclaimed = **₹1,61,280 / month**.
@@ -266,19 +281,19 @@ TASQ-ONE ko bank-grade security standards par architect kiya gaya hai:
 
 ## 12. 🌐 Live Production Endpoints & Pages Directory
 
-| Route / URL | Component / Page | Description |
-| :--- | :--- | :--- |
-| **`/`** | `app/page.tsx` | Main Landing Page with Interactive Live Kanban & AI Simulator |
-| **`/solutions`** | `app/solutions/page.tsx` | Dedicated Tailored Solutions for Founders, Tech & Operations |
-| **`/pricing`** | `app/pricing/page.tsx` | Plans Breakdown, ₹0 Pilot Details & Pricing FAQ |
-| **`/features`** | `app/features/page.tsx` | Interactive Feature Showcase & Live Sandboxes |
-| **`/signup`** | `app/signup/page.tsx` | "Register Your Company" (Founding Admin Workspace Creation) |
-| **`/login`** | `app/login/page.tsx` | Smart Unified Sign-In with Database Role Detection |
-| **`/accept-invite`**| `app/accept-invite/page.tsx`| Single-use secure token invite acceptance for staff |
-| **`/admin/*`** | `app/admin/dashboard/` | Organization Analytics, Staff Management & Workspace Settings |
-| **`/manager/*`** | `app/manager/dashboard/` | Sprint Deliverable Boards, Task Assignment & Invites |
-| **`/employee/*`**| `app/employee/dashboard/`| "Due Today" Focus View & Personal Checklist |
-| **`/api/v1/health`**| `app/api/v1/health/route.ts`| Live JSON Health Check (`{"status":"ok"}`) |
+| Route / URL          | Component / Page             | Description                                                   |
+| :------------------- | :--------------------------- | :------------------------------------------------------------ |
+| **`/`**              | `app/page.tsx`               | Main Landing Page with Interactive Live Kanban & AI Simulator |
+| **`/solutions`**     | `app/solutions/page.tsx`     | Dedicated Tailored Solutions for Founders, Tech & Operations  |
+| **`/pricing`**       | `app/pricing/page.tsx`       | Plans Breakdown, ₹0 Pilot Details & Pricing FAQ               |
+| **`/features`**      | `app/features/page.tsx`      | Interactive Feature Showcase & Live Sandboxes                 |
+| **`/signup`**        | `app/signup/page.tsx`        | "Register Your Company" (Founding Admin Workspace Creation)   |
+| **`/login`**         | `app/login/page.tsx`         | Smart Unified Sign-In with Database Role Detection            |
+| **`/accept-invite`** | `app/accept-invite/page.tsx` | Single-use secure token invite acceptance for staff           |
+| **`/admin/*`**       | `app/admin/dashboard/`       | Organization Analytics, Staff Management & Workspace Settings |
+| **`/manager/*`**     | `app/manager/dashboard/`     | Sprint Deliverable Boards, Task Assignment & Invites          |
+| **`/employee/*`**    | `app/employee/dashboard/`    | "Due Today" Focus View & Personal Checklist                   |
+| **`/api/v1/health`** | `app/api/v1/health/route.ts` | Live JSON Health Check (`{"status":"ok"}`)                    |
 
 ---
 

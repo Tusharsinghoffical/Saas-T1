@@ -1,8 +1,14 @@
 import { RequestContext } from "@/shared/types/context";
 import { ForbiddenError } from "@/shared/errors/domainErrors";
 import { redisGet, redisSet } from "@/infrastructure/redis/redisClient";
-import { IDashboardRepository, dashboardRepository } from "../repository/dashboardRepository";
-import { IUserRepository, userRepository } from "@/domains/users/repository/userRepository";
+import {
+  IDashboardRepository,
+  dashboardRepository,
+} from "../repository/dashboardRepository";
+import {
+  IUserRepository,
+  userRepository,
+} from "@/domains/users/repository/userRepository";
 
 export async function getManagerDashboardUseCase(
   context: RequestContext,
@@ -12,7 +18,9 @@ export async function getManagerDashboardUseCase(
 ): Promise<{ data: any; source: "cache" | "database" }> {
   // Enforce manager or admin role
   if (context.role !== "manager" && context.role !== "admin") {
-    throw new ForbiddenError("Only managers and admins can access the team management dashboard.");
+    throw new ForbiddenError(
+      "Only managers and admins can access the team management dashboard."
+    );
   }
 
   const chartCacheKey = teamId
@@ -38,9 +46,13 @@ export async function getManagerDashboardUseCase(
 
   const managerProfile = {
     id: context.userId,
-    managerCode: `MGR-${(context.userId || "0000").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase()}`,
+    managerCode: `MGR-${(context.userId || "0000")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 6)
+      .toUpperCase()}`,
     fullName: managerProfileData?.fullName || "Lead Manager",
-    email: managerProfileData?.email || context.email || "manager@workspace.com",
+    email:
+      managerProfileData?.email || context.email || "manager@workspace.com",
     role: context.role || "manager",
     teamId: managerProfileData?.teamId || teamId || null,
     teamName: managerProfileData?.teamName || "Sprint Lead Squad",
@@ -50,7 +62,11 @@ export async function getManagerDashboardUseCase(
   // 2. Fetch live scoped tasks directly (unblocked by cache for instant bottom-up visibility)
   let tasks: any[] = [];
   if (context.role === "manager") {
-    tasks = await repo.getManagerDashboardTasks(context.orgId, context.userId, teamId);
+    tasks = await repo.getManagerDashboardTasks(
+      context.orgId,
+      context.userId,
+      teamId
+    );
   } else {
     // Admin has org-wide visibility
     tasks = await repo.getAdminDashboardTasks(context.orgId, teamId);
@@ -69,9 +85,12 @@ export async function getManagerDashboardUseCase(
       new Date(t.due_date).getTime() < nowMs
   ).length;
 
-  const completedTasks = tasks.filter((t: any) => t.status === "completed").length;
+  const completedTasks = tasks.filter(
+    (t: any) => t.status === "completed"
+  ).length;
   const totalTasks = tasks.length;
-  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const completionRate =
+    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   // 3. Fetch or compute expensive 30-day historical chart data with 60s Redis cache
   let timeline = await redisGet(chartCacheKey);
@@ -97,7 +116,10 @@ export async function getManagerDashboardUseCase(
 
       timeline.push({
         date: dateStr,
-        label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        label: d.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        }),
         completed: completedCount,
         created: createdCount,
       });
@@ -106,16 +128,24 @@ export async function getManagerDashboardUseCase(
     await redisSet(chartCacheKey, timeline, 60);
   }
 
-  const completedTaskItems = tasks.filter((t: any) => t.status === "completed" && t.created_at && t.updated_at);
-  const totalCompletionDurationDays = completedTaskItems.reduce((acc: number, t: any) => {
-    const created = new Date(t.created_at).getTime();
-    const updated = new Date(t.updated_at).getTime();
-    const diffDays = Math.max(0, (updated - created) / (1000 * 60 * 60 * 24));
-    return acc + diffDays;
-  }, 0);
-  const teamVelocityDays = completedTaskItems.length > 0
-    ? Math.round((totalCompletionDurationDays / completedTaskItems.length) * 10) / 10
-    : 0;
+  const completedTaskItems = tasks.filter(
+    (t: any) => t.status === "completed" && t.created_at && t.updated_at
+  );
+  const totalCompletionDurationDays = completedTaskItems.reduce(
+    (acc: number, t: any) => {
+      const created = new Date(t.created_at).getTime();
+      const updated = new Date(t.updated_at).getTime();
+      const diffDays = Math.max(0, (updated - created) / (1000 * 60 * 60 * 24));
+      return acc + diffDays;
+    },
+    0
+  );
+  const teamVelocityDays =
+    completedTaskItems.length > 0
+      ? Math.round(
+          (totalCompletionDurationDays / completedTaskItems.length) * 10
+        ) / 10
+      : 0;
 
   const aggregateData = {
     managerProfile,

@@ -1,7 +1,10 @@
 import type Stripe from "stripe";
 import { redisGet, redisSet } from "@/infrastructure/redis/redisClient";
 import { logger } from "@/infrastructure/logger/logger";
-import { ISubscriptionRepository, subscriptionRepository } from "../repository/subscriptionRepository";
+import {
+  ISubscriptionRepository,
+  subscriptionRepository,
+} from "../repository/subscriptionRepository";
 
 export async function handleStripeWebhookUseCase(
   event: Stripe.Event,
@@ -33,7 +36,9 @@ export async function handleStripeWebhookUseCase(
       const session = event.data?.object as Stripe.Checkout.Session;
       const orgId = session?.metadata?.org_id;
       const customerId =
-        typeof session?.customer === "string" ? session.customer : session?.customer?.id;
+        typeof session?.customer === "string"
+          ? session.customer
+          : session?.customer?.id;
       const subscriptionId =
         typeof session?.subscription === "string"
           ? session.subscription

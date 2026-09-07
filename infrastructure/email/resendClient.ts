@@ -17,7 +17,11 @@ export async function sendEmail({
   subject,
   html,
   text,
-}: SendEmailOptions): Promise<{ success: boolean; id?: string; error?: string }> {
+}: SendEmailOptions): Promise<{
+  success: boolean;
+  id?: string;
+  error?: string;
+}> {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey || apiKey.includes("placeholder") || !apiKey.startsWith("re_")) {
@@ -26,11 +30,13 @@ export async function sendEmail({
   }
 
   try {
-    const emailFrom = process.env.EMAIL_FROM || "TASQ-ONE <notifications@tasq-one.com>";
+    const emailFrom =
+      process.env.EMAIL_FROM || "TASQ-ONE <notifications@tasq-one.com>";
     if (!process.env.EMAIL_FROM && process.env.NODE_ENV === "production") {
       logger.warn({
         event: "email_from_default_fallback",
-        message: "EMAIL_FROM is unset in production. Falling back to 'TASQ-ONE <notifications@tasq-one.com>'. Verify domain in Resend.",
+        message:
+          "EMAIL_FROM is unset in production. Falling back to 'TASQ-ONE <notifications@tasq-one.com>'. Verify domain in Resend.",
       });
     }
 
@@ -51,13 +57,23 @@ export async function sendEmail({
 
     const json = await res.json();
     if (!res.ok) {
-      logger.error({ event: "resend_api_error", to, subject, error: json.message });
+      logger.error({
+        event: "resend_api_error",
+        to,
+        subject,
+        error: json.message,
+      });
       return { success: false, error: json.message || "Resend API error" };
     }
 
     return { success: true, id: json.id };
   } catch (err: any) {
-    logger.error({ event: "email_dispatch_failed", to, subject, error: err.message });
+    logger.error({
+      event: "email_dispatch_failed",
+      to,
+      subject,
+      error: err.message,
+    });
     return { success: false, error: err.message || "Failed to dispatch email" };
   }
 }
@@ -84,7 +100,21 @@ function sanitizeMessage(msg: string): string {
   // SECURITY: Only these tags/attributes are allowed — everything else (script,
   // iframe, object, event handlers, javascript: URLs) is stripped by default.
   return sanitizeHtml(msg, {
-    allowedTags: ["b", "i", "em", "strong", "u", "s", "p", "br", "ul", "ol", "li", "a", "span"],
+    allowedTags: [
+      "b",
+      "i",
+      "em",
+      "strong",
+      "u",
+      "s",
+      "p",
+      "br",
+      "ul",
+      "ol",
+      "li",
+      "a",
+      "span",
+    ],
     allowedAttributes: {
       a: ["href", "title"],
       span: ["style"],
@@ -122,7 +152,8 @@ export function buildNotificationEmailHtml({
   const safeTitle = escapeHtml(title);
   const safeMessage = sanitizeMessage(message);
   const safeActionText = escapeHtml(actionText);
-  const safeActionUrl = actionUrl && /^https?:\/\//i.test(actionUrl) ? actionUrl : null;
+  const safeActionUrl =
+    actionUrl && /^https?:\/\//i.test(actionUrl) ? actionUrl : null;
 
   return `
 <!DOCTYPE html>

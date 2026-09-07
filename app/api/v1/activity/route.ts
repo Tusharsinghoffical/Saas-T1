@@ -10,7 +10,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: NextRequest) {
   try {
-    const result = await activityController.getActivityLogs(request.nextUrl.searchParams);
+    const result = await activityController.getActivityLogs(
+      request.nextUrl.searchParams
+    );
 
     if (result.isCsv) {
       return new NextResponse(result.csvContent, {

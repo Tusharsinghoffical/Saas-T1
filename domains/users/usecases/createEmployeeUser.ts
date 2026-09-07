@@ -19,12 +19,16 @@ export async function createEmployeeUserUseCase(
 ): Promise<{ user: any; profile: UserProfile; message: string }> {
   // 1. Only admin and manager can create/add members
   if (context.role === "employee") {
-    throw new ForbiddenError("Employees are not authorized to create or invite team members.");
+    throw new ForbiddenError(
+      "Employees are not authorized to create or invite team members."
+    );
   }
 
   // 2. Managers cannot create admins or other managers
   if (context.role === "manager" && input.role !== "employee") {
-    throw new ForbiddenError("Managers can only add team members with the 'employee' role.");
+    throw new ForbiddenError(
+      "Managers can only add team members with the 'employee' role."
+    );
   }
 
   // 3. Validation
@@ -109,4 +113,3 @@ export async function createEmployeeUserUseCase(
     message: inviteResult.message,
   };
 }
-

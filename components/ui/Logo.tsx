@@ -20,9 +20,18 @@ export function Logo({
   // Enhanced, prominent sizing to ensure brand logo stands out clearly
   const sizeConfig = {
     sm: { height: 48, className: "h-11 sm:h-12 w-auto max-w-[200px]" },
-    md: { height: 72, className: "h-14 sm:h-16 md:h-[72px] w-auto max-w-[300px]" },
-    lg: { height: 96, className: "h-18 sm:h-22 md:h-[96px] w-auto max-w-[400px]" },
-    xl: { height: 120, className: "h-24 sm:h-28 md:h-[120px] w-auto max-w-[480px]" },
+    md: {
+      height: 72,
+      className: "h-14 sm:h-16 md:h-[72px] w-auto max-w-[300px]",
+    },
+    lg: {
+      height: 96,
+      className: "h-18 sm:h-22 md:h-[96px] w-auto max-w-[400px]",
+    },
+    xl: {
+      height: 120,
+      className: "h-24 sm:h-28 md:h-[120px] w-auto max-w-[480px]",
+    },
   }[size];
 
   // ONE Header .png is used for both Header and Footer
@@ -30,13 +39,15 @@ export function Logo({
   const altText = "TASQ-ONE Logo";
 
   const content = (
-    <div className={`inline-flex items-center select-none group transition-transform duration-200 hover:scale-[1.02] ${className}`}>
+    <div
+      className={`group inline-flex select-none items-center transition-transform duration-200 hover:scale-[1.02] ${className}`}
+    >
       <Image
         src={imageSrc}
         alt={altText}
         width={360}
         height={sizeConfig.height}
-        className={`${sizeConfig.className} object-contain transition-all drop-shadow-xs`}
+        className={`${sizeConfig.className} drop-shadow-xs object-contain transition-all`}
         priority={priority}
       />
     </div>

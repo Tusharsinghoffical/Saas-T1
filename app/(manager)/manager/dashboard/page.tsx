@@ -26,12 +26,21 @@ import {
   UserCheck,
 } from "lucide-react";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
-import { TaskFormModal, type OrgMember } from "@/components/tasks/TaskFormModal";
-import { ProductivityChart, type ProductivityDay } from "@/components/dashboard/ProductivityChart";
+import {
+  TaskFormModal,
+  type OrgMember,
+} from "@/components/tasks/TaskFormModal";
+import {
+  ProductivityChart,
+  type ProductivityDay,
+} from "@/components/dashboard/ProductivityChart";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useRealtimeTasks } from "@/lib/supabase/useRealtimeTasks";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
-import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
+import {
+  useAutoRefresh,
+  AutoRefreshBadge,
+} from "@/components/ui/AutoRefreshControl";
 
 export default function ManagerDashboardPage() {
   const [viewMode, setViewMode] = useState<"kanban" | "analytics">("kanban");
@@ -65,7 +74,11 @@ export default function ManagerDashboardPage() {
   });
 
   // Client-hydrated greeting based on user's local timezone
-  const [greeting, setGreeting] = useState<{ text: string; icon: any; color: string }>({
+  const [greeting, setGreeting] = useState<{
+    text: string;
+    icon: any;
+    color: string;
+  }>({
     text: "Welcome",
     icon: Sparkles,
     color: "text-amber-400",
@@ -76,9 +89,17 @@ export default function ManagerDashboardPage() {
     if (hour < 12) {
       setGreeting({ text: "Good Morning", icon: Sun, color: "text-amber-400" });
     } else if (hour < 18) {
-      setGreeting({ text: "Good Afternoon", icon: Sunset, color: "text-orange-400" });
+      setGreeting({
+        text: "Good Afternoon",
+        icon: Sunset,
+        color: "text-orange-400",
+      });
     } else {
-      setGreeting({ text: "Good Evening", icon: Moon, color: "text-indigo-300" });
+      setGreeting({
+        text: "Good Evening",
+        icon: Moon,
+        color: "text-indigo-300",
+      });
     }
   }, []);
 
@@ -101,18 +122,21 @@ export default function ManagerDashboardPage() {
       if (tasksRes && tasksRes.ok) {
         const tasksJson = await tasksRes.json();
         if (tasksJson.success && Array.isArray(tasksJson.data)) {
-          const mappedTasks: KanbanTaskItem[] = tasksJson.data.map((t: any) => ({
-            id: t.id,
-            title: t.title,
-            description: t.description || null,
-            status: t.status,
-            priority: t.priority,
-            dueDate: t.due_date || t.dueDate || null,
-            assignees: t.assignees || [],
-            dependencyTaskIds: t.dependency_task_ids || t.dependencyTaskIds || [],
-            tags: t.tags || [],
-            subtasks: t.subtasks || [],
-          }));
+          const mappedTasks: KanbanTaskItem[] = tasksJson.data.map(
+            (t: any) => ({
+              id: t.id,
+              title: t.title,
+              description: t.description || null,
+              status: t.status,
+              priority: t.priority,
+              dueDate: t.due_date || t.dueDate || null,
+              assignees: t.assignees || [],
+              dependencyTaskIds:
+                t.dependency_task_ids || t.dependencyTaskIds || [],
+              tags: t.tags || [],
+              subtasks: t.subtasks || [],
+            })
+          );
           setTasks(mappedTasks);
           if (tasksJson.data[0]?.org_id || tasksJson.data[0]?.orgId) {
             setOrgId(tasksJson.data[0].org_id || tasksJson.data[0].orgId);
@@ -125,7 +149,8 @@ export default function ManagerDashboardPage() {
         if (membersJson.success && Array.isArray(membersJson.data)) {
           const mappedMembers: OrgMember[] = membersJson.data.map((m: any) => ({
             id: m.id || m.user_id,
-            fullName: m.fullName || m.full_name || m.name || m.email || "Team Member",
+            fullName:
+              m.fullName || m.full_name || m.name || m.email || "Team Member",
             role: m.role || "employee",
             avatarUrl: m.avatarUrl || m.avatar_url || null,
           }));
@@ -142,7 +167,11 @@ export default function ManagerDashboardPage() {
           if (Array.isArray(dashJson.data.productivityChart)) {
             setChartData(dashJson.data.productivityChart);
           }
-          setCacheStatus(dashboardRes.headers.get("X-Cache") === "HIT" ? "redis-cache" : "live-db");
+          setCacheStatus(
+            dashboardRes.headers.get("X-Cache") === "HIT"
+              ? "redis-cache"
+              : "live-db"
+          );
         }
       }
     } catch (err) {
@@ -153,7 +182,9 @@ export default function ManagerDashboardPage() {
   }, [setTasks]);
 
   // Initial data load on mount
-  useEffect(() => { fetchAllData(); }, [fetchAllData]);
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchAllData);
 
@@ -161,7 +192,9 @@ export default function ManagerDashboardPage() {
   const nowMs = Date.now();
   const liveKpis = useMemo(() => {
     const total = tasks.length;
-    const active = tasks.filter((t) => ["pending", "in_progress", "in_review"].includes(t.status)).length;
+    const active = tasks.filter((t) =>
+      ["pending", "in_progress", "in_review"].includes(t.status)
+    ).length;
     const overdue = tasks.filter((t) => {
       if (t.status === "completed") return false;
       const due = t.due_date || t.dueDate;
@@ -193,76 +226,81 @@ export default function ManagerDashboardPage() {
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const initials = managerProfile.fullName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "MG";
+  const initials =
+    managerProfile.fullName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "MG";
 
   const GreetingIcon = greeting.icon;
 
   return (
-    <div className="space-y-6 animate-fade-in pb-14">
+    <div className="animate-fade-in space-y-6 pb-14">
       {/* 🚀 Executive Manager Profile & Operations Hub Command Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-7 shadow-2xl border border-indigo-800/40">
+      <div className="relative overflow-hidden rounded-3xl border border-indigo-800/40 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 text-white shadow-2xl sm:p-7">
         {/* Glow Spheres */}
-        <div className="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
           {/* Left Column: Manager Details */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             {/* Avatar with Live Beacon */}
             <div className="relative flex-shrink-0">
-              <div className="h-20 w-20 sm:h-22 sm:w-22 rounded-2xl bg-gradient-to-tr from-amber-500 via-indigo-500 to-teal-400 p-[2px] shadow-lg shadow-indigo-500/25">
-                <div className="h-full w-full rounded-[14px] bg-slate-900 flex items-center justify-center font-extrabold text-2xl tracking-wider text-white">
+              <div className="sm:h-22 sm:w-22 h-20 w-20 rounded-2xl bg-gradient-to-tr from-amber-500 via-indigo-500 to-teal-400 p-[2px] shadow-lg shadow-indigo-500/25">
+                <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-900 text-2xl font-extrabold tracking-wider text-white">
                   {initials}
                 </div>
               </div>
               {/* Online Beacon */}
               <span
                 title="Active Sprint Lead"
-                className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center shadow"
+                className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-slate-900 bg-emerald-500 shadow"
               >
-                <span className="h-2 w-2 rounded-full bg-white animate-ping" />
+                <span className="h-2 w-2 animate-ping rounded-full bg-white" />
               </span>
             </div>
 
             {/* Manager Info */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-wrap items-center gap-2">
                 {/* Greeting */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white/10 text-indigo-200 backdrop-blur-md border border-white/10">
-                  <GreetingIcon className={`w-3.5 h-3.5 ${greeting.color}`} />
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-2.5 py-0.5 text-[11px] font-bold text-indigo-200 backdrop-blur-md">
+                  <GreetingIcon className={`h-3.5 w-3.5 ${greeting.color}`} />
                   <span>{greeting.text}</span>
                 </span>
 
                 {/* Role Badge */}
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
-                  <Shield className="w-3 h-3" />
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-300">
+                  <Shield className="h-3 w-3" />
                   Sprint Lead (Manager)
                 </span>
 
                 {/* Realtime Live Sync Pill */}
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border backdrop-blur-md transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold backdrop-blur-md transition-colors ${
                     isConnected
-                      ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                      : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                      ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
+                      : "border-amber-500/30 bg-amber-500/20 text-amber-300"
                   }`}
                 >
-                  <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"}`} />
-                  <span>{isConnected ? "Realtime Database Sync" : "Connecting..."}</span>
+                  <Radio
+                    className={`h-3 w-3 ${isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"}`}
+                  />
+                  <span>
+                    {isConnected ? "Realtime Database Sync" : "Connecting..."}
+                  </span>
                 </span>
               </div>
 
               {/* Name & Title */}
               <div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                <h1 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
                   {managerProfile.fullName}
                 </h1>
-                <p className="text-xs sm:text-sm text-indigo-200/80 mt-0.5 flex items-center gap-2">
+                <p className="mt-0.5 flex items-center gap-2 text-xs text-indigo-200/80 sm:text-sm">
                   <span>Manager Operations Hub</span>
                   <span className="text-indigo-400">•</span>
                   <span>Sprint Velocity & Team Assignment Control</span>
@@ -270,38 +308,40 @@ export default function ManagerDashboardPage() {
               </div>
 
               {/* Identity & Metadata Chips */}
-              <div className="flex items-center gap-2.5 flex-wrap pt-1 text-xs">
+              <div className="flex flex-wrap items-center gap-2.5 pt-1 text-xs">
                 {/* Manager ID with Copy Button */}
                 <button
                   type="button"
                   onClick={copyManagerId}
                   title="Click to copy Manager ID"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-indigo-200 hover:text-white border border-white/10 transition group font-mono text-[11px] font-bold"
+                  className="group inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 font-mono text-[11px] font-bold text-indigo-200 transition hover:bg-white/15 hover:text-white"
                 >
-                  <Hash className="w-3 h-3 text-indigo-400" />
+                  <Hash className="h-3 w-3 text-indigo-400" />
                   <span>ID: {managerProfile.managerCode}</span>
                   {copiedId ? (
-                    <Check className="w-3 h-3 text-emerald-400" />
+                    <Check className="h-3 w-3 text-emerald-400" />
                   ) : (
-                    <Copy className="w-3 h-3 text-indigo-300 group-hover:text-white transition opacity-70" />
+                    <Copy className="h-3 w-3 text-indigo-300 opacity-70 transition group-hover:text-white" />
                   )}
                 </button>
 
                 {/* Team / Squad Chip */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px] font-semibold">
-                  <Briefcase className="w-3 h-3 text-amber-400" />
-                  <span>Squad: {managerProfile.teamName || "General Squad"}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-indigo-200">
+                  <Briefcase className="h-3 w-3 text-amber-400" />
+                  <span>
+                    Squad: {managerProfile.teamName || "General Squad"}
+                  </span>
                 </span>
 
                 {/* Email Chip */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px]">
-                  <Mail className="w-3 h-3 text-indigo-300" />
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 text-[11px] text-indigo-200">
+                  <Mail className="h-3 w-3 text-indigo-300" />
                   <span>{managerProfile.email}</span>
                 </span>
 
                 {/* Team Capacity */}
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 border border-white/10 text-[11px]">
-                  <Users className="w-3 h-3 text-teal-300" />
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 text-[11px] text-indigo-200">
+                  <Users className="h-3 w-3 text-teal-300" />
                   <span>{orgMembers.length} Active Assignees</span>
                 </span>
               </div>
@@ -309,8 +349,8 @@ export default function ManagerDashboardPage() {
           </div>
 
           {/* Right Column: Actions & View Switcher */}
-          <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end gap-3 flex-shrink-0">
-            <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-shrink-0 flex-col items-stretch gap-3 sm:flex-row sm:items-center lg:flex-col lg:items-end">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Manual Refresh */}
               <AutoRefreshBadge
                 isRefreshing={isRefreshing || isLoading}
@@ -318,29 +358,29 @@ export default function ManagerDashboardPage() {
               />
 
               {/* View Toggle */}
-              <div className="flex items-center p-1 rounded-xl bg-white/10 border border-white/10 text-xs font-semibold">
+              <div className="flex items-center rounded-xl border border-white/10 bg-white/10 p-1 text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setViewMode("kanban")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                     viewMode === "kanban"
-                      ? "bg-white text-slate-900 shadow-sm font-bold"
+                      ? "bg-white font-bold text-slate-900 shadow-sm"
                       : "text-indigo-200 hover:text-white"
                   }`}
                 >
-                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <LayoutGrid className="h-3.5 w-3.5" />
                   <span>Board</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setViewMode("analytics")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 transition ${
                     viewMode === "analytics"
-                      ? "bg-white text-slate-900 shadow-sm font-bold"
+                      ? "bg-white font-bold text-slate-900 shadow-sm"
                       : "text-indigo-200 hover:text-white"
                   }`}
                 >
-                  <BarChart3 className="w-3.5 h-3.5" />
+                  <BarChart3 className="h-3.5 w-3.5" />
                   <span>Velocity</span>
                 </button>
               </div>
@@ -348,9 +388,9 @@ export default function ManagerDashboardPage() {
               <button
                 type="button"
                 onClick={() => setIsTaskModalOpen(true)}
-                className="px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-700 text-white font-bold text-xs shadow-lg shadow-primary/30 transition flex items-center gap-1.5"
+                className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primary-700"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="h-4 w-4" />
                 <span>Create Task</span>
               </button>
             </div>
@@ -359,13 +399,13 @@ export default function ManagerDashboardPage() {
       </div>
 
       {/* 👥 Active Team Assignees Live Roster */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            <Users className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+            <Users className="h-4 w-4 text-primary" />
             <span>Team Members & Assignees ({orgMembers.length})</span>
           </div>
-          <span className="text-[11px] text-slate-500 font-medium">
+          <span className="text-[11px] font-medium text-slate-500">
             Realtime squad roster for task distribution
           </span>
         </div>
@@ -386,22 +426,24 @@ export default function ManagerDashboardPage() {
             return (
               <div
                 key={member.id}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-750 flex-shrink-0 hover:border-primary/40 transition"
+                className="dark:border-slate-750 flex flex-shrink-0 items-center gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50 px-3 py-2 transition hover:border-primary/40 dark:bg-slate-900/60"
               >
                 <div className="relative">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                     {memberInitials}
                   </div>
-                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 border border-white dark:border-slate-900" />
+                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-emerald-500 dark:border-slate-900" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+                  <div className="text-xs font-bold leading-tight text-slate-900 dark:text-white">
                     {member.fullName}
                   </div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                  <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400">
                     <span className="capitalize">{member.role}</span>
                     <span>•</span>
-                    <span className="font-semibold text-primary">{memberTasksCount} tasks</span>
+                    <span className="font-semibold text-primary">
+                      {memberTasksCount} tasks
+                    </span>
                   </div>
                 </div>
               </div>
@@ -409,7 +451,7 @@ export default function ManagerDashboardPage() {
           })}
 
           {orgMembers.length === 0 && (
-            <div className="text-xs text-slate-400 py-2">
+            <div className="py-2 text-xs text-slate-400">
               Loading team squad members...
             </div>
           )}
@@ -417,47 +459,63 @@ export default function ManagerDashboardPage() {
       </div>
 
       {/* Realtime Dynamic KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Active Team Tasks</span>
-            <Clock className="w-4 h-4 text-blue-500" />
+            <Clock className="h-4 w-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-black text-slate-900 dark:text-white">{liveKpis.activeTasks}</div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">In sprint execution</div>
+          <div className="text-2xl font-black text-slate-900 dark:text-white">
+            {liveKpis.activeTasks}
+          </div>
+          <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            In sprint execution
+          </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
+        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Overdue Items</span>
-            <AlertTriangle className={`w-4 h-4 ${liveKpis.overdueTasks > 0 ? "text-rose-500 animate-pulse" : "text-slate-400"}`} />
+            <AlertTriangle
+              className={`h-4 w-4 ${liveKpis.overdueTasks > 0 ? "animate-pulse text-rose-500" : "text-slate-400"}`}
+            />
           </div>
-          <div className={`text-2xl font-black ${liveKpis.overdueTasks > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-white"}`}>
+          <div
+            className={`text-2xl font-black ${liveKpis.overdueTasks > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-white"}`}
+          >
             {liveKpis.overdueTasks}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Require manager review</div>
+          <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            Require manager review
+          </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
+        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Sprint Completion</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{liveKpis.completionRate}%</div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+            {liveKpis.completionRate}%
+          </div>
+          <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
             {liveKpis.completedTasks} of {liveKpis.totalTasks} tasks done
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-semibold">
+        <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/90">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Team Velocity</span>
-            <TrendingUp className="w-4 h-4 text-indigo-500" />
+            <TrendingUp className="h-4 w-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white">
-            {liveKpis.teamVelocityDays > 0 ? `${liveKpis.teamVelocityDays}d` : "N/A"}
+            {liveKpis.teamVelocityDays > 0
+              ? `${liveKpis.teamVelocityDays}d`
+              : "N/A"}
           </div>
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Avg cycle time</div>
+          <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            Avg cycle time
+          </div>
         </div>
       </div>
 

@@ -59,9 +59,21 @@ export function TaskFormModal({
     { id: "mem-3", fullName: "Rohan Patel (Dev)", role: "employee" },
   ],
   availableTasks = [
-    { id: "task-1", title: "Set up company workspace & review OKRs", status: "in_progress" },
-    { id: "task-2", title: "Implement Postgres RLS policy test suite", status: "pending" },
-    { id: "task-3", title: "Set up Upstash Redis rate limiting bucket", status: "in_review" },
+    {
+      id: "task-1",
+      title: "Set up company workspace & review OKRs",
+      status: "in_progress",
+    },
+    {
+      id: "task-2",
+      title: "Implement Postgres RLS policy test suite",
+      status: "pending",
+    },
+    {
+      id: "task-3",
+      title: "Set up Upstash Redis rate limiting bucket",
+      status: "in_review",
+    },
   ],
   onSuccess,
 }: TaskFormModalProps) {
@@ -69,24 +81,38 @@ export function TaskFormModal({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState<"low" | "medium" | "high" | "urgent">("medium");
-  const [status, setStatus] = useState<"pending" | "in_progress" | "in_review" | "completed">("pending");
+  const [priority, setPriority] = useState<
+    "low" | "medium" | "high" | "urgent"
+  >("medium");
+  const [status, setStatus] = useState<
+    "pending" | "in_progress" | "in_review" | "completed"
+  >("pending");
   const [dueDate, setDueDate] = useState("");
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [membersList, setMembersList] = useState<OrgMember[]>(orgMembers || []);
-  const [selectedDependencies, setSelectedDependencies] = useState<string[]>([]);
+  const [selectedDependencies, setSelectedDependencies] = useState<string[]>(
+    []
+  );
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState("");
-  const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
+  const [subtasks, setSubtasks] = useState<
+    { id: string; title: string; completed: boolean }[]
+  >([]);
   const [newSubtask, setNewSubtask] = useState("");
 
   // AI Enhancement state
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [previousDescription, setPreviousDescription] = useState<string | null>(null);
+  const [previousDescription, setPreviousDescription] = useState<string | null>(
+    null
+  );
 
   // AI Assignee Workload Suggestion state
   const [isAiAssigneeLoading, setIsAiAssigneeLoading] = useState(false);
-  const [suggestedAssignee, setSuggestedAssignee] = useState<{ id: string; name: string; reasoning?: string } | null>(null);
+  const [suggestedAssignee, setSuggestedAssignee] = useState<{
+    id: string;
+    name: string;
+    reasoning?: string;
+  } | null>(null);
   const [aiToast, setAiToast] = useState<string | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -164,11 +190,20 @@ export function TaskFormModal({
       fetch("/api/v1/org/members")
         .then((res) => res.json())
         .then((json) => {
-          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          if (
+            json.success &&
+            Array.isArray(json.data) &&
+            json.data.length > 0
+          ) {
             setMembersList(
               json.data.map((m: any) => ({
                 id: m.id || m.user_id,
-                fullName: m.fullName || m.full_name || m.name || m.email || "Team Member",
+                fullName:
+                  m.fullName ||
+                  m.full_name ||
+                  m.name ||
+                  m.email ||
+                  "Team Member",
                 role: m.role || "employee",
                 avatarUrl: m.avatarUrl || m.avatar_url || null,
               }))
@@ -233,7 +268,10 @@ export function TaskFormModal({
 
   const handleAcceptSuggestedAssignee = () => {
     if (!suggestedAssignee) return;
-    if (suggestedAssignee.id && !selectedAssignees.includes(suggestedAssignee.id)) {
+    if (
+      suggestedAssignee.id &&
+      !selectedAssignees.includes(suggestedAssignee.id)
+    ) {
       setSelectedAssignees([...selectedAssignees, suggestedAssignee.id]);
     } else {
       const match = orgMembers.find(
@@ -275,7 +313,9 @@ export function TaskFormModal({
 
   const handleToggleSubtask = (id: string) => {
     setSubtasks(
-      subtasks.map((st) => (st.id === id ? { ...st, completed: !st.completed } : st))
+      subtasks.map((st) =>
+        st.id === id ? { ...st, completed: !st.completed } : st
+      )
     );
   };
 
@@ -295,7 +335,9 @@ export function TaskFormModal({
   // Dependency toggle
   const handleToggleDependency = (taskId: string) => {
     if (selectedDependencies.includes(taskId)) {
-      setSelectedDependencies(selectedDependencies.filter((id) => id !== taskId));
+      setSelectedDependencies(
+        selectedDependencies.filter((id) => id !== taskId)
+      );
     } else {
       setSelectedDependencies([...selectedDependencies, taskId]);
     }
@@ -332,7 +374,9 @@ export function TaskFormModal({
 
     setIsSubmitting(true);
     try {
-      const url = isEditing ? `/api/v1/tasks/${initialTask?.id}` : "/api/v1/tasks";
+      const url = isEditing
+        ? `/api/v1/tasks/${initialTask?.id}`
+        : "/api/v1/tasks";
       const method = isEditing ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -378,15 +422,15 @@ export function TaskFormModal({
       maxWidth="xl"
     >
       {aiToast && (
-        <div className="mb-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-xs text-amber-700 dark:text-amber-300 font-medium animate-fade-in">
+        <div className="animate-fade-in mb-3 flex items-center justify-between rounded-lg border border-amber-500/20 bg-amber-500/10 p-2.5 text-xs font-medium text-amber-700 dark:text-amber-300">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+            <Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-amber-500" />
             <span>{aiToast}</span>
           </div>
           <button
             type="button"
             onClick={() => setAiToast(null)}
-            className="text-amber-700 dark:text-amber-300 font-bold ml-2 hover:opacity-75"
+            className="ml-2 font-bold text-amber-700 hover:opacity-75 dark:text-amber-300"
           >
             ✕
           </button>
@@ -394,8 +438,8 @@ export function TaskFormModal({
       )}
 
       {serverError && (
-        <div className="mb-4 p-3 rounded-lg bg-urgent/10 border border-urgent/20 flex items-start gap-2 text-xs text-urgent font-medium">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-urgent/20 bg-urgent/10 p-3 text-xs font-medium text-urgent">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>{serverError}</span>
         </div>
       )}
@@ -403,7 +447,7 @@ export function TaskFormModal({
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {/* Task Title */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
             Task Title *
           </label>
           <Input
@@ -416,14 +460,16 @@ export function TaskFormModal({
             error={Boolean(errors.title)}
           />
           {errors.title && (
-            <p className="mt-1 text-xs text-urgent font-medium">{errors.title}</p>
+            <p className="mt-1 text-xs font-medium text-urgent">
+              {errors.title}
+            </p>
           )}
         </div>
 
         {/* Description & AI Enhance Button */}
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Description
             </label>
             <div className="flex items-center gap-1.5">
@@ -431,9 +477,9 @@ export function TaskFormModal({
                 <button
                   type="button"
                   onClick={handleUndoAi}
-                  className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1 font-medium px-2 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  className="flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                 >
-                  <Undo2 className="w-3 h-3" />
+                  <Undo2 className="h-3 w-3" />
                   <span>Undo</span>
                 </button>
               )}
@@ -441,9 +487,11 @@ export function TaskFormModal({
                 type="button"
                 onClick={handleEnhanceWithAi}
                 disabled={isAiLoading}
-                className="text-xs text-primary hover:text-primary-700 dark:hover:text-primary-400 flex items-center gap-1 font-semibold px-2.5 py-1 rounded-md bg-primary/10 hover:bg-primary/15 transition disabled:opacity-50"
+                className="flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary transition hover:bg-primary/15 hover:text-primary-700 disabled:opacity-50 dark:hover:text-primary-400"
               >
-                <Sparkles className={`w-3.5 h-3.5 ${isAiLoading ? "animate-spin" : ""}`} />
+                <Sparkles
+                  className={`h-3.5 w-3.5 ${isAiLoading ? "animate-spin" : ""}`}
+                />
                 <span>{isAiLoading ? "Enhancing..." : "Enhance with AI"}</span>
               </button>
             </div>
@@ -453,27 +501,32 @@ export function TaskFormModal({
             value={description}
             onChange={(e) => {
               setDescription(e.target.value);
-              if (errors.description) setErrors((prev) => ({ ...prev, description: "" }));
+              if (errors.description)
+                setErrors((prev) => ({ ...prev, description: "" }));
             }}
             rows={4}
             placeholder="Describe the task requirements, objective, or acceptance criteria..."
-            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent font-sans"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-sans text-xs text-slate-900 placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
           {errors.description && (
-            <p className="mt-1 text-xs text-urgent font-medium">{errors.description}</p>
+            <p className="mt-1 text-xs font-medium text-urgent">
+              {errors.description}
+            </p>
           )}
         </div>
 
         {/* Priority & Status & Due Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Priority
             </label>
             <Select
               value={priority}
               onChange={(e) =>
-                setPriority(e.target.value as "low" | "medium" | "high" | "urgent")
+                setPriority(
+                  e.target.value as "low" | "medium" | "high" | "urgent"
+                )
               }
             >
               <option value="low">Low</option>
@@ -484,14 +537,15 @@ export function TaskFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Status
             </label>
             <Select
               value={status}
               onChange={(e) =>
                 setStatus(
-                  e.target.value as "pending" | "in_progress" | "in_review" | "completed"
+                  e.target.value as
+                    "pending" | "in_progress" | "in_review" | "completed"
                 )
               }
             >
@@ -503,7 +557,7 @@ export function TaskFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               Due Date
             </label>
             <div className="relative">
@@ -518,32 +572,35 @@ export function TaskFormModal({
 
         {/* Assignee Multi-Select */}
         <div>
-          <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-primary" />
+          <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+            <label className="block flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <Users className="h-3.5 w-3.5 text-primary" />
               Assignees
             </label>
 
             {/* Subtle Loading Spinner or AI Suggestion Hint */}
             {isAiAssigneeLoading ? (
-              <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 animate-spin text-primary" />
+              <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                <Sparkles className="h-3 w-3 animate-spin text-primary" />
                 <span>Checking workload capacity...</span>
               </div>
             ) : suggestedAssignee ? (
               <button
                 type="button"
                 onClick={handleAcceptSuggestedAssignee}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline bg-primary/10 px-2 py-0.5 rounded-full transition"
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary transition hover:underline"
                 title={suggestedAssignee.reasoning || "Least loaded member"}
               >
-                <Sparkles className="w-3 h-3 text-primary" />
-                <span>AI suggests: <strong>{suggestedAssignee.name}</strong> (least loaded)</span>
+                <Sparkles className="h-3 w-3 text-primary" />
+                <span>
+                  AI suggests: <strong>{suggestedAssignee.name}</strong> (least
+                  loaded)
+                </span>
               </button>
             ) : null}
           </div>
 
-          <div className="flex flex-wrap gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+          <div className="flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-900/50">
             {membersList.map((member) => {
               const isSelected = selectedAssignees.includes(member.id);
               return (
@@ -551,15 +608,17 @@ export function TaskFormModal({
                   key={member.id}
                   type="button"
                   onClick={() => handleToggleAssignee(member.id)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                     isSelected
                       ? "bg-primary text-white shadow-sm"
-                      : "bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-primary"
+                      : "border border-slate-300 bg-white text-slate-700 hover:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                   }`}
                 >
                   <div
-                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                      isSelected ? "bg-white/20 text-white" : "bg-primary/20 text-primary"
+                    className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
+                      isSelected
+                        ? "bg-white/20 text-white"
+                        : "bg-primary/20 text-primary"
                     }`}
                   >
                     {member.fullName.slice(0, 1)}
@@ -574,11 +633,11 @@ export function TaskFormModal({
         {/* Dependencies / Depends On Picker */}
         {dependencyOptions.length > 0 && (
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <Link2 className="w-3.5 h-3.5 text-amber-500" />
+            <label className="mb-1.5 block flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <Link2 className="h-3.5 w-3.5 text-amber-500" />
               Depends On (Prerequisites to complete first)
             </label>
-            <div className="flex flex-wrap gap-1.5 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 max-h-36 overflow-y-auto">
+            <div className="flex max-h-36 flex-wrap gap-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-900/50">
               {dependencyOptions.map((depTask) => {
                 const isSelected = selectedDependencies.includes(depTask.id);
                 return (
@@ -586,14 +645,16 @@ export function TaskFormModal({
                     key={depTask.id}
                     type="button"
                     onClick={() => handleToggleDependency(depTask.id)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition ${
+                    className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                       isSelected
-                        ? "bg-amber-500 text-white shadow-sm font-semibold"
-                        : "bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-amber-500"
+                        ? "bg-amber-500 font-semibold text-white shadow-sm"
+                        : "border border-slate-300 bg-white text-slate-700 hover:border-amber-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                     }`}
                   >
-                    <Link2 className="w-3 h-3 opacity-80" />
-                    <span className="truncate max-w-[220px]">{depTask.title}</span>
+                    <Link2 className="h-3 w-3 opacity-80" />
+                    <span className="max-w-[220px] truncate">
+                      {depTask.title}
+                    </span>
                   </button>
                 );
               })}
@@ -603,16 +664,16 @@ export function TaskFormModal({
 
         {/* Tags */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <Tag className="w-3.5 h-3.5 text-slate-400" />
+          <label className="mb-1.5 block flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            <Tag className="h-3.5 w-3.5 text-slate-400" />
             Tags (Press Enter to add)
           </label>
-          <div className="flex flex-wrap gap-1.5 mb-2">
+          <div className="mb-2 flex flex-wrap gap-1.5">
             {tags.map((tag) => (
               <Badge
                 key={tag}
                 variant="outline"
-                className="gap-1 bg-white dark:bg-slate-800 py-1"
+                className="gap-1 bg-white py-1 dark:bg-slate-800"
               >
                 #{tag}
                 <button
@@ -635,18 +696,18 @@ export function TaskFormModal({
 
         {/* Checklist / Sub-tasks */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <CheckSquare className="w-3.5 h-3.5 text-primary" />
+          <label className="mb-1.5 block flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            <CheckSquare className="h-3.5 w-3.5 text-primary" />
             Checklist / Sub-tasks
           </label>
 
-          <div className="space-y-1.5 mb-2.5">
+          <div className="mb-2.5 space-y-1.5">
             {subtasks.map((st) => (
               <div
                 key={st.id}
-                className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs"
+                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs dark:border-slate-700 dark:bg-slate-800/60"
               >
-                <label className="flex items-center gap-2 cursor-pointer flex-1">
+                <label className="flex flex-1 cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
                     checked={st.completed}
@@ -656,7 +717,7 @@ export function TaskFormModal({
                   <span
                     className={
                       st.completed
-                        ? "line-through text-slate-400"
+                        ? "text-slate-400 line-through"
                         : "text-slate-800 dark:text-slate-200"
                     }
                   >
@@ -666,9 +727,9 @@ export function TaskFormModal({
                 <button
                   type="button"
                   onClick={() => handleRemoveSubtask(st.id)}
-                  className="text-slate-400 hover:text-urgent p-1"
+                  className="p-1 text-slate-400 hover:text-urgent"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             ))}
@@ -692,20 +753,20 @@ export function TaskFormModal({
               size="sm"
               onClick={handleAddSubtask}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
         {/* Modal Actions Footer */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4 dark:border-slate-800">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Saving Task...</span>
               </>
             ) : (

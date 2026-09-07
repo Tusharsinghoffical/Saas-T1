@@ -7,13 +7,20 @@ export class ActivityController {
     const auth = await requireRole(["admin", "manager"]);
 
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(searchParams.get("limit") || "20", 10))
+    );
     const entity = searchParams.get("entity");
     const action = searchParams.get("action");
     const format = searchParams.get("format");
 
     if (format === "csv") {
-      const csvString = await exportActivityLogsCsvUseCase(auth, entity, action);
+      const csvString = await exportActivityLogsCsvUseCase(
+        auth,
+        entity,
+        action
+      );
       return {
         isCsv: true,
         csvContent: csvString,

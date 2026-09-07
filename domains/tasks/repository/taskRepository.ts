@@ -1,14 +1,36 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
-import { Task, CreateTaskDTO, UpdateTaskDTO, TaskFilterDTO } from "../entities/Task";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
+import {
+  Task,
+  CreateTaskDTO,
+  UpdateTaskDTO,
+  TaskFilterDTO,
+} from "../entities/Task";
+import { ValidationError } from "@/shared/errors/domainErrors";
 
 export interface ITaskRepository {
-  listTasks(orgId: string, filters: TaskFilterDTO): Promise<{ tasks: Task[]; total: number }>;
+  listTasks(
+    orgId: string,
+    filters: TaskFilterDTO
+  ): Promise<{ tasks: Task[]; total: number }>;
   getTaskById(taskId: string, orgId: string): Promise<Task | null>;
-  createTask(orgId: string, creatorUserId: string, data: CreateTaskDTO): Promise<Task>;
-  updateTask(taskId: string, orgId: string, updates: UpdateTaskDTO): Promise<Task>;
+  createTask(
+    orgId: string,
+    creatorUserId: string,
+    data: CreateTaskDTO
+  ): Promise<Task>;
+  updateTask(
+    taskId: string,
+    orgId: string,
+    updates: UpdateTaskDTO
+  ): Promise<Task>;
   deleteTask(taskId: string, orgId: string): Promise<boolean>;
   getAssignedUserIds(taskId: string): Promise<string[]>;
-  getDependencies(taskId: string): Promise<{ id: string; title: string; status: any }[]>;
+  getDependencies(
+    taskId: string
+  ): Promise<{ id: string; title: string; status: any }[]>;
   getActiveTaskCountByUser(orgId: string): Promise<Record<string, number>>;
   getOrgWeeklyStats(orgId: string): Promise<{
     completedCount: number;
@@ -36,40 +58,17 @@ export class SupabaseTaskRepository implements ITaskRepository {
     return createAdminClient();
   }
 
-  async listTasks(orgId: string, filters: TaskFilterDTO): Promise<{ tasks: Task[]; total: number }> {
+  async listTasks(
+    orgId: string,
+    filters: TaskFilterDTO
+  ): Promise<{ tasks: Task[]; total: number }> {
     if (!this.hasSupabase()) {
-      const mockTasks: Task[] = [
-        {
-          id: "task-1",
-          orgId,
-          title: "Prepare quarterly compliance report",
-          description: "Compile Q3 compliance data and share with stakeholders.",
-          status: "pending",
-          priority: "high",
-          dueDate: new Date(Date.now() + 86400000).toISOString(),
-          createdBy: "22222222-2222-2222-2222-222222222222",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          assignees: [{ id: "22222222-2222-2222-2222-222222222222", fullName: "Demo Assignee" }],
-          dependencies: [],
-        },
-        {
-          id: "task-2",
-          orgId,
-          title: "Design team workflow dashboard",
-          description: "Update Figma and create Stitch tokens.",
-          status: "in_progress",
-          priority: "medium",
-          dueDate: new Date(Date.now() + 172800000).toISOString(),
-          createdBy: "22222222-2222-2222-2222-222222222222",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          assignees: [],
-          dependencies: [],
-        },
-      ];
-
-      return { tasks: mockTasks, total: mockTasks.length };
+      if (process.env.NODE_ENV === "production") {
+        throw new ValidationError(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return { tasks: [], total: 0 };
     }
 
     const supabase = this.getClient();
@@ -116,10 +115,14 @@ export class SupabaseTaskRepository implements ITaskRepository {
         .order("created_at", { ascending: false })
         .range(filters.offset, filters.offset + filters.limit - 1);
 
-      if (filters.status) fallbackQuery = fallbackQuery.eq("status", filters.status);
-      if (filters.priority) fallbackQuery = fallbackQuery.eq("priority", filters.priority);
-      if (filters.teamId) fallbackQuery = fallbackQuery.eq("team_id", filters.teamId);
-      if (filters.search) fallbackQuery = fallbackQuery.ilike("title", `%${filters.search}%`);
+      if (filters.status)
+        fallbackQuery = fallbackQuery.eq("status", filters.status);
+      if (filters.priority)
+        fallbackQuery = fallbackQuery.eq("priority", filters.priority);
+      if (filters.teamId)
+        fallbackQuery = fallbackQuery.eq("team_id", filters.teamId);
+      if (filters.search)
+        fallbackQuery = fallbackQuery.ilike("title", `%${filters.search}%`);
 
       const { data: fallbackData, error: fallbackError } = await fallbackQuery;
       if (fallbackError) {
@@ -132,9 +135,11 @@ export class SupabaseTaskRepository implements ITaskRepository {
           .range(filters.offset, filters.offset + filters.limit - 1);
 
         if (filters.status) rawQuery = rawQuery.eq("status", filters.status);
-        if (filters.priority) rawQuery = rawQuery.eq("priority", filters.priority);
+        if (filters.priority)
+          rawQuery = rawQuery.eq("priority", filters.priority);
         if (filters.teamId) rawQuery = rawQuery.eq("team_id", filters.teamId);
-        if (filters.search) rawQuery = rawQuery.ilike("title", `%${filters.search}%`);
+        if (filters.search)
+          rawQuery = rawQuery.ilike("title", `%${filters.search}%`);
         const { data: rawData, error: rawError } = await rawQuery;
         if (rawError) {
           console.warn("[listTasks raw fallback error]", rawError.message);
@@ -146,10 +151,14 @@ export class SupabaseTaskRepository implements ITaskRepository {
                 .eq("org_id", orgId)
                 .order("created_at", { ascending: false })
                 .range(filters.offset, filters.offset + filters.limit - 1);
-              if (filters.status) adminQuery = adminQuery.eq("status", filters.status);
-              if (filters.priority) adminQuery = adminQuery.eq("priority", filters.priority);
-              if (filters.teamId) adminQuery = adminQuery.eq("team_id", filters.teamId);
-              if (filters.search) adminQuery = adminQuery.ilike("title", `%${filters.search}%`);
+              if (filters.status)
+                adminQuery = adminQuery.eq("status", filters.status);
+              if (filters.priority)
+                adminQuery = adminQuery.eq("priority", filters.priority);
+              if (filters.teamId)
+                adminQuery = adminQuery.eq("team_id", filters.teamId);
+              if (filters.search)
+                adminQuery = adminQuery.ilike("title", `%${filters.search}%`);
               const { data: adminTasks } = await adminQuery;
               if (adminTasks && adminTasks.length > 0) {
                 rawTasks = adminTasks;
@@ -178,10 +187,14 @@ export class SupabaseTaskRepository implements ITaskRepository {
             .eq("org_id", orgId)
             .order("created_at", { ascending: false })
             .range(filters.offset, filters.offset + filters.limit - 1);
-          if (filters.status) adminQuery = adminQuery.eq("status", filters.status);
-          if (filters.priority) adminQuery = adminQuery.eq("priority", filters.priority);
-          if (filters.teamId) adminQuery = adminQuery.eq("team_id", filters.teamId);
-          if (filters.search) adminQuery = adminQuery.ilike("title", `%${filters.search}%`);
+          if (filters.status)
+            adminQuery = adminQuery.eq("status", filters.status);
+          if (filters.priority)
+            adminQuery = adminQuery.eq("priority", filters.priority);
+          if (filters.teamId)
+            adminQuery = adminQuery.eq("team_id", filters.teamId);
+          if (filters.search)
+            adminQuery = adminQuery.ilike("title", `%${filters.search}%`);
           const { data: adminTasks } = await adminQuery;
           if (adminTasks && adminTasks.length > 0) {
             rawTasks = adminTasks;
@@ -191,7 +204,10 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
 
     // Resilient independent assignee loading if join was not present or empty
-    if (rawTasks.length > 0 && (!rawTasks[0].task_assignees || rawTasks[0].task_assignees.length === 0)) {
+    if (
+      rawTasks.length > 0 &&
+      (!rawTasks[0].task_assignees || rawTasks[0].task_assignees.length === 0)
+    ) {
       try {
         const taskIds = rawTasks.map((t: any) => t.id);
         const { data: assigneesData } = await (supabase as any)
@@ -200,19 +216,27 @@ export class SupabaseTaskRepository implements ITaskRepository {
           .in("task_id", taskIds);
 
         if (assigneesData && assigneesData.length > 0) {
-          const userIds = Array.from(new Set(assigneesData.map((a: any) => a.user_id)));
+          const userIds = Array.from(
+            new Set(assigneesData.map((a: any) => a.user_id))
+          );
           const { data: profilesData } = await (supabase as any)
             .from("profiles")
             .select("id, full_name, avatar_url")
             .in("id", userIds);
 
-          const profileMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+          const profileMap = new Map(
+            (profilesData || []).map((p: any) => [p.id, p])
+          );
           const assigneesByTask = new Map<string, any[]>();
           for (const a of assigneesData) {
             const list = assigneesByTask.get(a.task_id) || [];
             list.push({
               user_id: a.user_id,
-              profiles: profileMap.get(a.user_id) || { id: a.user_id, full_name: "Member", avatar_url: null },
+              profiles: profileMap.get(a.user_id) || {
+                id: a.user_id,
+                full_name: "Member",
+                avatar_url: null,
+              },
             });
             assigneesByTask.set(a.task_id, list);
           }
@@ -227,8 +251,9 @@ export class SupabaseTaskRepository implements ITaskRepository {
       }
     }
 
-    // Auto-seed starter workspace tasks if organization has zero tasks on initial load
+    // Auto-seed starter workspace tasks if organization has zero tasks on initial load (non-production only)
     if (
+      process.env.NODE_ENV !== "production" &&
       (!rawTasks || rawTasks.length === 0) &&
       !filters.status &&
       !filters.priority &&
@@ -237,12 +262,15 @@ export class SupabaseTaskRepository implements ITaskRepository {
       !filters.assigneeId
     ) {
       try {
-        const { seedWorkspaceDataUseCase } = await import("../usecases/seedWorkspaceData");
+        const { seedWorkspaceDataUseCase } =
+          await import("../usecases/seedWorkspaceData");
         const seedResult = await seedWorkspaceDataUseCase(orgId);
         if (seedResult.success && seedResult.tasksCount > 0) {
           const { data: seededTasks } = await (supabase as any)
             .from("tasks")
-            .select("id, org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at")
+            .select(
+              "id, org_id, team_id, title, description, status, priority, due_date, created_by, created_at, updated_at"
+            )
             .eq("org_id", orgId)
             .order("created_at", { ascending: false });
           if (seededTasks && seededTasks.length > 0) {
@@ -278,7 +306,9 @@ export class SupabaseTaskRepository implements ITaskRepository {
         fullName: a.profiles?.full_name || "Assignee",
         avatarUrl: a.profiles?.avatar_url,
       })),
-      dependencyTaskIds: (t.task_dependencies || []).map((d: any) => d.depends_on_task_id),
+      dependencyTaskIds: (t.task_dependencies || []).map(
+        (d: any) => d.depends_on_task_id
+      ),
     }));
 
     return { tasks: mappedTasks, total: mappedTasks.length };
@@ -290,14 +320,20 @@ export class SupabaseTaskRepository implements ITaskRepository {
         id: taskId,
         orgId,
         title: "Demo Task Details",
-        description: "This is a detailed view of the requested task in demo mode.",
+        description:
+          "This is a detailed view of the requested task in demo mode.",
         status: "in_progress",
         priority: "medium",
         dueDate: new Date().toISOString(),
         createdBy: "22222222-2222-2222-2222-222222222222",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        assignees: [{ id: "22222222-2222-2222-2222-222222222222", fullName: "Demo Assignee" }],
+        assignees: [
+          {
+            id: "22222222-2222-2222-2222-222222222222",
+            fullName: "Demo Assignee",
+          },
+        ],
         dependencies: [],
         comments: [],
         attachments: [],
@@ -332,7 +368,9 @@ export class SupabaseTaskRepository implements ITaskRepository {
       .single();
 
     if (error) {
-      const { data: fallbackTask, error: fallbackError } = await (supabase as any)
+      const { data: fallbackTask, error: fallbackError } = await (
+        supabase as any
+      )
         .from("tasks")
         .select(
           `
@@ -383,7 +421,9 @@ export class SupabaseTaskRepository implements ITaskRepository {
         avatarUrl: a.profiles?.avatar_url,
       })),
       assigneeIds: (task.task_assignees || []).map((a: any) => a.user_id),
-      dependencyTaskIds: (task.task_dependencies || []).map((d: any) => d.depends_on_task_id),
+      dependencyTaskIds: (task.task_dependencies || []).map(
+        (d: any) => d.depends_on_task_id
+      ),
       comments: (task.task_comments || []).map((c: any) => ({
         id: c.id,
         taskId: task.id,
@@ -395,7 +435,11 @@ export class SupabaseTaskRepository implements ITaskRepository {
     };
   }
 
-  async createTask(orgId: string, creatorUserId: string, data: CreateTaskDTO): Promise<Task> {
+  async createTask(
+    orgId: string,
+    creatorUserId: string,
+    data: CreateTaskDTO
+  ): Promise<Task> {
     if (!this.hasSupabase()) {
       return {
         id: `task-${Date.now()}`,
@@ -486,7 +530,11 @@ export class SupabaseTaskRepository implements ITaskRepository {
     };
   }
 
-  async updateTask(taskId: string, orgId: string, updates: UpdateTaskDTO): Promise<Task> {
+  async updateTask(
+    taskId: string,
+    orgId: string,
+    updates: UpdateTaskDTO
+  ): Promise<Task> {
     if (!this.hasSupabase()) {
       return {
         id: taskId,
@@ -507,11 +555,15 @@ export class SupabaseTaskRepository implements ITaskRepository {
     };
 
     if (updates.title !== undefined) updatePayload.title = updates.title;
-    if (updates.description !== undefined) updatePayload.description = updates.description;
-    if (updates.priority !== undefined) updatePayload.priority = updates.priority;
+    if (updates.description !== undefined)
+      updatePayload.description = updates.description;
+    if (updates.priority !== undefined)
+      updatePayload.priority = updates.priority;
     if (updates.status !== undefined) updatePayload.status = updates.status;
     if (updates.dueDate !== undefined)
-      updatePayload.due_date = updates.dueDate ? new Date(updates.dueDate).toISOString() : null;
+      updatePayload.due_date = updates.dueDate
+        ? new Date(updates.dueDate).toISOString()
+        : null;
     if (updates.teamId !== undefined) updatePayload.team_id = updates.teamId;
 
     const { data: updatedTask, error } = await (adminClient as any)
@@ -527,15 +579,24 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
 
     if (updates.assigneeIds !== undefined) {
-      await (adminClient as any).from("task_assignees").delete().eq("task_id", taskId);
+      await (adminClient as any)
+        .from("task_assignees")
+        .delete()
+        .eq("task_id", taskId);
       if (updates.assigneeIds.length > 0) {
-        const rows = updates.assigneeIds.map((uId) => ({ task_id: taskId, user_id: uId }));
+        const rows = updates.assigneeIds.map((uId) => ({
+          task_id: taskId,
+          user_id: uId,
+        }));
         await (adminClient as any).from("task_assignees").insert(rows);
       }
     }
 
     if (updates.dependencyTaskIds !== undefined) {
-      await (adminClient as any).from("task_dependencies").delete().eq("task_id", taskId);
+      await (adminClient as any)
+        .from("task_dependencies")
+        .delete()
+        .eq("task_id", taskId);
       if (updates.dependencyTaskIds.length > 0) {
         const depRows = updates.dependencyTaskIds.map((depId) => ({
           task_id: taskId,
@@ -588,16 +649,20 @@ export class SupabaseTaskRepository implements ITaskRepository {
     return (assignments || []).map((a: any) => a.user_id);
   }
 
-  async getDependencies(taskId: string): Promise<{ id: string; title: string; status: any }[]> {
+  async getDependencies(
+    taskId: string
+  ): Promise<{ id: string; title: string; status: any }[]> {
     if (!this.hasSupabase()) return [];
 
     const supabase = this.getClient();
     const { data: deps } = await (supabase as any)
       .from("task_dependencies")
-      .select(`
+      .select(
+        `
         depends_on_task_id,
         tasks:depends_on_task_id (id, title, status)
-      `)
+      `
+      )
       .eq("task_id", taskId);
 
     return (deps || []).map((d: any) => ({
@@ -607,18 +672,24 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }));
   }
 
-  async getActiveTaskCountByUser(orgId: string): Promise<Record<string, number>> {
+  async getActiveTaskCountByUser(
+    orgId: string
+  ): Promise<Record<string, number>> {
     if (!this.hasSupabase()) return {};
 
     const supabase = this.getClient();
-    const { data: activeAssignments } = await (supabase.from("task_assignees") as any)
-      .select(`
+    const { data: activeAssignments } = await (
+      supabase.from("task_assignees") as any
+    )
+      .select(
+        `
         user_id,
         tasks!inner (
           status,
           org_id
         )
-      `)
+      `
+      )
       .eq("tasks.org_id", orgId)
       .in("tasks.status", ["pending", "in_progress", "in_review"]);
 
@@ -671,13 +742,17 @@ export class SupabaseTaskRepository implements ITaskRepository {
       ["pending", "in_progress", "in_review"].includes(t.status)
     ).length;
 
-    const { data: blockedDeps } = await (adminClient.from("task_dependencies") as any)
-      .select(`
+    const { data: blockedDeps } = await (
+      adminClient.from("task_dependencies") as any
+    )
+      .select(
+        `
         task_id,
         depends_on_task_id,
         tasks!task_dependencies_task_id_fkey (title, status, org_id),
         prereq:tasks!task_dependencies_depends_on_task_id_fkey (title, status)
-      `)
+      `
+      )
       .eq("tasks.org_id", orgId);
 
     const topBlockers = (blockedDeps || [])
@@ -698,7 +773,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
       completedCount,
       overdueCount,
       totalActive,
-      topBlockers: topBlockers.length > 0 ? topBlockers : ["No active blockers detected"],
+      topBlockers:
+        topBlockers.length > 0 ? topBlockers : ["No active blockers detected"],
       adminEmails,
     };
   }

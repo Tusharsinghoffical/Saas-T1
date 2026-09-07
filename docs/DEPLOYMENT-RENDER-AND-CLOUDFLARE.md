@@ -28,6 +28,7 @@ This guide walks you through deploying **TASQ-ONE** on **Render (Docker Web Serv
 ## Part 1: Deploying on Render (Docker Web Service)
 
 ### Method A: One-Click Blueprint Deployment (Recommended)
+
 1. Go to your [Render Dashboard](https://dashboard.render.com/).
 2. Click **New +** → **Blueprint**.
 3. Connect your GitHub repository: `https://github.com/Tusharsinghoffical/Saas-T1`.
@@ -38,7 +39,9 @@ This guide walks you through deploying **TASQ-ONE** on **Render (Docker Web Serv
 ---
 
 ### Method B: Manual Web Service Setup on Render
+
 If setting up manually without Blueprint:
+
 1. Click **New +** → **Web Service**.
 2. Connect repository: `https://github.com/Tusharsinghoffical/Saas-T1`.
 3. Configure settings:
@@ -59,30 +62,31 @@ If setting up manually without Blueprint:
 
 Set these under **Render Dashboard** → **Your Service** → **Environment**:
 
-| Variable | Sample / Value | Description |
-| :--- | :--- | :--- |
-| `NODE_ENV` | `production` | Production mode |
-| `PORT` | `3000` | Internal Next.js port |
-| `NEXT_PUBLIC_APP_URL` | `https://tasq-one.onrender.com` *(or your custom domain)* | Canonical public app URL |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://xyzcompany.supabase.co` | Supabase Cloud project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOi...` | Supabase Anon client key |
-| `SUPABASE_SERVICE_ROLE_KEY` | `eyJhbGciOi...` | Supabase backend service key |
-| `GROQ_API_KEY` | `gsk_...` | Groq Cloud AI API key |
-| `UPSTASH_REDIS_REST_URL` | `https://...upstash.io` | Upstash Redis REST URL |
-| `UPSTASH_REDIS_REST_TOKEN` | `A...` | Upstash Redis REST Token |
-| `CLOUDFLARE_R2_ACCESS_KEY_ID` | `r2_access_key` | Cloudflare R2 Access Key |
-| `CLOUDFLARE_R2_SECRET_ACCESS_KEY`| `r2_secret_key` | Cloudflare R2 Secret Key |
-| `CLOUDFLARE_R2_BUCKET` | `tasq-one-attachments` | R2 bucket name |
-| `CLOUDFLARE_R2_ENDPOINT` | `https://<accountid>.r2.cloudflarestorage.com` | R2 S3-compatible API endpoint |
-| `RESEND_API_KEY` | `re_...` | Resend email API key |
-| `CRON_SECRET` | `generate_random_secret_string` | Bearer token for AI weekly summary cron |
-| `NEXT_PUBLIC_ENABLE_BILLING` | `false` | Default `false` for Starter Pilot (₹0 Free) |
+| Variable                          | Sample / Value                                            | Description                                 |
+| :-------------------------------- | :-------------------------------------------------------- | :------------------------------------------ |
+| `NODE_ENV`                        | `production`                                              | Production mode                             |
+| `PORT`                            | `3000`                                                    | Internal Next.js port                       |
+| `NEXT_PUBLIC_APP_URL`             | `https://tasq-one.onrender.com` _(or your custom domain)_ | Canonical public app URL                    |
+| `NEXT_PUBLIC_SUPABASE_URL`        | `https://xyzcompany.supabase.co`                          | Supabase Cloud project URL                  |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`   | `eyJhbGciOi...`                                           | Supabase Anon client key                    |
+| `SUPABASE_SERVICE_ROLE_KEY`       | `eyJhbGciOi...`                                           | Supabase backend service key                |
+| `GROQ_API_KEY`                    | `gsk_...`                                                 | Groq Cloud AI API key                       |
+| `UPSTASH_REDIS_REST_URL`          | `https://...upstash.io`                                   | Upstash Redis REST URL                      |
+| `UPSTASH_REDIS_REST_TOKEN`        | `A...`                                                    | Upstash Redis REST Token                    |
+| `CLOUDFLARE_R2_ACCESS_KEY_ID`     | `r2_access_key`                                           | Cloudflare R2 Access Key                    |
+| `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | `r2_secret_key`                                           | Cloudflare R2 Secret Key                    |
+| `CLOUDFLARE_R2_BUCKET`            | `tasq-one-attachments`                                    | R2 bucket name                              |
+| `CLOUDFLARE_R2_ENDPOINT`          | `https://<accountid>.r2.cloudflarestorage.com`            | R2 S3-compatible API endpoint               |
+| `RESEND_API_KEY`                  | `re_...`                                                  | Resend email API key                        |
+| `CRON_SECRET`                     | `generate_random_secret_string`                           | Bearer token for AI weekly summary cron     |
+| `NEXT_PUBLIC_ENABLE_BILLING`      | `false`                                                   | Default `false` for Starter Pilot (₹0 Free) |
 
 ---
 
 ## Part 2: Cloudflare Setup (Custom Domain, DNS & SSL)
 
 ### Step 1: Add Custom Domain to Cloudflare
+
 1. Log in to [Cloudflare Dashboard](https://dash.cloudflare.com/).
 2. Add your domain (e.g., `tasqone.com`).
 3. Update your domain registrar's nameservers to the assigned Cloudflare nameservers.
@@ -90,6 +94,7 @@ Set these under **Render Dashboard** → **Your Service** → **Environment**:
 ---
 
 ### Step 2: Configure DNS Records to Point to Render
+
 1. In Cloudflare Dashboard, go to **DNS** → **Records**.
 2. Add the following records:
    - **Root Domain (`@`):**
@@ -106,6 +111,7 @@ Set these under **Render Dashboard** → **Your Service** → **Environment**:
 ---
 
 ### Step 3: Configure Cloudflare SSL / TLS Encryption
+
 1. In Cloudflare, go to **SSL/TLS** → **Overview**.
 2. Select **Full (strict)** or **Full** encryption mode.
 3. Under **SSL/TLS** → **Edge Certificates**:
@@ -116,6 +122,7 @@ Set these under **Render Dashboard** → **Your Service** → **Environment**:
 ---
 
 ### Step 4: Link Custom Domain in Render
+
 1. Go to **Render Dashboard** → **tasq-one** service → **Settings** → **Custom Domains**.
 2. Add your domain: `tasqone.com` and `www.tasqone.com`.
 3. Render will verify the CNAME record and activate TLS certificates automatically.
@@ -135,6 +142,7 @@ Set these under **Render Dashboard** → **Your Service** → **Environment**:
 ## Part 4: Verification & Health Checks
 
 Once deployed:
+
 1. **Container Health:** Visit `https://yourdomain.com/api/v1/health`  
    Expected JSON response:
    ```json
@@ -145,10 +153,11 @@ Once deployed:
    }
    ```
 2. **Landing Page:** Open `https://yourdomain.com` in your browser.
-3. **PWA Check:** Open Chrome DevTools → Application  → Manifest / Service Worker (status: Activated).
+3. **PWA Check:** Open Chrome DevTools → Application → Manifest / Service Worker (status: Activated).
 
 ---
 
 ## 📬 Need Help?
+
 - **Engineering Support Desk:** [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com)
 - **Repository Issues:** [https://github.com/Tusharsinghoffical/Saas-T1/issues](https://github.com/Tusharsinghoffical/Saas-T1/issues)

@@ -2,7 +2,7 @@
 
 Continues numbering from `08-DDS-MIGRATION-AND-VERIFICATION-PROMPTS.md`. Run this **after** Prompt 33 (Final Verification) comes back "READY FOR LAUNCH" — security audit should test a functionally-complete, DDS-structured codebase, not a half-built one.
 
-This is your original prompt, enhanced: generic SaaS categories kept, but every category is now tied to TASQ-ONE's *actual* stack (Supabase Auth + RLS, Upstash Redis, Next.js Edge, Groq, Cloudflare R2, Resend), your DDS folder layout, and multi-tenant-specific attack vectors that a generic checklist misses (tenant isolation, JWT claim tampering, AI prompt injection, presigned-URL abuse).
+This is your original prompt, enhanced: generic SaaS categories kept, but every category is now tied to TASQ-ONE's _actual_ stack (Supabase Auth + RLS, Upstash Redis, Next.js Edge, Groq, Cloudflare R2, Resend), your DDS folder layout, and multi-tenant-specific attack vectors that a generic checklist misses (tenant isolation, JWT claim tampering, AI prompt injection, presigned-URL abuse).
 
 ---
 
@@ -77,6 +77,7 @@ For EVERY item below: state PASS / FAIL / NOT-APPLICABLE, cite the exact file/li
 ---
 
 ## Notes
+
 - This prompt assumes Prompts 1–33 (build + DDS migration + verification) are done — it audits real code, not a spec.
 - Run this audit **again after every major feature addition** (Slack integration, Stripe billing, mobile app) — a security audit is a snapshot, not a one-time certificate.
 - If Prompt 34's report comes back with any Critical/High finding, treat it like Section B/C/D failures from Prompt 33 — fix before deploying, no exceptions, even under launch-date pressure.

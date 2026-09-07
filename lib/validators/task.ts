@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 export const taskPriorityEnum = z.enum(["low", "medium", "high", "urgent"]);
-export const taskStatusEnum = z.enum(["pending", "in_progress", "in_review", "completed"]);
+export const taskStatusEnum = z.enum([
+  "pending",
+  "in_progress",
+  "in_review",
+  "completed",
+]);
 
 export const createTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
@@ -47,5 +52,7 @@ export const taskFilterSchema = z.object({
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
-export type EmployeeStatusUpdateInput = z.infer<typeof employeeStatusUpdateSchema>;
+export type EmployeeStatusUpdateInput = z.infer<
+  typeof employeeStatusUpdateSchema
+>;
 export type TaskFilterInput = z.infer<typeof taskFilterSchema>;

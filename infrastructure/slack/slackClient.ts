@@ -65,11 +65,17 @@ export async function sendSlackNotification({
     });
 
     if (!res.ok) {
-      return { success: false, error: `Slack webhook responded with status ${res.status}` };
+      return {
+        success: false,
+        error: `Slack webhook responded with status ${res.status}`,
+      };
     }
 
     return { success: true };
   } catch (err: any) {
-    return { success: false, error: err.message || "Failed to send Slack webhook notification" };
+    return {
+      success: false,
+      error: err.message || "Failed to send Slack webhook notification",
+    };
   }
 }

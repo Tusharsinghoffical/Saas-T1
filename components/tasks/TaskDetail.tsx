@@ -94,27 +94,69 @@ function getPlatformInfo(url: string) {
     const host = parsed.hostname.toLowerCase();
 
     if (host.includes("drive.google.com") || host.includes("docs.google.com")) {
-      return { name: "Google Drive", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20", icon: Globe };
+      return {
+        name: "Google Drive",
+        color:
+          "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+        icon: Globe,
+      };
     }
     if (host.includes("figma.com")) {
-      return { name: "Figma", color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20", icon: Sparkles };
+      return {
+        name: "Figma",
+        color:
+          "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+        icon: Sparkles,
+      };
     }
     if (host.includes("github.com") || host.includes("gitlab.com")) {
-      return { name: "GitHub / Repo", color: "bg-slate-800 text-slate-200 border-slate-700", icon: FileCode };
+      return {
+        name: "GitHub / Repo",
+        color: "bg-slate-800 text-slate-200 border-slate-700",
+        icon: FileCode,
+      };
     }
     if (host.includes("notion.so") || host.includes("notion.site")) {
-      return { name: "Notion", color: "bg-stone-500/10 text-stone-600 dark:text-stone-300 border-stone-500/20", icon: FileText };
+      return {
+        name: "Notion",
+        color:
+          "bg-stone-500/10 text-stone-600 dark:text-stone-300 border-stone-500/20",
+        icon: FileText,
+      };
     }
-    if (host.includes("loom.com") || host.includes("youtube.com") || host.includes("vimeo.com")) {
-      return { name: "Video / Loom", color: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20", icon: Video };
+    if (
+      host.includes("loom.com") ||
+      host.includes("youtube.com") ||
+      host.includes("vimeo.com")
+    ) {
+      return {
+        name: "Video / Loom",
+        color:
+          "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
+        icon: Video,
+      };
     }
     if (host.includes("dropbox.com") || host.includes("box.com")) {
-      return { name: "Cloud Storage", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20", icon: Globe };
+      return {
+        name: "Cloud Storage",
+        color:
+          "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+        icon: Globe,
+      };
     }
 
-    return { name: host.replace(/^www\./, ""), color: "bg-primary/10 text-primary border-primary/20", icon: ExternalLink };
+    return {
+      name: host.replace(/^www\./, ""),
+      color: "bg-primary/10 text-primary border-primary/20",
+      icon: ExternalLink,
+    };
   } catch {
-    return { name: "Web Resource", color: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700", icon: Link2 };
+    return {
+      name: "Web Resource",
+      color:
+        "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700",
+      icon: Link2,
+    };
   }
 }
 
@@ -124,8 +166,18 @@ export function TaskDetail({
   task,
   orgMembers = [
     { id: "mem-1", fullName: "Jane Doe", full_name: "Jane Doe", role: "admin" },
-    { id: "mem-2", fullName: "Alex Smith", full_name: "Alex Smith", role: "manager" },
-    { id: "mem-3", fullName: "Rohan Patel", full_name: "Rohan Patel", role: "employee" },
+    {
+      id: "mem-2",
+      fullName: "Alex Smith",
+      full_name: "Alex Smith",
+      role: "manager",
+    },
+    {
+      id: "mem-3",
+      fullName: "Rohan Patel",
+      full_name: "Rohan Patel",
+      role: "employee",
+    },
   ],
   allTasks = [],
   onTaskUpdated,
@@ -140,7 +192,9 @@ export function TaskDetail({
   const [linkUrl, setLinkUrl] = useState("");
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const [copiedAttachmentId, setCopiedAttachmentId] = useState<string | null>(null);
+  const [copiedAttachmentId, setCopiedAttachmentId] = useState<string | null>(
+    null
+  );
   const [copiedTaskShare, setCopiedTaskShare] = useState(false);
 
   // @mention autocomplete state
@@ -149,7 +203,9 @@ export function TaskDetail({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Subtasks local state
-  const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
+  const [subtasks, setSubtasks] = useState<
+    { id: string; title: string; completed: boolean }[]
+  >([]);
 
   const fetchComments = useCallback(async () => {
     if (!task) return;
@@ -188,7 +244,8 @@ export function TaskDetail({
 
     // Realtime channel for task comments & attachments
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
+    const hasSupabase =
+      Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
     if (!hasSupabase) return;
 
     let channel: any = null;
@@ -273,7 +330,9 @@ export function TaskDetail({
     if (mentionIndex === -1) return;
     const memberName = member.fullName || member.full_name || "teammate";
     const before = newComment.slice(0, mentionIndex);
-    const after = newComment.slice(textareaRef.current?.selectionStart || mentionIndex);
+    const after = newComment.slice(
+      textareaRef.current?.selectionStart || mentionIndex
+    );
     const updated = `${before}@${memberName} ${after}`;
     setNewComment(updated);
     setMentionQuery(null);
@@ -302,7 +361,11 @@ export function TaskDetail({
         setNewComment("");
         fetchComments();
       } else {
-        alert(json.error || json.message || "Failed to post comment. Please try again.");
+        alert(
+          json.error ||
+            json.message ||
+            "Failed to post comment. Please try again."
+        );
       }
     } catch {
       alert("Network error posting comment. Please try again.");
@@ -330,7 +393,9 @@ export function TaskDetail({
     if (!title) {
       try {
         const u = new URL(cleanUrl);
-        title = u.hostname.replace(/^www\./, "") + (u.pathname !== "/" ? u.pathname : "");
+        title =
+          u.hostname.replace(/^www\./, "") +
+          (u.pathname !== "/" ? u.pathname : "");
       } catch {
         title = "Attached Resource Link";
       }
@@ -357,7 +422,9 @@ export function TaskDetail({
         setLinkUrl("");
         await fetchAttachments();
       } else {
-        setLinkError(json.error || "Failed to save link to workspace database.");
+        setLinkError(
+          json.error || "Failed to save link to workspace database."
+        );
       }
     } catch {
       setLinkError("Network error: Could not save link.");
@@ -454,31 +521,33 @@ export function TaskDetail({
       <div className="space-y-6">
         {/* Blocked Warning Banner */}
         {isBlocked && (
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-300">
-            <Lock className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3.5 text-xs text-amber-800 dark:text-amber-300">
+            <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
             <div>
               <div className="font-bold text-amber-900 dark:text-amber-200">
                 This task is currently BLOCKED
               </div>
               <p className="mt-0.5 text-amber-700 dark:text-amber-400">
-                It cannot be moved to &quot;In Progress&quot; or &quot;Completed&quot; until all prerequisite dependencies are Completed.
+                It cannot be moved to &quot;In Progress&quot; or
+                &quot;Completed&quot; until all prerequisite dependencies are
+                Completed.
               </p>
             </div>
           </div>
         )}
 
         {/* Task Badges & Meta Info */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant={priorityVariants[task.priority] || "default"}>
               {task.priority.toUpperCase()}
             </Badge>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary uppercase">
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold uppercase text-primary">
               {task.status.replace("_", " ")}
             </span>
             {dueDateStr && (
-              <span className="text-xs text-slate-500 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
+              <span className="flex items-center gap-1 text-xs text-slate-500">
+                <Clock className="h-3.5 w-3.5" />
                 Due: {new Date(dueDateStr).toLocaleDateString()}
               </span>
             )}
@@ -488,20 +557,24 @@ export function TaskDetail({
           <button
             type="button"
             onClick={copyTaskShareLink}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary transition border border-slate-200 dark:border-slate-700"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:text-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             title="Copy Direct Task URL Link"
           >
-            {copiedTaskShare ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+            {copiedTaskShare ? (
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <Share2 className="h-3.5 w-3.5" />
+            )}
             <span>{copiedTaskShare ? "Task Link Copied!" : "Share Task"}</span>
           </button>
         </div>
 
         {/* Task Description */}
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+          <h4 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
             Description
           </h4>
-          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+          <div className="dark:bg-slate-850 whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs leading-relaxed text-slate-800 dark:border-slate-800 dark:text-slate-200">
             {task.description || "No description provided."}
           </div>
         </div>
@@ -509,8 +582,8 @@ export function TaskDetail({
         {/* Task Dependencies & Blocking Relationships */}
         {(resolvedDependencies.length > 0 || dependentTasks.length > 0) && (
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Link2 className="w-3.5 h-3.5 text-amber-500" />
+            <h4 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+              <Link2 className="h-3.5 w-3.5 text-amber-500" />
               Dependencies & Blocker Flow
             </h4>
 
@@ -523,13 +596,13 @@ export function TaskDetail({
                 {resolvedDependencies.map((dep) => (
                   <div
                     key={dep.id}
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs"
+                    className="dark:bg-slate-850 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs dark:border-slate-800"
                   >
                     <div className="flex items-center gap-2">
                       {dep.status === "completed" ? (
-                        <CheckCircle2 className="w-4 h-4 text-success" />
+                        <CheckCircle2 className="h-4 w-4 text-success" />
                       ) : (
-                        <Lock className="w-4 h-4 text-amber-500" />
+                        <Lock className="h-4 w-4 text-amber-500" />
                       )}
                       <span
                         className={`font-semibold ${
@@ -543,7 +616,7 @@ export function TaskDetail({
                     </div>
 
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                      className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${
                         dep.status === "completed"
                           ? "bg-success/15 text-success"
                           : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
@@ -565,7 +638,7 @@ export function TaskDetail({
                 {dependentTasks.map((waiting) => (
                   <div
                     key={waiting.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300"
+                    className="dark:bg-slate-850 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700 dark:border-slate-800 dark:text-slate-300"
                   >
                     <span>{waiting.title}</span>
                     <span className="text-[10px] text-slate-400">Waiting</span>
@@ -579,8 +652,8 @@ export function TaskDetail({
         {/* Checklist / Subtasks */}
         {subtasks.length > 0 && (
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
-              <CheckSquare className="w-3.5 h-3.5 text-primary" />
+            <h4 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+              <CheckSquare className="h-3.5 w-3.5 text-primary" />
               Subtasks Checklist
             </h4>
             <div className="space-y-1.5">
@@ -588,19 +661,19 @@ export function TaskDetail({
                 <div
                   key={st.id}
                   onClick={() => handleToggleSubtask(st.id)}
-                  className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs select-none"
+                  className="dark:bg-slate-850 flex cursor-pointer select-none items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs transition hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800"
                 >
                   <input
                     type="checkbox"
                     checked={st.completed}
                     onChange={() => {}}
-                    className="rounded border-slate-300 text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                    className="h-4 w-4 cursor-pointer rounded border-slate-300 text-primary focus:ring-primary"
                   />
                   <span
                     className={`${
                       st.completed
-                        ? "line-through text-slate-400 dark:text-slate-500"
-                        : "text-slate-800 dark:text-slate-200 font-medium"
+                        ? "text-slate-400 line-through dark:text-slate-500"
+                        : "font-medium text-slate-800 dark:text-slate-200"
                     }`}
                   >
                     {st.title}
@@ -613,9 +686,9 @@ export function TaskDetail({
 
         {/* ── 🔗 File URLs & Resource Links Section ── */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Link2 className="w-3.5 h-3.5 text-primary" />
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+              <Link2 className="h-3.5 w-3.5 text-primary" />
               Attached File URLs & Links ({attachments.length})
             </h4>
             <span className="text-[11px] text-slate-400">
@@ -626,37 +699,37 @@ export function TaskDetail({
           {/* Form to Add / Share File URL */}
           <form
             onSubmit={handleAddResourceLink}
-            className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850/70 border border-slate-200 dark:border-slate-800 space-y-2.5"
+            className="dark:bg-slate-850/70 space-y-2.5 rounded-2xl border border-slate-200 bg-slate-50 p-3.5 dark:border-slate-800"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
               <div className="sm:col-span-5">
                 <input
                   type="text"
                   placeholder="Link Title (e.g. Figma Design, Drive Doc)"
                   value={linkTitle}
                   onChange={(e) => setLinkTitle(e.target.value)}
-                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
 
-              <div className="sm:col-span-7 flex gap-2">
+              <div className="flex gap-2 sm:col-span-7">
                 <input
                   type="text"
                   placeholder="Paste File URL (https://drive.google.com/...)"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
-                  className="flex-1 text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
                 <Button
                   type="submit"
                   size="sm"
                   disabled={!linkUrl.trim() || isAddingLink}
-                  className="gap-1 px-3 whitespace-nowrap text-xs font-bold h-auto py-2 rounded-xl"
+                  className="h-auto gap-1 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold"
                 >
                   {isAddingLink ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="h-3.5 w-3.5" />
                   )}
                   <span>Attach URL</span>
                 </Button>
@@ -664,8 +737,8 @@ export function TaskDetail({
             </div>
 
             {linkError && (
-              <div className="text-[11px] text-rose-500 flex items-center gap-1 font-medium">
-                <AlertCircle className="w-3 h-3" />
+              <div className="flex items-center gap-1 text-[11px] font-medium text-rose-500">
+                <AlertCircle className="h-3 w-3" />
                 <span>{linkError}</span>
               </div>
             )}
@@ -683,57 +756,63 @@ export function TaskDetail({
               return (
                 <div
                   key={att.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs shadow-sm hover:border-primary/40 transition group"
+                  className="group flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-sm transition hover:border-primary/40 dark:border-slate-800 dark:bg-slate-900"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-slate-600 dark:text-slate-400">
-                      <PlatformIcon className="w-4 h-4" />
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                      <PlatformIcon className="h-4 w-4" />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-slate-900 dark:text-white truncate">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate font-bold text-slate-900 dark:text-white">
                           {fileName}
                         </span>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${platform.color}`}>
+                        <span
+                          className={`py-0.2 rounded border px-1.5 text-[10px] font-bold ${platform.color}`}
+                        >
                           {platform.name}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5 font-mono">
+                      <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400">
                         {fileUrl}
                       </p>
                     </div>
                   </div>
 
                   {/* Actions: Copy Link + Open in New Tab + Delete */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex flex-shrink-0 items-center gap-1">
                     <button
                       type="button"
                       onClick={() => copyAttachmentUrl(att.id, fileUrl)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                      className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                       title="Copy URL"
                     >
-                      {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      {isCopied ? (
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
                     </button>
 
                     <a
                       href={fileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg font-bold text-xs bg-primary/10 text-primary hover:bg-primary hover:text-white transition"
+                      className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-bold text-primary transition hover:bg-primary hover:text-white"
                       title="Open URL in new tab"
                     >
                       <span>Open Link</span>
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="h-3 w-3" />
                     </a>
 
                     <button
                       type="button"
                       onClick={() => handleDeleteLink(att.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition opacity-0 group-hover:opacity-100"
+                      className="rounded-lg p-1.5 text-slate-400 opacity-0 transition hover:bg-rose-50 hover:text-rose-500 group-hover:opacity-100 dark:hover:bg-rose-950/40"
                       title="Remove Link"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
@@ -741,8 +820,9 @@ export function TaskDetail({
             })}
 
             {attachments.length === 0 && (
-              <div className="py-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">
-                No file URLs or links attached yet. Use the form above to attach resources!
+              <div className="rounded-xl border border-dashed border-slate-200 py-4 text-center text-xs text-slate-400 dark:border-slate-800">
+                No file URLs or links attached yet. Use the form above to attach
+                resources!
               </div>
             )}
           </div>
@@ -750,12 +830,12 @@ export function TaskDetail({
 
         {/* Comment Thread & @mention Input */}
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+          <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
             Activity & Comments ({comments.length})
           </h4>
 
           {/* Comments List */}
-          <div className="space-y-3 mb-4 max-h-56 overflow-y-auto pr-1">
+          <div className="mb-4 max-h-56 space-y-3 overflow-y-auto pr-1">
             {comments.map((com) => {
               const authorName =
                 com.profiles?.full_name ||
@@ -763,17 +843,18 @@ export function TaskDetail({
                 com.author?.full_name ||
                 com.author?.fullName ||
                 "Team Member";
-              const commentDate = com.created_at || com.createdAt || new Date().toISOString();
+              const commentDate =
+                com.created_at || com.createdAt || new Date().toISOString();
               const commentBody = com.content || com.body || "";
 
               return (
                 <div
                   key={com.id}
-                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-1 text-xs"
+                  className="dark:bg-slate-850 space-y-1 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-bold text-primary">
                         {authorName.slice(0, 1).toUpperCase()}
                       </div>
                       <span className="font-bold text-slate-900 dark:text-white">
@@ -788,7 +869,7 @@ export function TaskDetail({
                     </span>
                   </div>
 
-                  <p className="text-slate-700 dark:text-slate-300 pl-7 leading-relaxed">
+                  <p className="pl-7 leading-relaxed text-slate-700 dark:text-slate-300">
                     {commentBody}
                   </p>
                 </div>
@@ -796,7 +877,7 @@ export function TaskDetail({
             })}
 
             {comments.length === 0 && (
-              <div className="text-center py-4 text-xs text-slate-400">
+              <div className="py-4 text-center text-xs text-slate-400">
                 No comments yet. Start the discussion below!
               </div>
             )}
@@ -806,8 +887,8 @@ export function TaskDetail({
           <form onSubmit={handleAddComment} className="relative">
             {/* Mention Suggestions Popup */}
             {filteredMembers.length > 0 && (
-              <div className="absolute bottom-full mb-1 left-0 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-20 overflow-hidden">
-                <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-700">
+              <div className="absolute bottom-full left-0 z-20 mb-1 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800">
+                <div className="dark:bg-slate-850 border-b border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-700">
                   Mention Teammate
                 </div>
                 {filteredMembers.map((m) => {
@@ -817,9 +898,9 @@ export function TaskDetail({
                       key={m.id}
                       type="button"
                       onClick={() => handleSelectMention(m)}
-                      className="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 hover:text-primary flex items-center gap-2 transition"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition hover:bg-primary/10 hover:text-primary"
                     >
-                      <div className="w-4 h-4 rounded-full bg-primary/20 text-primary text-[9px] flex items-center justify-center font-bold">
+                      <div className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
                         {mName.slice(0, 1)}
                       </div>
                       <span className="font-semibold">{mName}</span>
@@ -836,18 +917,18 @@ export function TaskDetail({
                 onChange={handleCommentChange}
                 placeholder="Write a comment... (Type @ to mention teammates)"
                 rows={2}
-                className="flex-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-2.5 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary transition resize-none"
+                className="flex-1 resize-none rounded-xl border border-slate-300 bg-white p-2.5 text-xs text-slate-900 transition placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               />
               <Button
                 type="submit"
                 size="sm"
                 disabled={!newComment.trim() || isSubmittingComment}
-                className="h-10 px-3.5 gap-1.5 font-bold"
+                className="h-10 gap-1.5 px-3.5 font-bold"
               >
                 {isSubmittingComment ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="w-3.5 h-3.5" />
+                  <Send className="h-3.5 w-3.5" />
                 )}
                 <span>Send</span>
               </Button>

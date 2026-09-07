@@ -8,11 +8,18 @@ export type MemberRole = "admin" | "manager" | "employee" | string;
 /**
  * Returns a standardized, human-readable Member Code (e.g., EMP-835DCB, MGR-4F2A19, ADM-9E1102)
  */
-export function formatMemberCode(id: string | null | undefined, role?: MemberRole): string {
+export function formatMemberCode(
+  id: string | null | undefined,
+  role?: MemberRole
+): string {
   if (!id) return "EMP-000000";
   const cleanRole = (role || "").toLowerCase();
-  const prefix = cleanRole === "admin" ? "ADM" : cleanRole === "manager" ? "MGR" : "EMP";
-  const hex = id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
+  const prefix =
+    cleanRole === "admin" ? "ADM" : cleanRole === "manager" ? "MGR" : "EMP";
+  const hex = id
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 6)
+    .toUpperCase();
   return `${prefix}-${hex.padEnd(6, "0")}`;
 }
 
@@ -71,7 +78,10 @@ export function matchesMemberSearch(
   }
 
   // 6. Check Formatted Member Code (e.g. EMP-835DCB, MGR-XXXXXX)
-  const memberCode = formatMemberCode(member.id, member.role || "employee").toLowerCase();
+  const memberCode = formatMemberCode(
+    member.id,
+    member.role || "employee"
+  ).toLowerCase();
   if (memberCode.includes(rawQuery)) {
     return true;
   }

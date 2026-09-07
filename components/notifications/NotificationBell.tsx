@@ -17,7 +17,12 @@ import { captureEvent } from "@/lib/analytics/posthog";
 export interface NotificationItem {
   id: string;
   user_id: string;
-  type: "task.assigned" | "task.mentioned" | "task.due_soon" | "task.overdue" | string;
+  type:
+    | "task.assigned"
+    | "task.mentioned"
+    | "task.due_soon"
+    | "task.overdue"
+    | string;
   payload?: {
     task_id?: string;
     task_title?: string;
@@ -41,7 +46,9 @@ export function NotificationBell({ userId }: { userId?: string }) {
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setNotifications(json.data);
-        const unread = json.data.filter((n: NotificationItem) => !n.read_at).length;
+        const unread = json.data.filter(
+          (n: NotificationItem) => !n.read_at
+        ).length;
         setUnreadCount(unread);
       }
     } catch {
@@ -101,7 +108,10 @@ export function NotificationBell({ userId }: { userId?: string }) {
   // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -144,15 +154,15 @@ export function NotificationBell({ userId }: { userId?: string }) {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "task.assigned":
-        return <UserPlus className="w-3.5 h-3.5 text-primary" />;
+        return <UserPlus className="h-3.5 w-3.5 text-primary" />;
       case "task.mentioned":
-        return <AtSign className="w-3.5 h-3.5 text-amber-500" />;
+        return <AtSign className="h-3.5 w-3.5 text-amber-500" />;
       case "task.due_soon":
-        return <Clock className="w-3.5 h-3.5 text-blue-500" />;
+        return <Clock className="h-3.5 w-3.5 text-blue-500" />;
       case "task.overdue":
-        return <AlertTriangle className="w-3.5 h-3.5 text-urgent" />;
+        return <AlertTriangle className="h-3.5 w-3.5 text-urgent" />;
       default:
-        return <Bell className="w-3.5 h-3.5 text-slate-400" />;
+        return <Bell className="h-3.5 w-3.5 text-slate-400" />;
     }
   };
 
@@ -173,12 +183,12 @@ export function NotificationBell({ userId }: { userId?: string }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+        className="relative rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
         aria-label="Notifications"
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-urgent text-[9px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
+          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-urgent px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -186,15 +196,15 @@ export function NotificationBell({ userId }: { userId?: string }) {
 
       {/* Dropdown Card */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-hidden animate-fade-in">
+        <div className="animate-fade-in absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:w-96">
           {/* Header */}
-          <div className="flex items-center justify-between p-3.5 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between border-b border-slate-100 p-3.5 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
                 Notifications
               </h4>
               {unreadCount > 0 && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                   {unreadCount} new
                 </span>
               )}
@@ -204,16 +214,16 @@ export function NotificationBell({ userId }: { userId?: string }) {
               <button
                 type="button"
                 onClick={() => handleMarkAsRead("all")}
-                className="text-[11px] font-semibold text-primary hover:text-primary-700 flex items-center gap-1"
+                className="flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-700"
               >
-                <Check className="w-3 h-3" />
+                <Check className="h-3 w-3" />
                 Mark all read
               </button>
             )}
           </div>
 
           {/* List */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-slate-800">
             {notifications.map((notif) => {
               const isUnread = !notif.read_at;
               return (
@@ -227,17 +237,17 @@ export function NotificationBell({ userId }: { userId?: string }) {
                     });
                     if (isUnread) handleMarkAsRead(notif.id);
                   }}
-                  className={`p-3.5 flex items-start gap-3 transition cursor-pointer text-xs ${
+                  className={`flex cursor-pointer items-start gap-3 p-3.5 text-xs transition ${
                     isUnread
-                      ? "bg-primary/[0.03] dark:bg-primary/[0.06] hover:bg-slate-50 dark:hover:bg-slate-850"
-                      : "hover:bg-slate-50 dark:hover:bg-slate-850 opacity-75 hover:opacity-100"
+                      ? "dark:hover:bg-slate-850 bg-primary/[0.03] hover:bg-slate-50 dark:bg-primary/[0.06]"
+                      : "dark:hover:bg-slate-850 opacity-75 hover:bg-slate-50 hover:opacity-100"
                   }`}
                 >
-                  <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 flex-shrink-0 mt-0.5">
+                  <div className="mt-0.5 flex-shrink-0 rounded-xl bg-slate-100 p-2 dark:bg-slate-800">
                     {getNotificationIcon(notif.type)}
                   </div>
 
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p
                       className={`leading-snug ${
                         isUnread
@@ -259,7 +269,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
                   </div>
 
                   {isUnread && (
-                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                    <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
                   )}
                 </div>
               );
@@ -267,7 +277,7 @@ export function NotificationBell({ userId }: { userId?: string }) {
 
             {notifications.length === 0 && (
               <div className="p-8 text-center text-xs text-slate-400">
-                <CheckCircle2 className="w-6 h-6 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+                <CheckCircle2 className="mx-auto mb-2 h-6 w-6 text-slate-300 dark:text-slate-600" />
                 No notifications right now. You&apos;re all caught up!
               </div>
             )}

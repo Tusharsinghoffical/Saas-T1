@@ -1,4 +1,7 @@
-import { createAdminClient, createClient } from "@/infrastructure/supabase/supabaseServer";
+import {
+  createAdminClient,
+  createClient,
+} from "@/infrastructure/supabase/supabaseServer";
 
 export interface SeedTaskResult {
   success: boolean;
@@ -14,6 +17,16 @@ export async function seedWorkspaceDataUseCase(
   orgId: string,
   actorId?: string | null
 ): Promise<SeedTaskResult> {
+  // STRICT AUDIT GUARD: Demo seed generators must NEVER execute in production
+  if (process.env.NODE_ENV === "production") {
+    return {
+      success: false,
+      tasksCount: 0,
+      message:
+        "Seeding workspace sample data is disabled in production environments.",
+    };
+  }
+
   if (!orgId) {
     return { success: false, tasksCount: 0, message: "Missing orgId" };
   }
@@ -76,7 +89,8 @@ export async function seedWorkspaceDataUseCase(
       org_id: orgId,
       team_id: defaultTeamId,
       title: "Initialize TASQ-ONE Work OS Workspace",
-      description: "Welcome to your organization portal. Configure your profile, notification channels, and workspace preferences.",
+      description:
+        "Welcome to your organization portal. Configure your profile, notification channels, and workspace preferences.",
       status: "completed",
       priority: "low",
       due_date: new Date(now - dayMs * 1).toISOString(),
@@ -88,7 +102,8 @@ export async function seedWorkspaceDataUseCase(
       org_id: orgId,
       team_id: defaultTeamId,
       title: "Review Sprint Milestones & Task Delegation",
-      description: "Organize pending backlog items, estimate delivery velocity, and align priorities with team managers.",
+      description:
+        "Organize pending backlog items, estimate delivery velocity, and align priorities with team managers.",
       status: "in_progress",
       priority: "high",
       due_date: new Date(now + dayMs * 2).toISOString(),
@@ -100,7 +115,8 @@ export async function seedWorkspaceDataUseCase(
       org_id: orgId,
       team_id: defaultTeamId,
       title: "Connect Repository URLs & Project Roadmaps",
-      description: "Link GitHub repositories, PRs, and architectural design docs directly in task detail views.",
+      description:
+        "Link GitHub repositories, PRs, and architectural design docs directly in task detail views.",
       status: "in_progress",
       priority: "urgent",
       due_date: new Date(now + dayMs * 1).toISOString(),
@@ -112,7 +128,8 @@ export async function seedWorkspaceDataUseCase(
       org_id: orgId,
       team_id: defaultTeamId,
       title: "Verify Workspace Security & Member Access",
-      description: "Audit role hierarchy (Admin, Manager, Employee) and review multi-tenant row-level access controls.",
+      description:
+        "Audit role hierarchy (Admin, Manager, Employee) and review multi-tenant row-level access controls.",
       status: "in_review",
       priority: "medium",
       due_date: new Date(now + dayMs * 3).toISOString(),
@@ -124,7 +141,8 @@ export async function seedWorkspaceDataUseCase(
       org_id: orgId,
       team_id: defaultTeamId,
       title: "Invite Team Members & Set Department Roles",
-      description: "Send invite magic links to managers and teammates to start collaborative real-time Kanban tracking.",
+      description:
+        "Send invite magic links to managers and teammates to start collaborative real-time Kanban tracking.",
       status: "pending",
       priority: "high",
       due_date: new Date(now + dayMs * 5).toISOString(),
@@ -136,7 +154,8 @@ export async function seedWorkspaceDataUseCase(
       org_id: orgId,
       team_id: defaultTeamId,
       title: "Test AI Workload Balancing & Smart Enhancer",
-      description: "Try generating AI task descriptions and smart assignee recommendations powered by Groq Llama 3.",
+      description:
+        "Try generating AI task descriptions and smart assignee recommendations powered by Groq Llama 3.",
       status: "pending",
       priority: "medium",
       due_date: new Date(now + dayMs * 7).toISOString(),
@@ -147,12 +166,17 @@ export async function seedWorkspaceDataUseCase(
   ];
 
   try {
-    const { data: insertedTasks, error: insertError } = await (client.from("tasks") as any)
+    const { data: insertedTasks, error: insertError } = await (
+      client.from("tasks") as any
+    )
       .insert(starterTasks)
       .select("id, title, status");
 
     if (insertError) {
-      console.error("[seedWorkspaceData] Task insertion error:", insertError.message);
+      console.error(
+        "[seedWorkspaceData] Task insertion error:",
+        insertError.message
+      );
       return { success: false, tasksCount: 0, message: insertError.message };
     }
 
@@ -177,6 +201,10 @@ export async function seedWorkspaceDataUseCase(
     };
   } catch (err: any) {
     console.error("[seedWorkspaceData] Fatal error:", err);
-    return { success: false, tasksCount: 0, message: err?.message || "Failed to seed tasks" };
+    return {
+      success: false,
+      tasksCount: 0,
+      message: err?.message || "Failed to seed tasks",
+    };
   }
 }

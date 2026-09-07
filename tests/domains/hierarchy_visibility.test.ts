@@ -7,7 +7,10 @@ import { IDashboardRepository } from "@/domains/tasks/repository/dashboardReposi
 import { IUserRepository } from "@/domains/users/repository/userRepository";
 import { RequestContext } from "@/shared/types/context";
 import { ForbiddenError } from "@/shared/errors/domainErrors";
-import { invalidateOrgDashboardCache, redisGet } from "@/infrastructure/redis/redisClient";
+import {
+  invalidateOrgDashboardCache,
+  redisGet,
+} from "@/infrastructure/redis/redisClient";
 
 describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
   const adminContext: RequestContext = {
@@ -35,9 +38,27 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
   const mockDashboardRepo: IDashboardRepository = {
     getAdminDashboardTasks: async (orgId, teamId) => {
       const allTasks = [
-        { id: "t1", status: "in_progress", priority: "high", due_date: new Date(Date.now() + 86400000).toISOString(), team_id: "team-eng" },
-        { id: "t2", status: "completed", priority: "medium", due_date: new Date(Date.now() - 86400000).toISOString(), team_id: "team-eng" },
-        { id: "t3", status: "pending", priority: "low", due_date: new Date(Date.now() + 172800000).toISOString(), team_id: "team-mkt" },
+        {
+          id: "t1",
+          status: "in_progress",
+          priority: "high",
+          due_date: new Date(Date.now() + 86400000).toISOString(),
+          team_id: "team-eng",
+        },
+        {
+          id: "t2",
+          status: "completed",
+          priority: "medium",
+          due_date: new Date(Date.now() - 86400000).toISOString(),
+          team_id: "team-eng",
+        },
+        {
+          id: "t3",
+          status: "pending",
+          priority: "low",
+          due_date: new Date(Date.now() + 172800000).toISOString(),
+          team_id: "team-mkt",
+        },
       ];
       if (teamId) return allTasks.filter((t) => t.team_id === teamId);
       return allTasks;
@@ -46,17 +67,34 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
       // mgr-1 manages team-eng
       if (managerUserId === "mgr-1") {
         if (teamId && teamId !== "team-eng") {
-          throw new Error("Manager cannot access data outside their assigned team scope.");
+          throw new Error(
+            "Manager cannot access data outside their assigned team scope."
+          );
         }
         return [
-          { id: "t1", status: "in_progress", priority: "high", due_date: new Date(Date.now() + 86400000).toISOString(), team_id: "team-eng" },
-          { id: "t2", status: "completed", priority: "medium", due_date: new Date(Date.now() - 86400000).toISOString(), team_id: "team-eng" },
+          {
+            id: "t1",
+            status: "in_progress",
+            priority: "high",
+            due_date: new Date(Date.now() + 86400000).toISOString(),
+            team_id: "team-eng",
+          },
+          {
+            id: "t2",
+            status: "completed",
+            priority: "medium",
+            due_date: new Date(Date.now() - 86400000).toISOString(),
+            team_id: "team-eng",
+          },
         ];
       }
       return [];
     },
     getEmployeeTasks: async () => [],
-    getStatusCounts: async (orgId?: string, teamId?: string | null): Promise<Record<string, number>> => {
+    getStatusCounts: async (
+      orgId?: string,
+      teamId?: string | null
+    ): Promise<Record<string, number>> => {
       if (teamId === "team-eng") return { in_progress: 1, completed: 1 };
       if (teamId === "team-mkt") return { pending: 1 };
       return { in_progress: 1, completed: 1, pending: 1 };
@@ -67,20 +105,63 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
   const mockUserRepo: IUserRepository = {
     getProfileById: async (userId) => {
       if (userId === "mgr-1") {
-        return { id: "mgr-1", orgId: "org-100", fullName: "Eng Manager", role: "manager", teamId: "team-eng", teamName: "Engineering" };
+        return {
+          id: "mgr-1",
+          orgId: "org-100",
+          fullName: "Eng Manager",
+          role: "manager",
+          teamId: "team-eng",
+          teamName: "Engineering",
+        };
       }
       return null;
     },
     listOrgMembers: async (orgId) => [
-      { id: "admin-1", orgId, fullName: "Admin User", role: "admin", teamId: "team-lead", teamName: "Leadership" },
-      { id: "mgr-1", orgId, fullName: "Eng Manager", role: "manager", teamId: "team-eng", teamName: "Engineering" },
-      { id: "emp-1", orgId, fullName: "Eng Dev", role: "employee", teamId: "team-eng", teamName: "Engineering" },
-      { id: "emp-2", orgId, fullName: "Marketing Specialist", role: "employee", teamId: "team-mkt", teamName: "Marketing" },
+      {
+        id: "admin-1",
+        orgId,
+        fullName: "Admin User",
+        role: "admin",
+        teamId: "team-lead",
+        teamName: "Leadership",
+      },
+      {
+        id: "mgr-1",
+        orgId,
+        fullName: "Eng Manager",
+        role: "manager",
+        teamId: "team-eng",
+        teamName: "Engineering",
+      },
+      {
+        id: "emp-1",
+        orgId,
+        fullName: "Eng Dev",
+        role: "employee",
+        teamId: "team-eng",
+        teamName: "Engineering",
+      },
+      {
+        id: "emp-2",
+        orgId,
+        fullName: "Marketing Specialist",
+        role: "employee",
+        teamId: "team-mkt",
+        teamName: "Marketing",
+      },
     ],
     softDeleteUser: async () => true,
     ensureDefaultTeam: async () => "team-default",
     assignUserToTeam: async (userId, orgId, teamId) => teamId || "team-default",
-    createUserWithPassword: async (orgId, email, password, fullName, role, creatorId, teamId) => ({
+    createUserWithPassword: async (
+      orgId,
+      email,
+      password,
+      fullName,
+      role,
+      creatorId,
+      teamId
+    ) => ({
       user: { id: "new-user-1", email },
       profile: {
         id: "new-user-1",
@@ -100,7 +181,11 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
 
   describe("Gap 1: Dashboard Real-Time Sync & Caching Split", () => {
     it("returns fresh live KPI counters while caching expensive productivity charts", async () => {
-      const result = await getAdminDashboardUseCase(adminContext, null, mockDashboardRepo);
+      const result = await getAdminDashboardUseCase(
+        adminContext,
+        null,
+        mockDashboardRepo
+      );
 
       expect(result.data.kpis).toBeDefined();
       expect(result.data.kpis.totalTasks).toBe(3);
@@ -145,7 +230,11 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
     });
 
     it("ensures manager dashboard only aggregates tasks for their managed team", async () => {
-      const managerDashboard = await getManagerDashboardUseCase(managerContext, null, mockDashboardRepo);
+      const managerDashboard = await getManagerDashboardUseCase(
+        managerContext,
+        null,
+        mockDashboardRepo
+      );
 
       // mgr-1 only has 2 tasks in team-eng (1 in_progress, 1 completed)
       expect(managerDashboard.data.kpis.totalTasks).toBe(2);
@@ -155,12 +244,19 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
 
     it("rejects manager attempting to access data outside their assigned team scope", async () => {
       await expect(
-        getManagerDashboardUseCase(managerContext, "team-mkt", mockDashboardRepo)
-      ).rejects.toThrow("Manager cannot access data outside their assigned team scope.");
+        getManagerDashboardUseCase(
+          managerContext,
+          "team-mkt",
+          mockDashboardRepo
+        )
+      ).rejects.toThrow(
+        "Manager cannot access data outside their assigned team scope."
+      );
     });
 
     it("P1: createUserWithPassword error messages strictly sanitize infra secrets and vendor names", async () => {
-      const { SupabaseUserRepository } = await import("@/domains/users/repository/userRepository");
+      const { SupabaseUserRepository } =
+        await import("@/domains/users/repository/userRepository");
       const repo = new SupabaseUserRepository();
       (repo as any).hasSupabase = () => true;
 
@@ -169,7 +265,12 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
         auth: {
           admin: {
             listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),
-            createUser: vi.fn().mockResolvedValue({ data: null, error: new Error("admin failed") }),
+            createUser: vi
+              .fn()
+              .mockResolvedValue({
+                data: null,
+                error: new Error("admin failed"),
+              }),
           },
         },
       });
@@ -209,7 +310,12 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
         auth: {
           admin: {
             listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),
-            createUser: vi.fn().mockResolvedValue({ data: null, error: new Error("admin failed") }),
+            createUser: vi
+              .fn()
+              .mockResolvedValue({
+                data: null,
+                error: new Error("admin failed"),
+              }),
           },
         },
       });
@@ -218,7 +324,9 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
         auth: {
           signUp: vi.fn().mockResolvedValue({
             data: null,
-            error: new Error("Signups not allowed for this instance (disabled)"),
+            error: new Error(
+              "Signups not allowed for this instance (disabled)"
+            ),
           }),
         },
       });
@@ -234,11 +342,12 @@ describe("Hierarchy Visibility & Real-Time Sync Audit Tests", () => {
         );
         expect.unreachable();
       } catch (err: any) {
-        expect(err.message).toBe("Unable to create user account. Please contact support.");
+        expect(err.message).toBe(
+          "Unable to create user account. Please contact support."
+        );
         expect(err.message).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
         expect(err.message).not.toContain("Render");
       }
     });
   });
 });
-

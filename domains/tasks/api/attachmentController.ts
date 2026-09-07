@@ -18,20 +18,31 @@ export class AttachmentController {
 
   async handleAttachmentAction(taskId: string, body: any) {
     const auth = await requireAuth();
-    const action = body?.action || (body?.fileUrl ? "save_attachment" : "get_presigned_url");
+    const action =
+      body?.action || (body?.fileUrl ? "save_attachment" : "get_presigned_url");
 
     if (action === "get_presigned_url") {
       const validation = presignedUrlRequestSchema.safeParse(body);
       if (!validation.success) {
-        throw new ValidationError("Validation failed", validation.error.flatten().fieldErrors);
+        throw new ValidationError(
+          "Validation failed",
+          validation.error.flatten().fieldErrors
+        );
       }
       return await getPresignedUploadUrlUseCase(auth, taskId, validation.data);
     }
 
-    if (action === "save_attachment" || action === "add_link" || action === "save_link") {
+    if (
+      action === "save_attachment" ||
+      action === "add_link" ||
+      action === "save_link"
+    ) {
       const validation = createAttachmentSchema.safeParse(body);
       if (!validation.success) {
-        throw new ValidationError("Validation failed", validation.error.flatten().fieldErrors);
+        throw new ValidationError(
+          "Validation failed",
+          validation.error.flatten().fieldErrors
+        );
       }
       return await saveAttachmentUseCase(auth, taskId, validation.data);
     }
@@ -41,7 +52,10 @@ export class AttachmentController {
       if (!task) {
         throw new NotFoundError("Task not found in your organization.");
       }
-      const success = await attachmentRepository.deleteAttachment?.(body.attachmentId, taskId);
+      const success = await attachmentRepository.deleteAttachment?.(
+        body.attachmentId,
+        taskId
+      );
       return { success };
     }
 

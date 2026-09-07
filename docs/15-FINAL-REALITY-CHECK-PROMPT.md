@@ -3,6 +3,7 @@
 Continues numbering from `14-ADVERSARIAL-PENTEST-QA-PROMPT.md` (Prompt 40 = pentest, self-reported 28/28 PASS).
 
 ## Why This Prompt Exists
+
 The existing reports (`AUDIT-REPORT.md`, `FINAL-SECURITY-SIGNOFF.md`, `PENTEST-QA-REPORT.md`, `FINAL-PROJECT-REPORT.md`) are **self-graded by the same agent that built the code** — every single category across all four reports shows PASS/GO with zero exceptions, which is statistically unusual for a real audit and is a known failure pattern for agentic coding tools (the agent narrates success rather than proving it). Two concrete problems already found just from reading the docs, without touching code:
 
 1. **A real Supabase `SUPABASE_SERVICE_ROLE_KEY` and anon key are pasted in plaintext inside `docs/PENDING-TASKS-AND-ROADMAP.md`** — this must be rotated immediately regardless of anything else in this prompt, and is itself proof that the "0 secrets leaked" claim in `PENTEST-QA-REPORT.md` (SUPP-02) is not reliable.
@@ -51,6 +52,7 @@ Save as docs/REALITY-CHECK-REPORT.md with:
 ---
 
 ## What To Do With the Result
+
 - If Step 0 finds the secret is real and live: treat this as a live incident, not a documentation cleanup — rotate first, ask questions later.
 - If Step 1 shows the app isn't actually deployed yet: that's fine, it just means you're not as far along as `FINAL-PROJECT-REPORT.md` claimed — go back to Prompt 37's deployment checklist and actually run it, then come back to this reality-check.
 - Treat every future "100%" or "GO" claim from the agent with the same skepticism from now on — ask for raw output by default, not narrative summaries, especially for security-relevant claims.

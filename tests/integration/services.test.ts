@@ -1,7 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { groqChatCompletion } from "@/lib/groq/client";
-import { enhanceTaskPrompt, workloadSuggestionPrompt } from "@/lib/groq/prompts";
-import { sendEmail, buildNotificationEmailHtml } from "@/infrastructure/email/resendClient";
+import {
+  enhanceTaskPrompt,
+  workloadSuggestionPrompt,
+} from "@/lib/groq/prompts";
+import {
+  sendEmail,
+  buildNotificationEmailHtml,
+} from "@/infrastructure/email/resendClient";
 import { isBillingEnabled } from "@/lib/billing/config";
 
 describe("Groq AI & Resend Integration Service Unit Verification", () => {
@@ -66,7 +72,8 @@ describe("Groq AI & Resend Integration Service Unit Verification", () => {
 
 describe("P2.5: Organization Settings Ownership Check (Cross-Org IDOR)", () => {
   it("strictly rejects updateOrgSettingsUseCase when targetOrgId does not match context.orgId", async () => {
-    const { updateOrgSettingsUseCase } = await import("@/domains/organization/usecases/updateOrgSettings");
+    const { updateOrgSettingsUseCase } =
+      await import("@/domains/organization/usecases/updateOrgSettings");
     const { ForbiddenError } = await import("@/shared/errors/domainErrors");
 
     const callerContext = {
@@ -99,14 +106,17 @@ describe("P2.5: Organization Settings Ownership Check (Cross-Org IDOR)", () => {
         "org-b-2222-2222",
         mockRepo
       )
-    ).rejects.toThrow("Cannot update settings of an organization you do not belong to.");
+    ).rejects.toThrow(
+      "Cannot update settings of an organization you do not belong to."
+    );
 
     // Ensure database layer was never touched
     expect(mockRepo.updateOrg).not.toHaveBeenCalled();
   });
 
   it("AUDIT-INT-REDIS-CRASH: checkRateLimit falls back to in-memory limiter in production when Upstash is unconfigured", async () => {
-    const { checkRateLimit } = await import("@/infrastructure/redis/redisClient");
+    const { checkRateLimit } =
+      await import("@/infrastructure/redis/redisClient");
     const originalEnv = process.env.NODE_ENV;
     try {
       (process.env as any).NODE_ENV = "production";
@@ -120,9 +130,8 @@ describe("P2.5: Organization Settings Ownership Check (Cross-Org IDOR)", () => {
   });
 
   it("P2: sweepExpiredRateLimits purges expired entries from in-memory rate limit map", async () => {
-    const { checkRateLimit, sweepExpiredRateLimits, _getMemoryRateLimitSize } = await import(
-      "@/infrastructure/redis/redisClient"
-    );
+    const { checkRateLimit, sweepExpiredRateLimits, _getMemoryRateLimitSize } =
+      await import("@/infrastructure/redis/redisClient");
 
     // Insert 5 entries with 1 second TTL
     for (let i = 0; i < 5; i++) {
@@ -161,6 +170,3 @@ describe("P2.5: Organization Settings Ownership Check (Cross-Org IDOR)", () => {
     expect(res2.success).toBe(true);
   });
 });
-
-
-

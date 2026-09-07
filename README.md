@@ -1,48 +1,55 @@
-# <div align="center">
+<div align="center">
 
 <br/>
 
-```
+```text
 ████████╗ █████╗ ███████╗ ██████╗        ██████╗ ███╗   ██╗███████╗
 ╚══██╔══╝██╔══██╗██╔════╝██╔═══██╗      ██╔═══██╗████╗  ██║██╔════╝
-   ██║   ███████║███████╗██║   ██║█████╗██║   ██║██╔██╗ ██║█████╗  
-   ██║   ██╔══██║╚════██║██║▄▄ ██║╚════╝██║   ██║██║╚██╗██║██╔══╝  
+   ██║   ███████║███████╗██║   ██║█████╗██║   ██║██╔██╗ ██║█████╗
+   ██║   ██╔══██║╚════██║██║▄▄ ██║╚════╝██║   ██║██║╚██╗██║██╔══╝
    ██║   ██║  ██║███████║╚██████╔╝      ╚██████╔╝██║ ╚████║███████╗
    ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚══▀▀═╝        ╚═════╝ ╚═╝  ╚═══╝╚══════╝
 ```
 
-<br/>
+### The Intelligent Task Operating System for High-Velocity Teams
 
-<h2>The Intelligent Task Operating System for High-Velocity Teams</h2>
-
-<p><em>Stop managing tasks in WhatsApp chats and messy spreadsheets. <br/>Assign with clarity, track in real-time, eliminate follow‑up meetings.</em></p>
-
-<br/>
-
-![Version](https://img.shields.io/badge/⚡_VERSION-2.5-6366F1?style=for-the-badge)
-![Next.js](https://img.shields.io/badge/Next.js-14.2.35-000000?style=for-the-badge&logo=next.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![Groq AI](https://img.shields.io/badge/Groq_AI-Llama_3.3_70B-F55036?style=for-the-badge)
-![Redis](https://img.shields.io/badge/Upstash_Redis-Multi--Layer_Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)
-![Cloudflare](https://img.shields.io/badge/Cloudflare-R2_Storage-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)
+_Stop managing mission-critical tasks in WhatsApp chats and messy spreadsheets._  
+_Assign with absolute clarity, track live execution in real time, and eliminate repetitive follow-up meetings._
 
 <br/>
 
-<img src="docs/assets/hero-banner.png" alt="TASQ-ONE Platform" width="90%" style="border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);" />
+[![Version](https://img.shields.io/badge/⚡_VERSION-2.6_Production_Ready-6366F1?style=for-the-badge)](https://tasq-one.onrender.com)
+[![Next.js](https://img.shields.io/badge/Next.js-15.5.25-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres_RLS-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Cloudflare](https://img.shields.io/badge/Cloudflare-Turnstile_%26_R2-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://cloudflare.com/)
+[![Groq AI](https://img.shields.io/badge/Groq_AI-Llama_3.3_70B-F55036?style=for-the-badge)](https://groq.com/)
+[![Redis](https://img.shields.io/badge/Upstash_Redis-Multi--Layer_Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
+[![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](./LICENSE)
 
-<br/><br/>
+<br/>
 
-[![Live Demo](https://img.shields.io/badge/🌐_LIVE_DEMO-tasq--one.onrender.com-6366F1?style=for-the-badge)](https://tasq-one.onrender.com)
-[![Features](https://img.shields.io/badge/⚡_Features-/features-8B5CF6?style=for-the-badge)](https://tasq-one.onrender.com/features)
-[![Pricing](https://img.shields.io/badge/💳_Pricing-/pricing-EC4899?style=for-the-badge)](https://tasq-one.onrender.com/pricing)
+[![Live Production Demo](https://img.shields.io/badge/🌐_LIVE_DEMO-tasq--one.onrender.com-4F46E5?style=for-the-badge&logo=render&logoColor=white)](https://tasq-one.onrender.com)
+[![Explore Features](https://img.shields.io/badge/⚡_Features-/features-8B5CF6?style=for-the-badge)](https://tasq-one.onrender.com/features)
+[![SaaS Pricing](https://img.shields.io/badge/💳_Pricing-/pricing-EC4899?style=for-the-badge)](https://tasq-one.onrender.com/pricing)
+[![Security Policy](https://img.shields.io/badge/🛡️_Security-/security-10B981?style=for-the-badge)](https://tasq-one.onrender.com/security)
 
-<div align="center">
+<br/>
 
-### ╔═══════════════════════════════════════════════╗
-### ║  Navigate:   [Overview](#-overview)  •  [v2.5 Changes](#-whats-new-in-v25)  •  [Features](#-core-capabilities)  •  [Roles](#-role-based-access-portals)  •  [Performance](#-performance-architecture)  •  [Security](#-enterprise-security)  •  [Quick Start](#-quick-start) ║
-### ╚═══════════════════════════════════════════════╝
+|              ⚡ **1–3s Page Loads**              |          🛡️ **Zero-IDOR RLS**          |  🤖 **Sub-Second Groq AI**  | 🔒 **Turnstile Bot Shield** |    🇮🇳 **100% INR / DPDP Ready**     |
+| :----------------------------------------------: | :------------------------------------: | :-------------------------: | :-------------------------: | :---------------------------------: |
+| Parallel `Promise.all` + Multi-Layer L1/L2 Cache | Tenant-isolated at the DB kernel level | Llama 3.3 70B decomposition | Non-intrusive smart CAPTCHA | Calibrated for Indian tech founders |
+
+<br/>
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│  Quick Navigation:                                                                     │
+│  [Overview](#-overview)  •  [v2.6 Highlights](#-whats-new-in-v26)  •  [Architecture](#-architecture--data-flow)  │
+│  [Features](#-core-capabilities)  •  [RBAC Portals](#-role-based-access-portals)  •  [Cloudflare & Supabase](#-cloudflare--supabase-reconfiguration-guide) │
+│  [Quick Start](#-quick-start)  •  [Security](#-enterprise-security--compliance)  •  [Verification](#-production-readiness-evidence)  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
 
 </div>
 
@@ -50,555 +57,349 @@
 
 ## 🎯 Overview
 
-> **TASQ-ONE v2.5** is an enterprise‑grade, multi‑tenant Task Operating System built for startups, agencies, and engineering orgs who need **real operational clarity — without the bloat.**
+**TASQ-ONE** is an enterprise-grade, multi-tenant Task Operating System designed from first principles for startups, agile product teams, and engineering organizations who demand **radical operational clarity without software bloat**.
 
-Traditional tools have steep learning curves, cluttered UIs, and zero accountability — pushing teams back to WhatsApp and spreadsheets. TASQ-ONE fixes this with:
+Traditional project management tools are bogged down by sluggish waterfall queries, steep learning curves, and clunky interfaces that inevitably drive teams back into unorganized WhatsApp chats and spreadsheets. **TASQ-ONE fixes this permanently:**
 
-- 🤖 **AI‑powered task decomposition** via Groq Llama 3.3 70B (millisecond inference)
-- 📋 **Personal employee morning checklists** — only see what's due *today*
-- 🔗 **Task Dependency DAG** enforcement — no downstream task starts early
-- 🔐 **Immutable cryptographic audit logs** — tamper‑proof, real‑time, exportable
-- 📢 **Async multi‑channel broadcasts** — Slack + Email, zero synchronous meetings
+- 🤖 **Sub-Second AI Task Decomposition:** Transform a raw 5-word sentence into production-ready specifications, DoD, and 4-point Acceptance Criteria via Groq Llama 3.3 70B in under 800ms.
+- 📋 **Personal Employee Morning Focus:** Distraction-free daily checklists showing only what is due _today_, complete with one-click status transitions.
+- 🔗 **Strict DAG Dependency Enforcement:** Visual and logical task blocking preventing downstream execution until prerequisites are verified complete.
+- 🛡️ **Zero-IDOR PostgreSQL Row-Level Security:** Cryptographically verified tenant isolation enforced directly in PostgreSQL kernel policies.
+- 🔒 **Cloudflare Turnstile Anti-Abuse:** Transparent bot protection on signups paired with a generous 100/hr IP ceiling for frictionless team onboarding.
+- 📢 **Async Multi-Channel Broadcasts:** Real-time automated Slack cards and weekly Resend executive digests eliminating synchronous status meetings.
 
-> Founders and managers reclaim **10+ hours every week.**
-
----
-
-## 🆕 What's New in v2.5
-
-<div align="center">
-
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                      🚀  VERSION 2.5 HIGHLIGHTS                        │
-├──────────────────────────────────────┬──────────────────────────────────┤
-│  ⚡ Performance Overhaul            │  10-15s load → 1-3s              │
-│  🔄 Auto-Refresh on All Dashboards  │  10s cycle + ON/OFF toggle       │
-│  🎨 Employee Dashboard Redesign     │  Profile hero, metric tiles      │
-│  📊 Audit Trail Redesign            │  Zero raw JSON, CSV export       │
-│  👥 Inline Team Assignment          │  Edit team in table row          │
-│  🏗️ Admin Sidebar Cleanup           │  Removed redundant cards         │
-│  🐛 TypeScript Bug Fixes            │  KanbanTaskItem, OrgMember fixes │
-└──────────────────────────────────────┴──────────────────────────────────┘
-```
-
-</div>
-
-### ⚡ Performance Overhaul — The Biggest Change in v2.5
-
-**Root Cause:** Pages loaded in 10‑15 seconds due to sequential database waterfall queries.
-
-**Fix Applied:** Converted all sequential queries to `Promise.all` parallel execution + multi‑layer caching.
-
-| Bottleneck | Before | After | Gain |
-|:-----------|:------:|:-----:|:----:|
-| `listOrgMembers` (profiles + auth + teams) | ~12s sequential | ~3s parallel | **4× faster** |
-| Employee dashboard task fetch | 2‑query chain | `Promise.all` | **2× faster** |
-| Manager dashboard team resolve | 2‑query chain | `Promise.all` | **2× faster** |
-| `requireAuth()` — Supabase auth hit | Every request | 15s memory cache | **~0ms** |
-| Org member lookup | No cache | 20s Redis + L1 cache | **~0ms** |
-| Redis client calls | No timeout (could hang) | 600ms hard timeout + L1 | **Safe** |
+> **Bottom Line:** Founders, engineering leads, and operations managers reclaim **10+ hours every single week**.
 
 ---
 
-### 🔄 Auto-Refresh — New on All 6 Dashboards
-
-Every role dashboard now has a **live auto‑refresh system**:
+## 🆕 What's New in v2.6
 
 ```
-    ┌────────────────────────────────┐
-    │  🟢 Auto-refresh in  7s  [■]  │  ← countdown badge + toggle
-    └────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│                             🚀  VERSION 2.6 PRODUCTION RELEASE                           │
+├────────────────────────────────────────┬─────────────────────────────────────────────────┤
+│  🛡️ Cloudflare Turnstile Bot Defense   │  Smart anti-bot CAPTCHA on company signup        │
+│  ⚡ Re-engineered Rate Limiting        │  Generous 100/hr signup IP ceiling + strict login│
+│  🧹 Zero Fake/Mock Data Fallbacks      │  Purged all silent demo arrays from 9 repos     │
+│  📊 Real Velocity Telemetry            │  Computed from actual task completion durations │
+│  🚨 Next.js 15 Root Error Boundaries   │  Added instrumentation.ts & global-error.tsx    │
+│  🧪 10 New Rate Limiting Tests         │  Vitest suite at 60 passed tests, 0 failures    │
+└────────────────────────────────────────┴─────────────────────────────────────────────────┘
 ```
-- Animated **countdown badge** (live seconds display)
-- **Toggle ON/OFF** with one click
-- **Manual sync** button with spinning refresh animation
-- Pages covered: Admin Dashboard · Admin Team · Admin Activity · Manager Dashboard · Manager Team · Employee Dashboard
+
+### 1. Cloudflare Turnstile Anti-Abuse + Generous Signup Ceiling
+
+- **The Challenge:** The previous strict 5-attempt rate limit blocked legitimate founders and QA testers from repeatedly creating workspaces during demos and onboarding sessions.
+- **The v2.6 Solution:**
+  - Integrated **Cloudflare Turnstile** (`lib/security/turnstile.ts` + `components/auth/Turnstile.tsx`) to stop automated bot spam cryptographically without punishing human users.
+  - Raised the IP-based registration ceiling to **100 signups per hour per IP** (`ratelimit:signup:${ip}`).
+  - Kept login strictly protected at **5 attempts per 5 minutes per IP+email** (`auth:login:${ip}:${email}`) to prevent brute-force attacks.
+
+### 2. Complete Elimination of Demo & Mock Fallbacks
+
+- Removed all hardcoded fallback objects (`mgr-task-1`, `task-emp-1..5`, `{completed: 2}`, `mem-1..3`) across all 9 domain repositories (`dashboardRepository.ts`, `taskRepository.ts`, `userRepository.ts`, etc.).
+- Gated all seed generators behind `NODE_ENV !== 'production'`.
+- Enforced genuine Cloudflare R2 credentials; missing credentials fail loudly with actionable setup instructions rather than generating fake URLs.
+- Replaced hardcoded velocity metrics (`2.8` / `2.4` days) with real completion duration averages.
 
 ---
 
-### 🎨 Employee Dashboard — Fully Redesigned
+## 🏛️ Architecture & Data Flow
 
+```mermaid
+flowchart TD
+    subgraph Client["Client Tier (Edge & Browser)"]
+        User["User Browser / Mobile PWA"]
+        Turnstile["Cloudflare Turnstile Widget"]
+    end
+
+    subgraph Security["Edge & Gateway Tier"]
+        CF["Cloudflare Edge (SSL Strict / CDN)"]
+        RateLimit["Upstash Redis Rate Limiter\n• Login: 5/5min (IP+Email)\n• Signup: 100/hr (IP)"]
+        R2["Cloudflare R2 Storage\n(Zero-Egress Attachments)"]
+    end
+
+    subgraph App["Application Tier (Next.js 15 App Router)"]
+        MW["Middleware (RBAC Guard & Session)"]
+        API["Domain API Controllers\n(Zod Input Validation)"]
+        UseCases["Clean Architecture Use Cases"]
+        Cache["L1 Memory Cache (15s Auth / 20s Members)"]
+    end
+
+    subgraph Services["External Engines"]
+        Groq["Groq Cloud\n(Llama 3.3 70B AI)"]
+        Resend["Resend API\n(Transactional Emails)"]
+        Slack["Slack Webhooks\n(Realtime Broadcasts)"]
+    end
+
+    subgraph Database["Data Tier (Supabase)"]
+        Auth["Supabase GoTrue Auth"]
+        PG["PostgreSQL 15 Database\n(Row-Level Security Policies)"]
+        RT["Realtime CDC Engine\n(WebSocket Task Updates)"]
+    end
+
+    User -->|HTTPS Request| CF
+    Turnstile -.->|Challenge Token| User
+    CF --> RateLimit
+    RateLimit --> MW
+    MW --> API
+    API --> UseCases
+    UseCases <--> Cache
+    UseCases -->|Presigned URL| R2
+    UseCases -->|LLM Inference| Groq
+    UseCases -->|Digest / Alerts| Resend
+    UseCases -->|Task Completion| Slack
+    UseCases -->|Cookie-Scoped JWT| PG
+    Auth -->|Token Issuance| MW
+    PG -.->|Replication Feed| RT
+    RT -.->|Push Notifications| User
 ```
-╔══════════════════════════════════════════════════════════╗
-║  👤  Krishan Kumar          [EMP-XXXX  📋]  Good Evening ║
-║      Workspace Member · Engineering Team                  ║
-╠══════════════════════════════════════════════════════════╣
-║  [ Due Today: 2 ] [ In Progress: 1 ] [ Upcoming: 4 ] [✓] ║
-╠══════════════════════════════════════════════════════════╣
-║  🔍 Search tasks...     [Priority ▼]    [Status ▼]       ║
-╠══════════════════════════════════════════════════════════╣
-║  ○ Fix API rate limiting bug    🔴 URGENT  Due: Today     ║
-║  ○ Draft Q3 sprint review       🟠 HIGH    Due: Tomorrow  ║
-╚══════════════════════════════════════════════════════════╝
-```
-
----
-
-### 📊 Audit Trail — Zero Raw JSON
-
-**Before v2.5:** Entries showed raw JSON blobs.
-
-**After v2.5:** Every entry renders as structured human‑readable cards:
-
-```
-  Sep 1, 05:51 PM  ·  Admin User  ·  Status Changed  ·  tasks
-  ┌──────────────┐       ┌──────────────┐
-  │  title       │  →    │  status      │
-  │  "Fix Login" │       │  in_review   │
-  └──────────────┘       └──────────────┘     [Inspect ▶]
-```
-
----
-
-## 🔥 The Problem & The Solution
-
-<div align="center">
-
-```
-WITHOUT TASQ-ONE                      WITH TASQ-ONE
-────────────────                    ────────────────────
-❌ Tasks buried in                    ✅ One centralized board
-   WhatsApp noise                        with verified owners
-
-❌ 45‑min status meetings             ✅ 5‑second progress check,
-   with no clear answers                 no meetings needed
-
-❌ "What are you working on?"         ✅ AI converts 1 sentence
-   messages all day                      into full task specs
-
-❌ Missed deadlines from              ✅ Auto Slack + Email alerts,
-   unbalanced workload                    nothing slips
-
-❌ No record of who changed           ✅ Immutable cryptographic
-   what or when                         audit trail
-```
-
-</div>
 
 ---
 
 ## 🚀 Core Capabilities
 
-### `01` 🤖 AI Task Decomposer *(Groq Llama 3.3 70B)*
-Write one sentence. Get a production‑ready task spec in milliseconds.
+### `01` 🤖 AI Task Decomposer _(Groq Llama 3.3 70B)_
 
-```
-Input: "Build the user profile settings page"
-↓
-Output: ✓ Title (enhanced)
-        ✓ Description with context
-        ✓ 4‑point Acceptance Criteria
-        ✓ Priority level
-        ✓ Estimated hours
-        ✓ Suggested assignee
-        ✓ Department tag (Engineering / Design / Ops / Sales)
-```
+Input a raw prompt (e.g., _"Integrate Razorpay auto-pay subscriptions"_), and receive a fully formed, production-grade technical ticket in under 800ms:
 
-### `02` 🎯 Personal Focus Dashboard *(Employee)*
-Distraction‑free morning checklist — only what's due *today*:
-- **Profile Hero Card:** Time‑of‑day greeting, Employee ID (1‑click copy), team badge
-- **Metric Tiles:** Due Today·In Progress·Upcoming (7D)·Completed — each clickable filter
-- **Premium Task Cards:** Priority badge, overdue alert, subtask counter, quick‑complete circle, inline status dropdown
-- **Live Search + Filter Bar:** Real‑time search across title, description, and tags
+- Refined technical title and detailed scope summary
+- 4-point concrete **Acceptance Criteria**
+- Definition of Done (DoD) checklist
+- Suggested assignee based on current open backlog count
+- Priority score and estimated completion hours
 
-### `03` 📊 Immutable Activity & Audit Trail
-- **Cryptographically verifiable** — tamper‑proof log of every workspace mutation
-- **Human‑readable entries** — status chips, priority pills, comment quotes, team tags
-- **Structured inspector modal** — diff card view of changed `property → value` pairs
-- **Export to CSV** with active filters applied
-- **Auto‑backfill synthesis** from existing tasks and profiles
+### `02` 🎯 Personal Focus Dashboard _(Employee Portal)_
 
-### `04` 🔗 Task Dependency DAG
-```
-[Task A: Design Mockups]  ──►  [Task B: Frontend Build]  ──►  [Task C: QA Testing]
-      ✅ Completed               🔒 Blocked until A done         🔒 Blocked until B done
-```
-Downstream tasks are **blocked at the UI level** until their prerequisite is marked `Completed`.
+A distraction-free view designed for morning execution:
 
-### `05` 🔔 Real‑Time Notification System
-```
-   🔔 3  ← unread badge, live via Supabase Realtime
-   ├── 🔴 "Fix Login Bug" is overdue!
-   ├── 📌 "Krishan Kumar" assigned you a task
-   └── 💬 "Admin User" mentioned you in a comment
-```
-Delivered via Supabase Realtime channels — zero polling, instant push.
+- **Profile Hero Card:** Time-of-day greeting, auto-generated Member ID (`EMP-XXXX`) with 1-click clipboard copy, and team badge.
+- **Metric Tiles:** Clickable filter cards for _Due Today_, _In Progress_, _Upcoming (7D)_, and _Completed_.
+- **Interactive Task Cards:** Priority indicators, overdue badges, subtask progress, and inline status dropdowns.
+- **Live Search & Filter:** Instant local filtering by title, tags, and description.
 
-### `06` 📢 Automated Multi‑Channel Broadcasts
-- **Slack Release Cards** — rich formatted block when task reaches `Completed`
-- **Weekly Executive Digest** — Monday summary of velocity, on‑time rate, and blockers via Resend email
+### `03` 📊 Cryptographic Activity & Audit Trail
 
-### `07` 💰 ROI Capacity Calculator
-Interactive savings calculator calibrated to the **Indian tech ecosystem**:
-```
-Team Size: 10 people     Rate: ₹1,200/hr (avg knowledge worker)
-─────────────────────────────────────────────────────
-Hours saved per month:        40h
-Monthly bottom-line savings:  ₹48,000
-```
+- **Tamper-Proof Audit Logging:** Every task creation, status transition, assignment, and comment is logged with actor UUID, timestamp, and property diffs.
+- **Zero Raw JSON:** Structured cards display visual `property → before / after` badges.
+- **CSV Export:** One-click download of audit logs filtered by entity and action.
+
+### `04` 🔗 Strict DAG Task Dependency Engine
+
+- Prevents premature execution of downstream tasks.
+- If **Task B** depends on **Task A**, Task B is visually locked and blocked from being marked `in_progress` or `completed` until Task A is verified `completed`.
+
+### `05` 🔄 Unified 10-Second Auto-Refresh
+
+Every role portal features a unified auto-refresh mechanism:
+
+- Real-time countdown timer badge with pulse animation
+- 1-click toggle to pause/resume auto-syncing
+- Instant manual refresh trigger without full-page reloads
 
 ---
 
-## 🧑‍💼 Role‑Based Access Portals
+## 🧑‍💼 Role-Based Access Portals
 
-<div align="center">
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                     3‑TIER RBAC SYSTEM                          │
-├──────────────────────┬───────────────┬───────────────┬───────────┤
-│ Feature              │  👑 Admin     │  ⚡ Manager   │ 👤 Emp   │
-├──────────────────────┼───────────────┼───────────────┼───────────┤
-│ Create & assign tasks│      ✅       │   ✅ (team)   │   ❌     │
-│ View all org tasks   │      ✅       │   ✅ (team)   │   ❌     │
-│ Add / remove members │      ✅       │   ✅ (emp)    │   ❌     │
-│ Activity Audit Trail │      ✅       │      ❌       │   ❌     │
-│ Assign team to users │      ✅       │      ❌       │   ❌     │
-│ Update task status   │      ✅       │      ✅       │   ✅     │
-│ Personal dashboard   │      ✅       │      ✅       │   ✅     │
-│ Export Audit CSV     │      ✅       │      ❌       │   ❌     │
-│ Manage org settings  │      ✅       │      ❌       │   ❌     │
-└──────────────────────┴───────────────┴───────────────┴───────────┘
-```
-
-</div>
+| Capability                        | 👑 Founder / Admin | ⚡ Engineering Manager |     👤 Team Member     |
+| :-------------------------------- | :----------------: | :--------------------: | :--------------------: |
+| **Workspace Setup & Billing**     |   ✅ Full Access   |     ❌ Restricted      |     ❌ Restricted      |
+| **Invite & Deactivate Members**   |    ✅ All Roles    |   ✅ Employees Only    |     ❌ Restricted      |
+| **Create & Assign Tasks**         |    ✅ Any Team     |    ✅ Managed Teams    |     ❌ Restricted      |
+| **View Full Organization Kanban** |  ✅ Full Org View  |     ✅ Team Scoped     | ❌ Personal Tasks Only |
+| **Task Status Transitions**       |     ✅ Allowed     |       ✅ Allowed       |   ✅ Assigned Tasks    |
+| **Team Re-assignment Dropdown**   |  ✅ In Table Row   |     ❌ Restricted      |     ❌ Restricted      |
+| **Audit Log & CSV Export**        |   ✅ Full Access   |     ❌ Restricted      |     ❌ Restricted      |
+| **Personal Daily Checklist**      |    ✅ Included     |      ✅ Included       |    ✅ Primary Focus    |
 
 ---
 
-## ⚡ Performance Architecture
+## ☁️ Cloudflare & Supabase Reconfiguration Guide
 
-<div align="center">
+When deploying TASQ-ONE to production (Render, Vercel, or VPS), follow these exact reconfiguration steps:
 
-```
-                          ┌─────────────────────┐
-                          │   Browser Request   │
-                          └──────────┬──────────┘
-                                     │
-                          ┌──────────▼──────────┐
-                          │  Next.js API Route  │
-                          └──────────┬──────────┘
-                                     │
-                ┌────────────────────▼────────────────────┐
-                │           requireAuth()                 │
-                │    L1 authContextCache (15s, ~0ms) ⚡   │
-                └────────────────────┬────────────────────┘
-                                     │
-                ┌────────────────────▼────────────────────┐
-                │          listOrgMembers()               │
-                │   L1 + Redis members cache (20s, ~0ms) │
-                └────────────────────┬────────────────────┘
-                                     │
-                             Cache Miss?
-                                     │
-                ┌────────────────────▼────────────────────┐
-                │              Promise.all()              │
-                ├─────────────────────────────────────────┤
-                │  [ profiles query ]                     │
-                │  [ auth.admin.listUsers ]  ← PARALLEL   │
-                │  [ team_members query ]                │
-                └────────────────────┬────────────────────┘
-                                     │
-                ┌────────────────────▼────────────────────┐
-                │  dashboardRepository                    │
-                │  tasks + assignments → Promise.all()    │
-                └────────────────────┬────────────────────┘
-                                     │
-                          ┌──────────▼──────────┐
-                          │  Response: 1‑3s ✅  │
-                          └─────────────────────┘
-```
+### 1. Cloudflare Dashboard Setup
 
-</div>
+1. **Cloudflare Turnstile (Anti-Bot CAPTCHA):**
+   - Go to **Turnstile** → **Add Widget**.
+   - Set **Domain** to your production URL (e.g., `tasq-one.onrender.com` or custom domain) and include `localhost` for local dev.
+   - Choose **Managed** mode.
+   - Copy the keys into your hosting environment:
+     ```env
+     NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAA...
+     TURNSTILE_SECRET_KEY=0x4AAAAAA...
+     ```
+2. **Cloudflare R2 (Task Attachments Storage):**
+   - Go to **R2** → **Create Bucket** named `tasq-one-attachments`.
+   - Under Bucket Settings, configure **CORS**:
+     ```json
+     [
+       {
+         "AllowedOrigins": [
+           "https://tasq-one.onrender.com",
+           "http://localhost:3000"
+         ],
+         "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+         "AllowedHeaders": ["*"],
+         "MaxAgeSeconds": 3600
+       }
+     ]
+     ```
+   - Generate an API Token with **Object Read & Write** permissions.
+3. **Cloudflare SSL/TLS:**
+   - Set Encryption Mode to **Full (Strict)**. Enable **Always Use HTTPS**.
 
-### Cache Layers Summary
-| Layer | TTL | Hit Latency | Scope |
-|:------|:---:|:-----------:|:------|
-| `authContextCache` in‑memory | 15s | ~0ms | Per user session |
-| `listOrgMembers` Redis + L1 | 20s | ~0ms | Per organization |
-| `redisClient` L1 memory | 30s | ~0ms | Per cache key |
-| Redis Upstash remote | 60s | ~30ms | Dashboard charts |
-| Redis timeout guard | 600ms max | — | All remote calls |
+### 2. Supabase Dashboard Setup
 
----
-
-## 🔒 Enterprise Security
-
-<div align="center">
-
-```
-[Client] ──► [Rate Limiter: Upstash Redis] ──► [JWT Verify: Next.js Middleware]
-                                                            │
-                                                ┌──────────▼───────────┐
-                                                │   RLS Policy Check    │
-                                                │   auth.jwt() org_id   │
-                                                └──────────┬───────────┘
-                                                            │
-                                                ┌──────────▼───────────┐
-                                                │   PostgreSQL DB        │
-                                                │  Tenant‑Isolated Data  │
-                                                └───────────────────────┘
-```
-
-| # | Security Layer | Description |
-|:--|:--------------|:------------|
-| 1 | **PostgreSQL RLS** | Every query auto-filters by `(auth.jwt() ->> 'org_id')::uuid` — Tenant A can never read Tenant B data |
-| 2 | **Privilege Escalation Defense** | Migration `0008_fix_privilege_escalation.sql` blocks self-`role` and self-`org_id` mutation |
-| 3 | **Distributed Rate Limiting** | Upstash Redis sliding-window token buckets on all public + auth endpoints |
-| 4 | **Presigned R2 Uploads** | 10 MB limit + MIME type allowlist (`image/*`, `application/pdf`, `text/*`) |
-| 5 | **Custom JWT Claims Hook** | Supabase `custom_access_token_hook` injects tenant context on every token issue |
-| 6 | **In-Memory Auth Cache** | `(userId, orgId, role)` cached 15s — no repeated Supabase auth calls without security compromise |
+1. **Database Schema:**
+   - Open **SQL Editor** in your Supabase project.
+   - Run the consolidated [`supabase/database.sql`](./supabase/database.sql) script to create all tables, indexes, triggers, and RLS policies.
+2. **Authentication URLs:**
+   - Go to **Authentication** → **URL Configuration**.
+   - Set **Site URL** to `https://tasq-one.onrender.com`.
+   - Add the following to **Redirect URLs (Allow list)**:
+     ```
+     https://tasq-one.onrender.com/auth/callback
+     https://tasq-one.onrender.com/accept-invite
+     https://tasq-one.onrender.com/**
+     http://localhost:3000/auth/callback
+     http://localhost:3000/accept-invite
+     ```
+3. **Realtime Replication:**
+   - Go to **Database** → **Replication**.
+   - Enable replication for tables: `tasks`, `task_comments`, `notifications`, `activity_logs`.
+4. **API Keys:**
+   - Copy **Project URL**, `anon` `public` key, and `service_role` `secret` key into your environment variables.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Environment Variables Reference
 
-<div align="center">
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         TECH STACK                                 │
-├──────────────────────────┬──────────────────────────────────────────┤
-│  Next.js 14 (App Router) │  SSR, streaming, standalone Docker       │
-│  TypeScript 5.0+         │  End-to-end strict type safety           │
-│  Tailwind CSS 3.4        │  Glassmorphism design system             │
-├──────────────────────────┼──────────────────────────────────────────┤
-│  Supabase PostgreSQL 15  │  ACID, RLS, Realtime subscriptions       │
-│  Groq Cloud Llama 3.3    │  Sub-second LLM inference                │
-│  Upstash Redis           │  Serverless rate limiting + L2 cache     │
-├──────────────────────────┼──────────────────────────────────────────┤
-│  Cloudflare R2           │  Zero-egress S3 file storage             │
-│  Resend Email            │  Transactional email + weekly digest      │
-│  Slack Webhooks          │  Async task completion broadcasts         │
-├──────────────────────────┼──────────────────────────────────────────┤
-│  PostHog                 │  Product analytics + funnels             │
-│  Vitest                  │  Unit tests + RLS isolation tests         │
-│  Docker + Compose        │  Self-hosted zero-dependency deploy       │
-│  Render.com              │  Auto-deploy + managed SSL                │
-└──────────────────────────┴──────────────────────────────────────────┘
-```
-
-</div>
-
----
-
-## 📁 Project Structure
-
-```
-TASQ-ONE/
-│
-├── 📂 app/
-│   ├── (admin)/admin/              👑 Admin Portal
-│   │   ├── dashboard/              →  Org overview + Kanban
-│   │   ├── team/                   →  Full member CRUD
-│   │   ├── activity/               →  Audit trail + CSV export
-│   │   └── settings/               →  Org configuration
-│   │
-│   ├── (manager)/manager/          ⚡ Manager Portal
-│   │   ├── dashboard/              →  Team tasks + Kanban
-│   │   └── team/                   →  Scoped member management
-│   │
-│   ├── (employee)/employee/        👤 Employee Portal
-│   │   └── dashboard/              →  Personal focus dashboard
-│   │
-│   └── api/v1/                     🔌 REST API
-│       ├── dashboard/              →  admin / manager / me
-│       ├── tasks/[id]/             →  CRUD, comments, attachments
-│       ├── org/members/            →  Team management
-│       ├── activity/               →  Audit log
-│       └── ai/                     →  Groq AI endpoints
-│
-├── 📂 components/
-│   ├── kanban/                     →  KanbanBoard, Column, TaskCard
-│   ├── tasks/                      →  TaskFormModal, TaskDetail
-│   ├── ui/                         →  Badge, Modal, AutoRefreshControl…
-│   ├── dashboard/                 →  ProductivityChart, MetricCard
-│   └── notifications/             →  NotificationBell, NotificationList
-│
-├── 📂 domains/                     🏗️ Clean Architecture Business Logic
-│   ├── tasks/                      →  Entity, Repository, Use Cases
-│   ├── users/                      →  Entity, Repository, Use Cases
-│   ├── activity/                   →  Audit Log Repository
-│   └── organization/               →  Org Repository
-│
-├── 📂 infrastructure/
-│   ├── redis/                      →  redisClient (L1 + Upstash, 600ms timeout)
-│   └── supabase/                   →  Server client, browser client, types
-│
-├── 📂 shared/
-│   └── middleware/                 →  rbacGuard (requireAuth + 15s cache)
-│
-├── 📂 supabase/migrations/
-│   ├── 0001_init.sql
-│   ├── 0002_rls.sql
-│   ├── 0003_auth_hook.sql
-│   ├── 0004_team_assignment_guarantee.sql
-│   ├── ...
-│   └── 0010_tasks_replica_identity_full.sql
-│
-└── 📂 tests/
-    ├── domains/                    →  Domain use case business rules
-    ├── integration/                →  Email, Redis, and service integrations
-    └── rls/                        →  RBAC routing & tenant isolation tests
-```
+| Variable                         | Required | Description                                               | Example / Fallback                               |
+| :------------------------------- | :------: | :-------------------------------------------------------- | :----------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`            | **Yes**  | Fully qualified public application URL                    | `https://tasq-one.onrender.com`                  |
+| `NEXT_PUBLIC_SUPABASE_URL`       | **Yes**  | Supabase Project REST / Auth API URL                      | `https://xyzcompany.supabase.co`                 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | **Yes**  | Supabase Anonymous Client Public Key                      | `eyJhbGciOi...`                                  |
+| `SUPABASE_SERVICE_ROLE_KEY`      | **Yes**  | Supabase Admin Secret Key (Server-Only)                   | `eyJhbGciOi...`                                  |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | **Yes**  | Cloudflare Turnstile Public Site Key                      | `0x4AAAAAA...`                                   |
+| `TURNSTILE_SECRET_KEY`           | **Yes**  | Cloudflare Turnstile Secret Key                           | `0x4AAAAAA...`                                   |
+| `GROQ_API_KEY`                   | **Yes**  | Groq Cloud API Key for Llama 3.3 70B                      | `gsk_...`                                        |
+| `UPSTASH_REDIS_REST_URL`         | Optional | Upstash Redis REST endpoint for distributed rate limiting | `https://...upstash.io` _(falls back to memory)_ |
+| `UPSTASH_REDIS_REST_TOKEN`       | Optional | Upstash Redis authentication token                        | `...`                                            |
+| `RESEND_API_KEY`                 | Optional | Resend API key for email invitations & weekly summaries   | `re_...`                                         |
+| `EMAIL_FROM`                     | Optional | Sender address for transactional emails                   | `TASQ-ONE <notifications@yourdomain.com>`        |
+| `NEXT_PUBLIC_POSTHOG_KEY`        | Optional | PostHog Project API key for client-side telemetry         | `phc_...`                                        |
+| `SENTRY_DSN`                     | Optional | Sentry DSN for server/client error capture                | `https://...@sentry.io/...`                      |
+| `CRON_SECRET`                    | Optional | Bearer secret for automated weekly summary cron jobs      | `32-character-random-secret`                     |
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-```bash
-Node.js ≥ 18 (v22 recommended)
-Supabase project
-Groq API key
-```
-
-### 1 · Clone & Install
+### 1 · Clone Repository
 
 ```bash
 git clone https://github.com/Tusharsinghoffical/TASQ-ONE.git
 cd TASQ-ONE
+```
+
+### 2 · Install Dependencies
+
+```bash
 npm install
 ```
 
-### 2 · Configure Environment
+### 3 · Configure Environment
 
 ```bash
 cp .env.local.example .env.local
+# Populate your Supabase, Turnstile, and Groq credentials in .env.local
 ```
 
-```env
-# ── Supabase ─────────────────────────────────────────────────────
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# ── Groq AI ──────────────────────────────────────────────────────
-GROQ_API_KEY=gsk_your_groq_api_key
-
-# ── Upstash Redis (optional, fallback: in-memory) ────────────────
-UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your_token
-
-# ── Cloudflare R2 (optional, for file attachments) ───────────────
-R2_ACCOUNT_ID=your_account_id
-R2_ACCESS_KEY_ID=your_access_key
-R2_SECRET_ACCESS_KEY=your_secret_key
-R2_BUCKET_NAME=tasq-attachments
-R2_PUBLIC_URL=https://pub-xxx.r2.dev
-
-# ── Resend Email (optional) ───────────────────────────────────────
-RESEND_API_KEY=re_your_key
-RESEND_FROM_EMAIL=noreply@yourdomain.com
-```
-
-### 3 · Apply Database Migrations
-Run all files from `supabase/migrations/` in your Supabase SQL editor — in order from `0001_` to `0008_`.
-
-### 4 · Start Dev Server
+### 4 · Run Development Server
 
 ```bash
 npm run dev
 ```
-Open → [http://localhost:3000](http://localhost:3000)
 
-### 5 · Docker (Self‑Hosted)
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 5 · Execute Test Suite
 
 ```bash
-docker-compose up --build
-
-# or use included batch scripts:
-# docker-start.bat    # ← start
-# docker-stop.bat     # ← stop
+npm test              # Run all 6 test suites via Vitest
+npx tsc --noEmit      # Validate complete TypeScript typing
+npm run lint          # Run ESLint across all files
+npm run build         # Verify production build compilation
 ```
 
 ---
 
-## 📋 Changelog
+## 🔒 Enterprise Security & Compliance
 
-### `v2.5` — September 2026 *(Current)*
 ```
-⚡ Performance
-   └── 10‑15s page loads → 1‑3s via Promise.all parallelization + multi‑layer caching
-   └── 15s in-memory authContextCache in requireAuth
-   └── 20s Redis + L1 cache in listOrgMembersUseCase
-   └── 600ms hard timeout on all Redis calls
-
-🔄 Auto‑Refresh
-   └── 10‑second live sync across all 6 dashboards
-   └── Animated countdown badge + ON/OFF toggle + manual sync button
-
-🎨 UI / UX
-   └── Employee Dashboard: profile hero card, interactive metric tiles, premium task cards
-   └── Activity Audit Trail: human‑readable entries, structured inspector modal, CSV export
-   └── Admin Sidebar: removed redundant Workspace/Organization/Plan card
-
-👥 Team Management
-   └── Inline team assignment: edit dropdown directly in table row (no modal)
-
-🐛 Bug Fixes
-   └── Fixed OrgMember fullName vs full_name property mismatch
-   └── Fixed missing KanbanTaskItem import in Admin Dashboard
-   └── Fixed optional field type errors across multiple components
+[Client Request]
+       │
+       ▼
+[Cloudflare Turnstile] ──► (Validates Human vs. Automated Bot)
+       │
+       ▼
+[Upstash Redis Limiter] ──► (Login: 5/5min | Signup: 100/hr)
+       │
+       ▼
+[Next.js RBAC Guard] ──► (Validates JWT Claims & 15s Session Cache)
+       │
+       ▼
+[PostgreSQL Kernel RLS] ──► (auth.jwt() ->> 'org_id'::uuid strict isolation)
 ```
 
-### `v2.0` — August 2026
-```
-🏗️ Foundation
-   └── Multi‑role RBAC portal system (Admin / Manager / Employee)
-   └── Groq AI task decomposer integration
-   └── Supabase Realtime Kanban board
-   └── Immutable activity & audit trail
-   └── Cloudflare R2 file attachments
-   └── Multi‑tenant RLS security hardening (migrations 0001–0008)
+- **Fail-Closed Privilege Defense:** `verifyRole` strictly rejects missing or unauthenticated roles with HTTP 403. Self-escalation via user metadata updates is blocked.
+- **Composite Brute-Force Shield:** Login rate limiting is composite-keyed on `auth:login:${ip}:${email}`, preventing credential stuffing even across rotating IP addresses.
+- **DPDP Act 2023 & GDPR Compliant:** Customer workspace data is never used to train public models. Audit trails provide verifiable accountability.
+
+---
+
+## 🧪 Production Readiness Evidence
+
+As verified in [docs/REAL-PRODUCTION-READINESS-REPORT.md](./docs/REAL-PRODUCTION-READINESS-REPORT.md):
+
+```text
+✓ tests/integration/auth_rate_limiting.test.ts (10 tests)
+✓ tests/rls/cross_role_routing.test.ts (20 tests)
+✓ tests/domains/task_business_rules.test.ts (4 tests)
+✓ tests/integration/services.test.ts (9 tests)
+✓ tests/domains/hierarchy_visibility.test.ts (7 tests)
+✓ tests/rls/multi_tenant_isolation.test.ts (12 tests | 2 skipped without Docker DB)
+
+Test Files: 6 passed (6)
+Tests:      60 passed | 2 skipped (62)
+TypeScript: 0 errors (npx tsc --noEmit)
+ESLint:     0 warnings, 0 errors (npm run lint)
+Build:      39 static pages, 49 total routes compiled successfully (npm run build)
 ```
 
 ---
 
-## 🇮🇳 Indian Localization
-
-| Feature | Detail |
-|:--------|:-------|
-| **Currency** | 100% `₹` INR with `en‑IN` number formatting |
-| **Data Privacy** | DPDP Act 2023 compliant + GDPR principles |
-| **AI Privacy** | Customer data never used to train public LLMs |
-| **HQ** | Delhi / Pune · India |
-
----
-
-## 📬 Contact & Support
+## 📬 Contact & Commercial Support
 
 <div align="center">
 
-| Channel | Details |
-|:--------|:--------|
-| 📧 **Support Email** | [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com) — Response within 2 business hours |
-| 👨‍💻 **Lead Developer** | [Tushar Singh](https://codewithmrsingh.me/) — `codewithmrsingh.me` |
-| 🐛 **Issue Tracker** | [github.com/Tusharsinghoffical/Saas-T1/issues](https://github.com/Tusharsinghoffical/Saas-T1/issues) |
-| 🏢 **Headquarters** | Delhi / Pune, India |
+| Channel                           | Details                                                                |
+| :-------------------------------- | :--------------------------------------------------------------------- |
+| 📧 **Primary Inquiries**          | [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com)              |
+| 👨‍💻 **Lead Architect & Developer** | [Tushar Singh](https://codewithmrsingh.me/) (`codewithmrsingh.me`)     |
+| 🐛 **Bug Tracker**                | [GitHub Issues](https://github.com/Tusharsinghoffical/TASQ-ONE/issues) |
+| 🏢 **Headquarters**               | Delhi / Pune · India                                                   |
 
-</div>
+<br/>
 
----
-
-## 📄 License
-
-Distributed under the **MIT License**. See [LICENSE](./LICENSE) for full terms.
-
----
-
-<div align="center">
+Distributed under the **MIT License**. See [LICENSE](./LICENSE) for complete details.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                                                                 │
-│     ⚡  TASQ-ONE  v2.5  — Built for Speed. Built for Teams.    │
-│                                                                 │
-│     Crafted with ❤️  by  Tushar Singh  (codewithmrsingh.me)    │
-│     tasqoneworkos@gmail.com  ·  Delhi / Pune, India            │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│        ⚡ TASQ-ONE v2.6 — Built for Velocity. Built for Security.        │
+│          Crafted with ❤️ by Tushar Singh (codewithmrsingh.me)             │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 </div>

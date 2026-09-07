@@ -13,6 +13,8 @@ export interface ActivityLogInput {
  * Shared server-side audit logger.
  * Delegates to domains/activity/usecases/recordActivityLog.
  */
-export async function writeActivityLog(input: ActivityLogInput): Promise<boolean> {
+export async function writeActivityLog(
+  input: ActivityLogInput
+): Promise<boolean> {
   return await recordActivityLogUseCase(input);
 }

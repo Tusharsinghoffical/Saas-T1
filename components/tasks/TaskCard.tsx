@@ -23,13 +23,24 @@ export interface KanbanTaskItem {
   due_date?: string | null;
   commentsCount?: number;
   comments?: any[];
-  assignees?: { id: string; fullName?: string; full_name?: string; avatar_url?: string | null }[];
-  task_assignees?: { user_id: string; profiles?: { id: string; full_name: string; avatar_url?: string | null } }[];
+  assignees?: {
+    id: string;
+    fullName?: string;
+    full_name?: string;
+    avatar_url?: string | null;
+  }[];
+  task_assignees?: {
+    user_id: string;
+    profiles?: { id: string; full_name: string; avatar_url?: string | null };
+  }[];
   tags?: string[];
   subtasks?: { id: string; title: string; completed: boolean }[];
   dependencyTaskIds?: string[];
   dependencies?: { id: string; title: string; status: string }[];
-  task_dependencies?: { depends_on_task_id: string; tasks?: { id: string; title: string; status: string } }[];
+  task_dependencies?: {
+    depends_on_task_id: string;
+    tasks?: { id: string; title: string; status: string };
+  }[];
   createdBy?: string | null;
   created_by?: string | null;
   org_id?: string | null;
@@ -50,7 +61,10 @@ export function TaskCard({
   onDragEnd,
   isDragging,
 }: TaskCardProps) {
-  const priorityVariants: Record<string, "default" | "urgent" | "warning" | "success"> = {
+  const priorityVariants: Record<
+    string,
+    "default" | "urgent" | "warning" | "success"
+  > = {
     low: "default",
     medium: "default",
     high: "warning",
@@ -66,9 +80,9 @@ export function TaskCard({
   // Check if blocked by any incomplete dependency
   const isBlocked = Boolean(
     task.dependencies?.some((d) => d.status !== "completed") ||
-      task.task_dependencies?.some(
-        (td) => td.tasks && td.tasks.status !== "completed"
-      )
+    task.task_dependencies?.some(
+      (td) => td.tasks && td.tasks.status !== "completed"
+    )
   );
 
   // Extract assignees
@@ -90,17 +104,17 @@ export function TaskCard({
       onDragStart={(e) => onDragStart && onDragStart(e, task.id)}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`group relative p-4 rounded-xl bg-white dark:bg-slate-850 border transition-all duration-150 cursor-pointer touch-manipulation active:scale-[0.98] select-none ${
+      className={`dark:bg-slate-850 group relative cursor-pointer touch-manipulation select-none rounded-xl border bg-white p-4 transition-all duration-150 active:scale-[0.98] ${
         isDragging
-          ? "opacity-40 scale-95 border-dashed border-primary shadow-inner"
+          ? "scale-95 border-dashed border-primary opacity-40 shadow-inner"
           : isBlocked
-          ? "border-amber-400/60 dark:border-amber-600/40 shadow-sm"
-          : "border-slate-200 dark:border-slate-800 hover:border-primary/50 shadow-sm hover:shadow-md"
+            ? "border-amber-400/60 shadow-sm dark:border-amber-600/40"
+            : "border-slate-200 shadow-sm hover:border-primary/50 hover:shadow-md dark:border-slate-800"
       }`}
     >
       {/* Top Header: Priority Badge + Blocked Pill + Drag Handle */}
-      <div className="flex items-center justify-between gap-2 mb-2.5">
-        <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant={priorityVariants[task.priority] || "default"}>
             {task.priority}
           </Badge>
@@ -108,9 +122,9 @@ export function TaskCard({
           {isBlocked && (
             <span
               title="Blocked by incomplete prerequisite task(s)"
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+              className="inline-flex items-center gap-1 rounded border border-amber-500/20 bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400"
             >
-              <Lock className="w-2.5 h-2.5" />
+              <Lock className="h-2.5 w-2.5" />
               Blocked
             </span>
           )}
@@ -127,28 +141,28 @@ export function TaskCard({
                 />
               ))}
               {assigneeList.length > 3 && (
-                <div className="inline-flex h-5 w-5 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 items-center justify-center text-[8px] font-semibold">
+                <div className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-200 text-[8px] font-semibold text-slate-600 ring-2 ring-white dark:bg-slate-700 dark:text-slate-300 dark:ring-slate-900">
                   +{assigneeList.length - 3}
                 </div>
               )}
             </AvatarGroup>
           )}
-          <GripVertical className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition opacity-0 group-hover:opacity-100" />
+          <GripVertical className="h-3.5 w-3.5 text-slate-300 opacity-0 transition group-hover:text-slate-500 group-hover:opacity-100" />
         </div>
       </div>
 
       {/* Task Title */}
-      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+      <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 transition-colors group-hover:text-primary dark:text-slate-100">
         {task.title}
       </h4>
 
       {/* Task Tags */}
       {task.tags && task.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
+        <div className="mt-2 flex flex-wrap gap-1">
           {task.tags.map((t) => (
             <span
               key={t}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium"
+              className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400"
             >
               #{t}
             </span>
@@ -157,19 +171,19 @@ export function TaskCard({
       )}
 
       {/* Card Footer: Due Date, Checklist progress, Comments, Dependencies */}
-      <div className="mt-3.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+      <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs dark:border-slate-800">
         {rawDueDate ? (
           <span
             className={`inline-flex items-center gap-1 text-[11px] font-medium ${
               isOverdue
-                ? "text-urgent font-bold"
+                ? "font-bold text-urgent"
                 : "text-slate-500 dark:text-slate-400"
             }`}
           >
             {isOverdue ? (
-              <AlertTriangle className="w-3 h-3 text-urgent" />
+              <AlertTriangle className="h-3 w-3 text-urgent" />
             ) : (
-              <Clock className="w-3 h-3" />
+              <Clock className="h-3 w-3" />
             )}
             {new Date(rawDueDate).toLocaleDateString(undefined, {
               month: "short",
@@ -180,14 +194,14 @@ export function TaskCard({
           <span />
         )}
 
-        <div className="flex items-center gap-2.5 text-slate-400 text-[11px]">
+        <div className="flex items-center gap-2.5 text-[11px] text-slate-400">
           {((task.dependencies && task.dependencies.length > 0) ||
             (task.dependencyTaskIds && task.dependencyTaskIds.length > 0)) && (
             <span
               title="Has task dependencies"
               className="inline-flex items-center gap-1 text-slate-500"
             >
-              <Link2 className="w-3 h-3" />
+              <Link2 className="h-3 w-3" />
               {task.dependencies?.length || task.dependencyTaskIds?.length}
             </span>
           )}
@@ -196,18 +210,20 @@ export function TaskCard({
             <span
               className={`inline-flex items-center gap-1 ${
                 completedSubtasks === totalSubtasks
-                  ? "text-success font-medium"
+                  ? "font-medium text-success"
                   : ""
               }`}
             >
-              <CheckSquare className="w-3 h-3" />
+              <CheckSquare className="h-3 w-3" />
               {completedSubtasks}/{totalSubtasks}
             </span>
           )}
 
-          {(task.commentsCount || (task.comments && task.comments.length) || 0) > 0 && (
+          {(task.commentsCount ||
+            (task.comments && task.comments.length) ||
+            0) > 0 && (
             <span className="inline-flex items-center gap-1">
-              <MessageSquare className="w-3 h-3" />
+              <MessageSquare className="h-3 w-3" />
               {task.commentsCount || task.comments?.length}
             </span>
           )}

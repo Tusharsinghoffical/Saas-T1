@@ -25,13 +25,15 @@ export function ProductivityChart({
 
   if (!data || data.length === 0) {
     return (
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-xs text-slate-400 dark:border-slate-800 dark:bg-slate-900">
         No productivity metrics recorded for this period.
       </div>
     );
   }
 
-  const maxVal = Math.max(...data.map((d) => Math.max(d.completed, d.created || 0, 5)));
+  const maxVal = Math.max(
+    ...data.map((d) => Math.max(d.completed, d.created || 0, 5))
+  );
   const totalCompletedInPeriod = data.reduce((acc, d) => acc + d.completed, 0);
 
   // SVG dimensions
@@ -41,7 +43,8 @@ export function ProductivityChart({
 
   const points = data.map((d, index) => {
     const x = paddingX + (index / (data.length - 1)) * (600 - paddingX * 2);
-    const y = height - paddingY - (d.completed / maxVal) * (height - paddingY * 2);
+    const y =
+      height - paddingY - (d.completed / maxVal) * (height - paddingY * 2);
     return { x, y, d, index };
   });
 
@@ -52,28 +55,28 @@ export function ProductivityChart({
   const areaD = `${pathD} L ${points[points.length - 1]?.x || 0} ${height - paddingY} L ${points[0]?.x || 0} ${height - paddingY} Z`;
 
   return (
-    <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+    <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               {title}
             </h3>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-success/15 text-success">
-              <TrendingUp className="w-3 h-3" /> +{totalCompletedInPeriod} done
+            <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">
+              <TrendingUp className="h-3 w-3" /> +{totalCompletedInPeriod} done
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
         </div>
 
         <div className="flex items-center gap-3 text-xs text-slate-500">
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+            <div className="h-2.5 w-2.5 rounded-full bg-primary" />
             <span>Completed</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <div className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-700" />
             <span>Created</span>
           </div>
         </div>
@@ -83,7 +86,7 @@ export function ProductivityChart({
       <div className="relative w-full overflow-hidden">
         <svg
           viewBox={`0 0 600 ${height}`}
-          className="w-full h-44 overflow-visible"
+          className="h-44 w-full overflow-visible"
         >
           <defs>
             <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -141,8 +144,8 @@ export function ProductivityChart({
                 r={hoveredIndex === p.index ? "5" : "3"}
                 className={`transition-all duration-150 ${
                   hoveredIndex === p.index
-                    ? "fill-primary stroke-white dark:stroke-slate-900 stroke-2"
-                    : "fill-white dark:fill-slate-900 stroke-primary stroke-2"
+                    ? "fill-primary stroke-white stroke-2 dark:stroke-slate-900"
+                    : "fill-white stroke-primary stroke-2 dark:fill-slate-900"
                 }`}
               />
             </g>
@@ -152,18 +155,18 @@ export function ProductivityChart({
         {/* Floating Tooltip */}
         {hoveredIndex !== null && points[hoveredIndex] && (
           <div
-            className="absolute -top-1 pointer-events-none transform -translate-x-1/2 p-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl border border-slate-700 text-xs z-30 transition-all"
+            className="pointer-events-none absolute -top-1 z-30 -translate-x-1/2 transform rounded-xl border border-slate-700 bg-slate-900 p-2 text-xs text-white shadow-xl transition-all dark:bg-white dark:text-slate-900"
             style={{
               left: `${(points[hoveredIndex].x / 600) * 100}%`,
             }}
           >
-            <div className="font-bold flex items-center gap-1.5 text-[11px]">
-              <Calendar className="w-3 h-3 opacity-70" />
+            <div className="flex items-center gap-1.5 text-[11px] font-bold">
+              <Calendar className="h-3 w-3 opacity-70" />
               {points[hoveredIndex].d.label}
             </div>
             <div className="mt-1 flex items-center gap-2 text-[10px]">
-              <span className="text-emerald-400 dark:text-emerald-600 font-semibold flex items-center gap-0.5">
-                <CheckCircle2 className="w-3 h-3" />
+              <span className="flex items-center gap-0.5 font-semibold text-emerald-400 dark:text-emerald-600">
+                <CheckCircle2 className="h-3 w-3" />
                 {points[hoveredIndex].d.completed} completed
               </span>
             </div>
@@ -172,7 +175,7 @@ export function ProductivityChart({
       </div>
 
       {/* Bottom Date Labels */}
-      <div className="flex justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex justify-between border-t border-slate-100 pt-1 text-[10px] text-slate-400 dark:border-slate-800">
         <span>{data[0]?.label}</span>
         <span>{data[Math.floor(data.length / 2)]?.label}</span>
         <span>{data[data.length - 1]?.label}</span>

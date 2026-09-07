@@ -28,7 +28,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
-import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
+import {
+  useAutoRefresh,
+  AutoRefreshBadge,
+} from "@/components/ui/AutoRefreshControl";
 import { MemberIdBadge } from "@/components/ui/MemberIdBadge";
 import { matchesMemberSearch, formatMemberCode } from "@/lib/memberId";
 
@@ -57,8 +60,12 @@ export default function AdminTeamPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<"admin" | "manager" | "employee">("employee");
-  const [creationMode, setCreationMode] = useState<"direct" | "invite">("direct");
+  const [role, setRole] = useState<"admin" | "manager" | "employee">(
+    "employee"
+  );
+  const [creationMode, setCreationMode] = useState<"direct" | "invite">(
+    "direct"
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -78,9 +85,15 @@ export default function AdminTeamPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Toast feedback
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
-  const showToast = (message: string, type: "success" | "error" = "success") => {
+  const showToast = (
+    message: string,
+    type: "success" | "error" = "success"
+  ) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
@@ -91,7 +104,10 @@ export default function AdminTeamPage() {
       const res = await fetch("/api/v1/org/members");
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
-        console.warn("[fetchMembers] Server returned non-JSON response:", res.status);
+        console.warn(
+          "[fetchMembers] Server returned non-JSON response:",
+          res.status
+        );
         return;
       }
       const json = await res.json();
@@ -103,7 +119,10 @@ export default function AdminTeamPage() {
             email: m.email || null,
             role: m.role || "employee",
             teamId: m.teamId || m.team_id || null,
-            teamName: m.teamName || m.team_name || (m.role === "admin" ? "Leadership" : "General"),
+            teamName:
+              m.teamName ||
+              m.team_name ||
+              (m.role === "admin" ? "Leadership" : "General"),
             avatarUrl: m.avatarUrl || m.avatar_url || null,
             createdAt: m.createdAt || m.created_at,
           }))
@@ -119,14 +138,17 @@ export default function AdminTeamPage() {
   }, []);
 
   // Initial data load on mount
-  useEffect(() => { fetchMembers(); }, [fetchMembers]);
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
 
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchMembers);
 
   // Realtime Supabase Channel Subscription for Team Profiles
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
+    const hasSupabase =
+      Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
 
     if (!hasSupabase) {
       setIsConnected(true);
@@ -225,7 +247,12 @@ export default function AdminTeamPage() {
       }
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || data.message || (typeof data.details === "string" ? data.details : null) || "Failed to add member.");
+        throw new Error(
+          data.error ||
+            data.message ||
+            (typeof data.details === "string" ? data.details : null) ||
+            "Failed to add member."
+        );
       }
 
       if (creationMode === "direct") {
@@ -255,7 +282,10 @@ export default function AdminTeamPage() {
   };
 
   // Handle Role Change
-  const handleRoleChange = async (userId: string, newRole: "admin" | "manager" | "employee") => {
+  const handleRoleChange = async (
+    userId: string,
+    newRole: "admin" | "manager" | "employee"
+  ) => {
     try {
       const res = await fetch(`/api/v1/org/members/${userId}`, {
         method: "PATCH",
@@ -265,7 +295,9 @@ export default function AdminTeamPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || data.error?.message || "Failed to update role.");
+        throw new Error(
+          data.message || data.error?.message || "Failed to update role."
+        );
       }
 
       setMembers((prev) =>
@@ -288,7 +320,11 @@ export default function AdminTeamPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || data.error?.message || "Failed to update team assignment.");
+        throw new Error(
+          data.message ||
+            data.error?.message ||
+            "Failed to update team assignment."
+        );
       }
 
       setMembers((prev) =>
@@ -311,7 +347,9 @@ export default function AdminTeamPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.message || data.error?.message || "Failed to remove member.");
+        throw new Error(
+          data.message || data.error?.message || "Failed to remove member."
+        );
       }
 
       setMembers((prev) => prev.filter((m) => m.id !== deletingMember.id));
@@ -326,7 +364,10 @@ export default function AdminTeamPage() {
 
   const copyCredentialsText = () => {
     if (!createdCredentials) return;
-    const memberCode = formatMemberCode(createdCredentials.id, createdCredentials.role);
+    const memberCode = formatMemberCode(
+      createdCredentials.id,
+      createdCredentials.role
+    );
     const text = `🎉 You've been added to TASQ-ONE Work OS!\n\nMember ID: ${memberCode} (${createdCredentials.id || "N/A"})\nLogin URL: ${window.location.origin}/login\nEmail: ${createdCredentials.email}\nPassword: ${createdCredentials.password}\nRole: ${createdCredentials.role.toUpperCase()}\nTeam: ${createdCredentials.teamName || "General"}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -338,50 +379,55 @@ export default function AdminTeamPage() {
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold flex items-center gap-2 animate-in slide-in-from-bottom-2 ${
+          className={`animate-in slide-in-from-bottom-2 fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl border px-4 py-3 text-xs font-semibold shadow-lg ${
             toast.type === "success"
-              ? "bg-emerald-950/90 text-emerald-300 border-emerald-500/30"
-              : "bg-rose-950/90 text-rose-300 border-rose-500/30"
+              ? "border-emerald-500/30 bg-emerald-950/90 text-emerald-300"
+              : "border-rose-500/30 bg-rose-950/90 text-rose-300"
           }`}
         >
           {toast.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-rose-400" />
+            <AlertCircle className="h-4 w-4 text-rose-400" />
           )}
           <span>{toast.message}</span>
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
               Team & Role Access
             </h1>
             {/* Live Realtime Status Pill */}
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold transition-colors ${
                 isConnected
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400"
               }`}
             >
-              <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`} />
-              <span>{isConnected ? "Realtime Database Sync" : "Syncing..."}</span>
+              <Radio
+                className={`h-3 w-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`}
+              />
+              <span>
+                {isConnected ? "Realtime Database Sync" : "Syncing..."}
+              </span>
             </span>
 
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+            <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-bold text-primary">
               {members.length} Total Members
             </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Add team members, guarantee manager/team assignments, and manage RBAC role permissions.
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Add team members, guarantee manager/team assignments, and manage
+            RBAC role permissions.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Manual Refresh */}
           <AutoRefreshBadge
             isRefreshing={isRefreshing || isLoading}
@@ -395,9 +441,9 @@ export default function AdminTeamPage() {
               setSelectedTeam("General");
               setIsAddModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary hover:bg-primary-700 text-white text-xs font-semibold shadow-sm shadow-primary/25"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-primary/25 hover:bg-primary-700"
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="h-4 w-4" />
             Add Team Member
           </Button>
         </div>
@@ -405,26 +451,31 @@ export default function AdminTeamPage() {
 
       {/* Gap 2: Unassigned Team Members Report / Warning Banner */}
       {unassignedMembers.length > 0 && (
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+        <div className="animate-fade-in flex flex-col justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-amber-500/20 text-amber-600 flex items-center justify-center flex-shrink-0">
-              <AlertCircle className="w-5 h-5" />
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-600">
+              <AlertCircle className="h-5 w-5" />
             </div>
             <div>
               <div className="text-xs font-bold text-amber-900 dark:text-amber-300">
-                {unassignedMembers.length} Member{unassignedMembers.length > 1 ? "s" : ""} Without Team Assignment
+                {unassignedMembers.length} Member
+                {unassignedMembers.length > 1 ? "s" : ""} Without Team
+                Assignment
               </div>
               <div className="text-[11px] text-amber-700 dark:text-amber-400">
-                Employees without an assigned team are invisible to Manager dashboards. Assign them to a team below.
+                Employees without an assigned team are invisible to Manager
+                dashboards. Assign them to a team below.
               </div>
             </div>
           </div>
           <button
             type="button"
             onClick={() => {
-              unassignedMembers.forEach((m) => handleTeamChange(m.id, "General"));
+              unassignedMembers.forEach((m) =>
+                handleTeamChange(m.id, "General")
+              );
             }}
-            className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition flex-shrink-0"
+            className="flex-shrink-0 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-amber-600"
           >
             Auto-Assign All to &quot;General&quot;
           </button>
@@ -432,62 +483,74 @@ export default function AdminTeamPage() {
       )}
 
       {/* Role Distribution Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div>
-            <div className="text-xs font-semibold text-slate-500">Employees (Workspace Users)</div>
+            <div className="text-xs font-semibold text-slate-500">
+              Employees (Workspace Users)
+            </div>
             <div className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
               {employeeCount}
             </div>
-            <div className="text-[11px] text-slate-400">Access to /employee/dashboard</div>
+            <div className="text-[11px] text-slate-400">
+              Access to /employee/dashboard
+            </div>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">
-            <Users className="w-5 h-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 font-bold text-emerald-600">
+            <Users className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div>
-            <div className="text-xs font-semibold text-slate-500">Managers (Sprint Leads)</div>
+            <div className="text-xs font-semibold text-slate-500">
+              Managers (Sprint Leads)
+            </div>
             <div className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
               {managerCount}
             </div>
-            <div className="text-[11px] text-slate-400">Access to /manager/dashboard</div>
+            <div className="text-[11px] text-slate-400">
+              Access to /manager/dashboard
+            </div>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
-            <ShieldCheck className="w-5 h-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 font-bold text-amber-600">
+            <ShieldCheck className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
           <div>
-            <div className="text-xs font-semibold text-slate-500">Founding Admins</div>
+            <div className="text-xs font-semibold text-slate-500">
+              Founding Admins
+            </div>
             <div className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
               {adminCount}
             </div>
-            <div className="text-[11px] text-slate-400">Full workspace & team control</div>
+            <div className="text-[11px] text-slate-400">
+              Full workspace & team control
+            </div>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-bold">
-            <Shield className="w-5 h-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 font-bold text-indigo-600">
+            <Shield className="h-5 w-5" />
           </div>
         </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+      <div className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:flex-row sm:items-center">
+        <div className="relative max-w-md flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Search by name, email, team, or Member ID (e.g. EMP-XXXXXX, MGR-XXXXXX, UUID)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-14 text-xs h-9"
+            className="h-9 pl-9 pr-14 text-xs"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400 hover:text-slate-600 dark:bg-slate-700 dark:hover:text-slate-200"
             >
               Clear
             </button>
@@ -496,14 +559,14 @@ export default function AdminTeamPage() {
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-slate-500">Role:</span>
-          <div className="flex items-center rounded-lg bg-slate-100 dark:bg-slate-900 p-1 border border-slate-200 dark:border-slate-750">
+          <div className="dark:border-slate-750 flex items-center rounded-lg border border-slate-200 bg-slate-100 p-1 dark:bg-slate-900">
             {["all", "admin", "manager", "employee"].map((r) => (
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold capitalize transition ${
+                className={`rounded-md px-3 py-1 text-xs font-semibold capitalize transition ${
                   roleFilter === r
-                    ? "bg-white dark:bg-slate-800 text-primary shadow-sm"
+                    ? "bg-white text-primary shadow-sm dark:bg-slate-800"
                     : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
@@ -515,20 +578,20 @@ export default function AdminTeamPage() {
       </div>
 
       {/* Members Table */}
-      <div className="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
         {isLoading ? (
-          <div className="p-12 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+          <div className="flex flex-col items-center gap-2 p-12 text-center text-xs text-slate-400">
+            <RefreshCw className="h-5 w-5 animate-spin text-primary" />
             <span>Loading workspace team members...</span>
           </div>
         ) : filteredMembers.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
+          <div className="p-12 text-center text-xs text-slate-400">
             No team members found matching your search.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
+              <thead className="border-b border-slate-200 bg-slate-50 text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-700 dark:bg-slate-900/60">
                 <tr>
                   <th className="px-5 py-3.5">Member / ID</th>
                   <th className="px-5 py-3.5">Email</th>
@@ -538,13 +601,16 @@ export default function AdminTeamPage() {
                   <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-750">
+              <tbody className="dark:divide-slate-750 divide-y divide-slate-100">
                 {filteredMembers.map((member) => (
-                  <tr key={member.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-750/30 transition">
+                  <tr
+                    key={member.id}
+                    className="dark:hover:bg-slate-750/30 transition hover:bg-slate-50/50"
+                  >
                     {/* Name, Avatar & MemberIdBadge */}
-                    <td className="px-5 py-3.5 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-xs border border-primary/20">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-xs font-bold text-primary">
                           {member.fullName
                             .split(" ")
                             .map((n) => n[0])
@@ -564,21 +630,25 @@ export default function AdminTeamPage() {
                     </td>
 
                     {/* Email */}
-                    <td className="px-5 py-3.5 whitespace-nowrap text-slate-500">
+                    <td className="whitespace-nowrap px-5 py-3.5 text-slate-500">
                       {member.email || "Workspace User"}
                     </td>
 
                     {/* Team Assignment — editable dropdown */}
-                    <td className="px-5 py-3.5 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-5 py-3.5">
                       <select
                         value={member.teamName || "General"}
-                        onChange={(e) => handleTeamChange(member.id, e.target.value)}
-                        className="text-xs font-semibold rounded-lg px-2.5 py-1 border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer transition"
+                        onChange={(e) =>
+                          handleTeamChange(member.id, e.target.value)
+                        }
+                        className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 transition focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200"
                       >
                         <option value="General">General</option>
                         <option value="Engineering">Engineering</option>
                         <option value="Product">Product &amp; Design</option>
-                        <option value="Marketing">Growth &amp; Marketing</option>
+                        <option value="Marketing">
+                          Growth &amp; Marketing
+                        </option>
                         <option value="Leadership">Leadership</option>
                         <option value="Sales">Sales</option>
                         <option value="Operations">Operations</option>
@@ -587,18 +657,21 @@ export default function AdminTeamPage() {
                     </td>
 
                     {/* Role Dropdown */}
-                    <td className="px-5 py-3.5 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-5 py-3.5">
                       <select
                         value={member.role}
                         onChange={(e) =>
-                          handleRoleChange(member.id, e.target.value as "admin" | "manager" | "employee")
+                          handleRoleChange(
+                            member.id,
+                            e.target.value as "admin" | "manager" | "employee"
+                          )
                         }
-                        className={`text-xs font-bold rounded-lg px-2.5 py-1 border transition cursor-pointer ${
+                        className={`cursor-pointer rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
                           member.role === "admin"
-                            ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30"
+                            ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
                             : member.role === "manager"
-                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                            : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                              ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                         }`}
                       >
                         <option value="employee">Employee</option>
@@ -608,25 +681,25 @@ export default function AdminTeamPage() {
                     </td>
 
                     {/* Destination Route */}
-                    <td className="px-5 py-3.5 whitespace-nowrap">
-                      <code className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-mono">
+                    <td className="whitespace-nowrap px-5 py-3.5">
+                      <code className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                         {member.role === "admin"
                           ? "/admin/dashboard"
                           : member.role === "manager"
-                          ? "/manager/dashboard"
-                          : "/employee/dashboard"}
+                            ? "/manager/dashboard"
+                            : "/employee/dashboard"}
                       </code>
                     </td>
 
                     {/* Actions */}
-                    <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                    <td className="whitespace-nowrap px-5 py-3.5 text-right">
                       <button
                         type="button"
                         onClick={() => setDeletingMember(member)}
                         title="Remove member from workspace"
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition"
+                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-600"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </td>
                   </tr>
@@ -653,17 +726,23 @@ export default function AdminTeamPage() {
       >
         {createdCredentials ? (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-3">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                <CheckCircle2 className="w-4 h-4" />
+            <div className="space-y-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="h-4 w-4" />
                 Account Created Successfully!
               </div>
 
               <div className="space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
                 {createdCredentials.id && (
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-500">Member ID:</span>
-                    <MemberIdBadge id={createdCredentials.id} role={createdCredentials.role} size="md" />
+                    <span className="font-semibold text-slate-500">
+                      Member ID:
+                    </span>
+                    <MemberIdBadge
+                      id={createdCredentials.id}
+                      role={createdCredentials.role}
+                      size="md"
+                    />
                   </div>
                 )}
                 <div>
@@ -672,21 +751,25 @@ export default function AdminTeamPage() {
                 </div>
                 <div>
                   <span className="font-semibold text-slate-500">Email:</span>{" "}
-                  <code className="font-mono bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                  <code className="rounded bg-white px-1.5 py-0.5 font-mono dark:bg-slate-800">
                     {createdCredentials.email}
                   </code>
                 </div>
                 {createdCredentials.password && (
                   <div>
-                    <span className="font-semibold text-slate-500">Password:</span>{" "}
-                    <code className="font-mono bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded font-bold text-primary">
+                    <span className="font-semibold text-slate-500">
+                      Password:
+                    </span>{" "}
+                    <code className="rounded bg-white px-1.5 py-0.5 font-mono font-bold text-primary dark:bg-slate-800">
                       {createdCredentials.password}
                     </code>
                   </div>
                 )}
                 <div>
-                  <span className="font-semibold text-slate-500">Assigned Role:</span>{" "}
-                  <Badge variant="default" className="uppercase text-[10px]">
+                  <span className="font-semibold text-slate-500">
+                    Assigned Role:
+                  </span>{" "}
+                  <Badge variant="default" className="text-[10px] uppercase">
                     {createdCredentials.role}
                   </Badge>
                 </div>
@@ -698,9 +781,13 @@ export default function AdminTeamPage() {
                 type="button"
                 variant="outline"
                 onClick={copyCredentialsText}
-                className="w-full flex items-center justify-center gap-2 text-xs font-semibold"
+                className="flex w-full items-center justify-center gap-2 text-xs font-semibold"
               >
-                {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                {copied ? (
+                  <Check className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
                 {copied ? "Copied to Clipboard!" : "Copy Login Info"}
               </Button>
 
@@ -710,7 +797,7 @@ export default function AdminTeamPage() {
                   setIsAddModalOpen(false);
                   setCreatedCredentials(null);
                 }}
-                className="w-full bg-primary hover:bg-primary-700 text-white text-xs font-semibold"
+                className="w-full bg-primary text-xs font-semibold text-white hover:bg-primary-700"
               >
                 Done
               </Button>
@@ -719,20 +806,20 @@ export default function AdminTeamPage() {
         ) : (
           <form onSubmit={handleAddMember} className="space-y-4">
             {errorMessage && (
-              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <div className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-600 dark:text-rose-400">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             {/* Mode Switcher */}
-            <div className="flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center rounded-lg border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
               <button
                 type="button"
                 onClick={() => setCreationMode("direct")}
-                className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition ${
+                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition ${
                   creationMode === "direct"
-                    ? "bg-white dark:bg-slate-900 text-primary shadow-sm"
+                    ? "bg-white text-primary shadow-sm dark:bg-slate-900"
                     : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
@@ -741,9 +828,9 @@ export default function AdminTeamPage() {
               <button
                 type="button"
                 onClick={() => setCreationMode("invite")}
-                className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition ${
+                className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition ${
                   creationMode === "invite"
-                    ? "bg-white dark:bg-slate-900 text-primary shadow-sm"
+                    ? "bg-white text-primary shadow-sm dark:bg-slate-900"
                     : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
@@ -753,7 +840,7 @@ export default function AdminTeamPage() {
 
             {/* Full Name */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Full Name *
               </label>
               <Input
@@ -767,7 +854,7 @@ export default function AdminTeamPage() {
 
             {/* Email Address */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Work Email *
               </label>
               <Input
@@ -783,7 +870,7 @@ export default function AdminTeamPage() {
             {/* Direct Password Input if Mode is Direct */}
             {creationMode === "direct" && (
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Assign Temporary Password *
                 </label>
                 <div className="relative">
@@ -793,23 +880,23 @@ export default function AdminTeamPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="text-xs pr-10"
+                    className="pr-10 text-xs"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-200"
                     title={showPassword ? "Hide password" : "Show password"}
                     tabIndex={-1}
                   >
                     {showPassword ? (
-                      <EyeOff className="w-4 h-4 text-slate-500" />
+                      <EyeOff className="h-4 w-4 text-slate-500" />
                     ) : (
-                      <Eye className="w-4 h-4 text-primary" />
+                      <Eye className="h-4 w-4 text-primary" />
                     )}
                   </button>
                 </div>
-                <span className="text-[10px] text-slate-400 mt-0.5 block">
+                <span className="mt-0.5 block text-[10px] text-slate-400">
                   Employee will use this email & password to sign in at /login.
                 </span>
               </div>
@@ -817,60 +904,66 @@ export default function AdminTeamPage() {
 
             {/* Role Selection */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Assign Workspace Role *
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => setRole("employee")}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`rounded-xl border p-2.5 text-left transition ${
                     role === "employee"
                       ? "border-primary bg-primary/5 text-primary"
-                      : "border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700"
                   }`}
                 >
-                  <div className="font-bold text-xs">Employee</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Task execution</div>
+                  <div className="text-xs font-bold">Employee</div>
+                  <div className="mt-0.5 text-[10px] text-slate-400">
+                    Task execution
+                  </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setRole("manager")}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`rounded-xl border p-2.5 text-left transition ${
                     role === "manager"
                       ? "border-amber-500 bg-amber-500/5 text-amber-600"
-                      : "border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700"
                   }`}
                 >
-                  <div className="font-bold text-xs">Manager</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Sprint reviews</div>
+                  <div className="text-xs font-bold">Manager</div>
+                  <div className="mt-0.5 text-[10px] text-slate-400">
+                    Sprint reviews
+                  </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setRole("admin")}
-                  className={`p-2.5 rounded-xl border text-left transition ${
+                  className={`rounded-xl border p-2.5 text-left transition ${
                     role === "admin"
                       ? "border-indigo-500 bg-indigo-500/5 text-indigo-600"
-                      : "border-slate-200 dark:border-slate-700 text-slate-600 hover:bg-slate-50"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700"
                   }`}
                 >
-                  <div className="font-bold text-xs">Admin</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Full workspace</div>
+                  <div className="text-xs font-bold">Admin</div>
+                  <div className="mt-0.5 text-[10px] text-slate-400">
+                    Full workspace
+                  </div>
                 </button>
               </div>
             </div>
 
             {/* Team / Squad Assignment */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Assign Team / Squad *
               </label>
               <select
                 value={selectedTeam}
                 onChange={(e) => setSelectedTeam(e.target.value)}
-                className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2.5 text-slate-800 dark:text-slate-200 font-medium"
+                className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-medium text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
                 <option value="General">General (Default Org Team)</option>
                 <option value="Engineering">Engineering Squad</option>
@@ -878,8 +971,9 @@ export default function AdminTeamPage() {
                 <option value="Marketing">Growth & Marketing</option>
                 <option value="Leadership">Executive Leadership</option>
               </select>
-              <span className="text-[10px] text-slate-400 mt-1 block">
-                Guarantees this member is visible in the corresponding Manager dashboard.
+              <span className="mt-1 block text-[10px] text-slate-400">
+                Guarantees this member is visible in the corresponding Manager
+                dashboard.
               </span>
             </div>
 
@@ -896,7 +990,7 @@ export default function AdminTeamPage() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-primary hover:bg-primary-700 text-white text-xs font-semibold"
+                className="bg-primary text-xs font-semibold text-white hover:bg-primary-700"
               >
                 {isSubmitting ? "Creating Account..." : "Create Member"}
               </Button>
@@ -914,7 +1008,9 @@ export default function AdminTeamPage() {
       >
         <div className="space-y-4">
           <p className="text-xs text-slate-600 dark:text-slate-300">
-            This will immediately deactivate <strong>{deletingMember?.fullName}</strong> and block them from logging in. Historical tasks and logs will be preserved.
+            This will immediately deactivate{" "}
+            <strong>{deletingMember?.fullName}</strong> and block them from
+            logging in. Historical tasks and logs will be preserved.
           </p>
 
           <div className="flex items-center justify-end gap-2 pt-2">
@@ -931,7 +1027,7 @@ export default function AdminTeamPage() {
               type="button"
               onClick={handleDeleteMember}
               disabled={isDeleting}
-              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold"
+              className="bg-rose-600 text-xs font-semibold text-white hover:bg-rose-700"
             >
               {isDeleting ? "Removing..." : "Remove Access"}
             </Button>

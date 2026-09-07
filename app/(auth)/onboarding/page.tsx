@@ -55,10 +55,16 @@ function OnboardingWizard() {
   const [invites, setInvites] = useState<InviteMemberInput[]>([
     { email: "", role: "employee" },
   ]);
-  const [inviteMode, setInviteMode] = useState<"rows" | "bulk" | "file">("rows");
+  const [inviteMode, setInviteMode] = useState<"rows" | "bulk" | "file">(
+    "rows"
+  );
   const [bulkText, setBulkText] = useState("");
-  const [bulkRole, setBulkRole] = useState<InviteMemberInput["role"]>("employee");
-  const [bulkNotice, setBulkNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [bulkRole, setBulkRole] =
+    useState<InviteMemberInput["role"]>("employee");
+  const [bulkNotice, setBulkNotice] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [firstTask, setFirstTask] = useState({
@@ -125,7 +131,10 @@ function OnboardingWizard() {
   const handleProcessBulkEmails = () => {
     setBulkNotice(null);
     if (!bulkText.trim()) {
-      setBulkNotice({ type: "error", text: "Please enter or paste at least one email address." });
+      setBulkNotice({
+        type: "error",
+        text: "Please enter or paste at least one email address.",
+      });
       return;
     }
 
@@ -141,11 +150,17 @@ function OnboardingWizard() {
 
     rawTokens.forEach((token) => {
       // Sanitize: strip quotes, brackets, and extra symbols
-      const cleanToken = token.replace(/^[<"']+|[>"',;]+$/g, "").trim().toLowerCase();
+      const cleanToken = token
+        .replace(/^[<"']+|[>"',;]+$/g, "")
+        .trim()
+        .toLowerCase();
       if (!cleanToken) return;
 
       if (EMAIL_REGEX.test(cleanToken)) {
-        if (existingEmails.has(cleanToken) || validNewEmails.includes(cleanToken)) {
+        if (
+          existingEmails.has(cleanToken) ||
+          validNewEmails.includes(cleanToken)
+        ) {
           duplicateCount++;
         } else {
           validNewEmails.push(cleanToken);
@@ -225,7 +240,10 @@ function OnboardingWizard() {
     };
 
     reader.onerror = () => {
-      setBulkNotice({ type: "error", text: "Failed to read file content safely." });
+      setBulkNotice({
+        type: "error",
+        text: "Failed to read file content safely.",
+      });
     };
 
     reader.readAsText(file);
@@ -247,7 +265,9 @@ function OnboardingWizard() {
       return cleanEmail.length > 0 && EMAIL_REGEX.test(cleanEmail);
     });
 
-    setInvites(validInvites.length > 0 ? validInvites : [{ email: "", role: "employee" }]);
+    setInvites(
+      validInvites.length > 0 ? validInvites : [{ email: "", role: "employee" }]
+    );
     setStep(3);
   };
 
@@ -304,24 +324,26 @@ function OnboardingWizard() {
     }
   };
 
-  const validInvitesCount = invites.filter((inv) => inv.email.trim().length > 0).length;
+  const validInvitesCount = invites.filter(
+    (inv) => inv.email.trim().length > 0
+  ).length;
 
   return (
     <div>
       {/* Wizard Progress Bar */}
       <div className="mb-6">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+        <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           <span>Step {step} of 3</span>
-          <span className="text-primary font-extrabold">
+          <span className="font-extrabold text-primary">
             {step === 1 && "1. Organization Details"}
             {step === 2 && "2. Invite Teammates"}
             {step === 3 && "3. First Task Setup"}
           </span>
         </div>
 
-        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+        <div className="flex h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
-            className={`h-full bg-primary transition-all duration-300 rounded-full ${
+            className={`h-full rounded-full bg-primary transition-all duration-300 ${
               step === 1 ? "w-1/3" : step === 2 ? "w-2/3" : "w-full"
             }`}
           />
@@ -329,58 +351,68 @@ function OnboardingWizard() {
       </div>
 
       {serverError && (
-        <div className="mb-5 p-3.5 rounded-2xl bg-urgent/10 border border-urgent/20 flex items-start gap-2.5 text-xs text-urgent font-medium animate-fade-in">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <div className="animate-fade-in mb-5 flex items-start gap-2.5 rounded-2xl border border-urgent/20 bg-urgent/10 p-3.5 text-xs font-medium text-urgent">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>{serverError}</span>
         </div>
       )}
 
       {/* STEP 1: Confirm Org Name & Timezone */}
       {step === 1 && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="text-center mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center mb-2.5 shadow-sm">
-              <Building2 className="w-6 h-6" />
+        <div className="animate-fade-in space-y-4">
+          <div className="mb-5 text-center">
+            <div className="mx-auto mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+              <Building2 className="h-6 w-6" />
             </div>
             <h3 className="text-xl font-extrabold text-slate-950 dark:text-white">
               Confirm Organization
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
               Customize your workspace name and default operational timezone.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               Workspace Name
             </label>
             <input
               type="text"
               value={orgDetails.orgName}
-              onChange={(e) => setOrgDetails({ ...orgDetails, orgName: e.target.value })}
-              className={`w-full px-3.5 py-2.5 rounded-xl border ${
+              onChange={(e) =>
+                setOrgDetails({ ...orgDetails, orgName: e.target.value })
+              }
+              className={`w-full rounded-xl border px-3.5 py-2.5 ${
                 stepErrors.orgName
                   ? "border-urgent focus:ring-urgent"
-                  : "border-slate-300 dark:border-slate-700 focus:ring-primary focus:border-primary"
-              } bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 text-sm font-medium transition`}
+                  : "border-slate-300 focus:border-primary focus:ring-primary dark:border-slate-700"
+              } bg-slate-50/50 text-sm font-medium text-slate-900 transition focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white`}
             />
             {stepErrors.orgName && (
-              <p className="mt-1 text-xs text-urgent font-medium">{stepErrors.orgName}</p>
+              <p className="mt-1 text-xs font-medium text-urgent">
+                {stepErrors.orgName}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               Default Timezone
             </label>
             <select
               value={orgDetails.timezone}
-              onChange={(e) => setOrgDetails({ ...orgDetails, timezone: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-sm font-medium transition"
+              onChange={(e) =>
+                setOrgDetails({ ...orgDetails, timezone: e.target.value })
+              }
+              className="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
             >
               <option value="Asia/Kolkata">Asia/Kolkata (IST +5:30)</option>
-              <option value="America/New_York">America/New_York (EST / EDT)</option>
-              <option value="America/Los_Angeles">America/Los_Angeles (PST / PDT)</option>
+              <option value="America/New_York">
+                America/New_York (EST / EDT)
+              </option>
+              <option value="America/Los_Angeles">
+                America/Los_Angeles (PST / PDT)
+              </option>
               <option value="Europe/London">Europe/London (GMT / BST)</option>
               <option value="Europe/Berlin">Europe/Berlin (CET)</option>
               <option value="Asia/Dubai">Asia/Dubai (GST +4:00)</option>
@@ -392,40 +424,41 @@ function OnboardingWizard() {
           <button
             type="button"
             onClick={handleStep1Next}
-            className="w-full mt-4 py-3 px-4 rounded-xl bg-primary hover:bg-primary-700 text-white font-bold text-sm shadow-md shadow-primary/25 transition flex items-center justify-center gap-2 cursor-pointer"
+            className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md shadow-primary/25 transition hover:bg-primary-700"
           >
             <span>Continue to Teammates</span>
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       )}
 
       {/* STEP 2: Invite Teammates (Multiple Upload & Manual Entry) */}
       {step === 2 && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="text-center mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center mb-2.5 shadow-sm">
-              <Users className="w-6 h-6" />
+        <div className="animate-fade-in space-y-4">
+          <div className="mb-4 text-center">
+            <div className="mx-auto mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+              <Users className="h-6 w-6" />
             </div>
             <h3 className="text-xl font-extrabold text-slate-950 dark:text-white">
               Invite Your Team
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Add your colleagues now or skip and invite them later from admin settings.
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Add your colleagues now or skip and invite them later from admin
+              settings.
             </p>
           </div>
 
           {/* Input Method Selector Tabs */}
-          <div className="flex rounded-xl bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200 dark:border-slate-700 text-xs font-bold">
+          <div className="flex rounded-xl border border-slate-200 bg-slate-100 p-1 text-xs font-bold dark:border-slate-700 dark:bg-slate-800/80">
             <button
               type="button"
               onClick={() => {
                 setInviteMode("rows");
                 setBulkNotice(null);
               }}
-              className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${
                 inviteMode === "rows"
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
@@ -438,13 +471,13 @@ function OnboardingWizard() {
                 setInviteMode("bulk");
                 setBulkNotice(null);
               }}
-              className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${
                 inviteMode === "bulk"
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
-              <Copy className="w-3.5 h-3.5 text-primary" />
+              <Copy className="h-3.5 w-3.5 text-primary" />
               <span>📋 Bulk Paste Emails</span>
             </button>
 
@@ -454,13 +487,13 @@ function OnboardingWizard() {
                 setInviteMode("file");
                 setBulkNotice(null);
               }}
-              className={`flex-1 py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 transition-all ${
                 inviteMode === "file"
-                  ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
-              <Upload className="w-3.5 h-3.5 text-indigo-500" />
+              <Upload className="h-3.5 w-3.5 text-indigo-500" />
               <span>📁 Upload CSV/TXT</span>
             </button>
           </div>
@@ -468,16 +501,16 @@ function OnboardingWizard() {
           {/* Feedback & Notice Banner */}
           {bulkNotice && (
             <div
-              className={`p-3 rounded-xl border text-xs flex items-start gap-2 animate-fade-in ${
+              className={`animate-fade-in flex items-start gap-2 rounded-xl border p-3 text-xs ${
                 bulkNotice.type === "success"
-                  ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300"
-                  : "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300"
               }`}
             >
               {bulkNotice.type === "success" ? (
-                <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" />
               )}
               <div className="flex-1">{bulkNotice.text}</div>
               <button
@@ -485,31 +518,37 @@ function OnboardingWizard() {
                 onClick={() => setBulkNotice(null)}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
 
           {/* TAB 1: Row-by-Row Manual Entry */}
           {inviteMode === "rows" && (
-            <div className="space-y-2.5 animate-fade-in">
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            <div className="animate-fade-in space-y-2.5">
+              <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
                 {invites.map((invite, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <input
                       type="email"
                       placeholder="teammate@company.com"
                       value={invite.email}
-                      onChange={(e) => handleInviteChange(index, "email", e.target.value)}
-                      className="flex-1 px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition"
+                      onChange={(e) =>
+                        handleInviteChange(index, "email", e.target.value)
+                      }
+                      className="flex-1 rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2.5 text-xs font-medium text-slate-900 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                     />
 
                     <select
                       value={invite.role}
                       onChange={(e) =>
-                        handleInviteChange(index, "role", e.target.value as InviteMemberInput["role"])
+                        handleInviteChange(
+                          index,
+                          "role",
+                          e.target.value as InviteMemberInput["role"]
+                        )
                       }
-                      className="px-2.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none transition"
+                      className="rounded-xl border border-slate-300 bg-slate-50/50 px-2.5 py-2.5 text-xs font-semibold text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                     >
                       <option value="employee">Employee</option>
                       <option value="manager">Manager</option>
@@ -520,10 +559,10 @@ function OnboardingWizard() {
                       <button
                         type="button"
                         onClick={() => handleRemoveInvite(index)}
-                        className="p-2 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                        className="cursor-pointer rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/40"
                         title="Remove invite"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     )}
                   </div>
@@ -533,9 +572,9 @@ function OnboardingWizard() {
               <button
                 type="button"
                 onClick={handleAddInvite}
-                className="w-full py-2.5 border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-400 hover:text-primary rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 py-2.5 text-xs font-bold text-slate-600 transition hover:border-primary hover:text-primary dark:border-slate-700 dark:text-slate-400"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="h-4 w-4" />
                 <span>Add Another Teammate Row</span>
               </button>
             </div>
@@ -543,29 +582,32 @@ function OnboardingWizard() {
 
           {/* TAB 2: Bulk Multi-Email Paste Input */}
           {inviteMode === "bulk" && (
-            <div className="space-y-3 animate-fade-in">
+            <div className="animate-fade-in space-y-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Paste Multiple Emails (Separated by commas, spaces, or new lines):
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Paste Multiple Emails (Separated by commas, spaces, or new
+                  lines):
                 </label>
                 <textarea
                   rows={4}
                   value={bulkText}
                   onChange={(e) => setBulkText(e.target.value)}
                   placeholder={`sarah@company.com, alex@agency.io\nmark@revonza.com; tech@acme.com`}
-                  className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-mono focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition resize-none placeholder:text-slate-400"
+                  className="w-full resize-none rounded-xl border border-slate-300 bg-slate-50/50 p-3 font-mono text-xs text-slate-900 transition placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </div>
 
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                  <label className="mb-1 block text-[11px] font-bold text-slate-600 dark:text-slate-400">
                     Assign Default Role:
                   </label>
                   <select
                     value={bulkRole}
-                    onChange={(e) => setBulkRole(e.target.value as InviteMemberInput["role"])}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none"
+                    onChange={(e) =>
+                      setBulkRole(e.target.value as InviteMemberInput["role"])
+                    }
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                   >
                     <option value="employee">Employee (Task Assignee)</option>
                     <option value="manager">Manager (Task Creator)</option>
@@ -576,9 +618,9 @@ function OnboardingWizard() {
                 <button
                   type="button"
                   onClick={handleProcessBulkEmails}
-                  className="mt-4 px-4 py-2 rounded-xl bg-primary hover:bg-primary-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                  className="mt-4 flex cursor-pointer items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-primary-700"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="h-4 w-4" />
                   <span>Add to Queue</span>
                 </button>
               </div>
@@ -587,10 +629,10 @@ function OnboardingWizard() {
 
           {/* TAB 3: File Upload (.csv or .txt) */}
           {inviteMode === "file" && (
-            <div className="space-y-3 animate-fade-in">
+            <div className="animate-fade-in space-y-3">
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-primary p-6 rounded-2xl text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-900/50 hover:bg-primary/5 group"
+                className="group cursor-pointer rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/50 p-6 text-center transition hover:border-primary hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-900/50"
               >
                 <input
                   type="file"
@@ -599,37 +641,44 @@ function OnboardingWizard() {
                   accept=".csv,.txt"
                   className="hidden"
                 />
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-primary mx-auto flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                  <Upload className="w-5 h-5" />
+                <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-primary transition-transform group-hover:scale-110 dark:bg-indigo-950/60">
+                  <Upload className="h-5 w-5" />
                 </div>
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white">
                   Click to select or drop a .CSV or .TXT file
                 </h4>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Supports comma, semicolon, or line-delimited email spreadsheets (Max 1MB).
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Supports comma, semicolon, or line-delimited email
+                  spreadsheets (Max 1MB).
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 p-2.5 rounded-xl">
-                <FileText className="w-4 h-4 text-primary flex-shrink-0" />
-                <span>Example CSV format: <code>name, email, role</code> or just a plain list of emails.</span>
+              <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-2.5 text-[11px] text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+                <FileText className="h-4 w-4 flex-shrink-0 text-primary" />
+                <span>
+                  Example CSV format: <code>name, email, role</code> or just a
+                  plain list of emails.
+                </span>
               </div>
             </div>
           )}
 
           {/* Summary / Queue Card */}
           {validInvitesCount > 0 && (
-            <div className="p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs animate-fade-in">
-              <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200 font-semibold">
-                <Users className="w-4 h-4 text-primary" />
+            <div className="animate-fade-in flex items-center justify-between rounded-xl border border-slate-200 bg-slate-100/70 p-3 text-xs dark:border-slate-700 dark:bg-slate-800/60">
+              <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
+                <Users className="h-4 w-4 text-primary" />
                 <span>
-                  <strong className="font-bold text-primary">{validInvitesCount}</strong> teammate(s) queued for invites
+                  <strong className="font-bold text-primary">
+                    {validInvitesCount}
+                  </strong>{" "}
+                  teammate(s) queued for invites
                 </span>
               </div>
               <button
                 type="button"
                 onClick={handleClearAllInvites}
-                className="text-[11px] text-slate-500 hover:text-rose-500 font-semibold transition cursor-pointer"
+                className="cursor-pointer text-[11px] font-semibold text-slate-500 transition hover:text-rose-500"
               >
                 Clear Queue
               </button>
@@ -641,19 +690,23 @@ function OnboardingWizard() {
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="py-3 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5 cursor-pointer"
+              className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-300 px-4 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="h-4 w-4" />
               <span>Back</span>
             </button>
 
             <button
               type="button"
               onClick={handleStep2Next}
-              className="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-700 text-white font-bold text-sm shadow-md shadow-primary/25 transition flex items-center justify-center gap-2 cursor-pointer"
+              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md shadow-primary/25 transition hover:bg-primary-700"
             >
-              <span>{validInvitesCount > 0 ? `Continue with ${validInvitesCount} Invites` : "Skip / Continue to Task"}</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>
+                {validInvitesCount > 0
+                  ? `Continue with ${validInvitesCount} Invites`
+                  : "Skip / Continue to Task"}
+              </span>
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -661,42 +714,51 @@ function OnboardingWizard() {
 
       {/* STEP 3: Create First Task */}
       {step === 3 && (
-        <form onSubmit={handleFinish} className="space-y-4 animate-fade-in" noValidate>
-          <div className="text-center mb-5">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary mx-auto flex items-center justify-center mb-2.5 shadow-sm">
-              <CheckSquare className="w-6 h-6" />
+        <form
+          onSubmit={handleFinish}
+          className="animate-fade-in space-y-4"
+          noValidate
+        >
+          <div className="mb-5 text-center">
+            <div className="mx-auto mb-2.5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+              <CheckSquare className="h-6 w-6" />
             </div>
             <h3 className="text-xl font-extrabold text-slate-950 dark:text-white">
               Create Your First Task
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Kick off your workspace sprint board with an active starter deliverable.
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Kick off your workspace sprint board with an active starter
+              deliverable.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               Task Title
             </label>
             <input
               type="text"
               value={firstTask.taskTitle}
-              onChange={(e) => setFirstTask({ ...firstTask, taskTitle: e.target.value })}
+              onChange={(e) =>
+                setFirstTask({ ...firstTask, taskTitle: e.target.value })
+              }
               placeholder="e.g., Launch Q3 product sprint & client deliverables"
-              className={`w-full px-3.5 py-2.5 rounded-xl border ${
+              className={`w-full rounded-xl border px-3.5 py-2.5 ${
                 stepErrors.taskTitle
                   ? "border-urgent focus:ring-urgent"
-                  : "border-slate-300 dark:border-slate-700 focus:ring-primary focus:border-primary"
-              } bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 text-sm font-medium transition`}
+                  : "border-slate-300 focus:border-primary focus:ring-primary dark:border-slate-700"
+              } bg-slate-50/50 text-sm font-medium text-slate-900 transition focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-white`}
             />
             {stepErrors.taskTitle && (
-              <p className="mt-1 text-xs text-urgent font-medium">{stepErrors.taskTitle}</p>
+              <p className="mt-1 text-xs font-medium text-urgent">
+                {stepErrors.taskTitle}
+              </p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                 Priority
               </label>
               <select
@@ -704,10 +766,11 @@ function OnboardingWizard() {
                 onChange={(e) =>
                   setFirstTask({
                     ...firstTask,
-                    priority: e.target.value as "low" | "medium" | "high" | "urgent",
+                    priority: e.target.value as
+                      "low" | "medium" | "high" | "urgent",
                   })
                 }
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none transition"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2.5 text-xs font-semibold text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               >
                 <option value="low">Low Priority</option>
                 <option value="medium">Medium Priority</option>
@@ -717,45 +780,50 @@ function OnboardingWizard() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                 Due Date (Optional)
               </label>
               <input
                 type="date"
                 value={firstTask.dueDate}
-                onChange={(e) => setFirstTask({ ...firstTask, dueDate: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none transition"
+                onChange={(e) =>
+                  setFirstTask({ ...firstTask, dueDate: e.target.value })
+                }
+                className="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-3 py-2 text-xs font-semibold text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-900 dark:text-white"
               />
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-primary/5 dark:bg-primary/10 border border-primary/15 flex items-center gap-3 text-xs text-primary font-medium">
-            <Sparkles className="w-4 h-4 flex-shrink-0" />
-            <span>AI task delegation, workload balancing, and Slack alerts will activate automatically.</span>
+          <div className="flex items-center gap-3 rounded-xl border border-primary/15 bg-primary/5 p-3.5 text-xs font-medium text-primary dark:bg-primary/10">
+            <Sparkles className="h-4 w-4 flex-shrink-0" />
+            <span>
+              AI task delegation, workload balancing, and Slack alerts will
+              activate automatically.
+            </span>
           </div>
 
           <div className="flex items-center gap-3 pt-3">
             <button
               type="button"
               onClick={() => setStep(2)}
-              className="py-3 px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5 cursor-pointer"
+              className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-300 px-4 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="h-4 w-4" />
               <span>Back</span>
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-primary-700 text-white font-bold text-sm shadow-md shadow-primary/25 transition flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+              className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md shadow-primary/25 transition hover:bg-primary-700 disabled:opacity-60"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Finalizing Workspace...</span>
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4" />
+                  <Check className="h-4 w-4" />
                   <span>Launch Workspace</span>
                 </>
               )}
@@ -772,7 +840,7 @@ export default function OnboardingPage() {
     <Suspense
       fallback={
         <div className="p-8 text-center text-xs text-slate-500">
-          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
+          <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-primary" />
           Loading onboarding setup...
         </div>
       }

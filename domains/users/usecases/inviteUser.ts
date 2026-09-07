@@ -17,12 +17,16 @@ export async function inviteUserUseCase(
 
   // 1. Employee cannot invite anyone
   if (inviterRole === "employee") {
-    throw new ForbiddenError("Employees are not authorized to invite team members.");
+    throw new ForbiddenError(
+      "Employees are not authorized to invite team members."
+    );
   }
 
   // 2. Manager can ONLY invite employees (cannot invite admin or manager)
   if (inviterRole === "manager" && input.role !== "employee") {
-    throw new ForbiddenError("Managers can only invite team members with the 'employee' role.");
+    throw new ForbiddenError(
+      "Managers can only invite team members with the 'employee' role."
+    );
   }
 
   // 3. Validate email

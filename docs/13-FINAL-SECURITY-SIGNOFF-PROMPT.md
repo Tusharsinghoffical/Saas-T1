@@ -45,6 +45,7 @@ If the verdict is GO, explicitly state: "Proceed to Prompt 37 (Zero-Cost Product
 ---
 
 ## Where This Sits in the Full Sequence
+
 ```
 34  Advanced Security Audit
 35  Security Remediation           ✅ done (97/100)

@@ -8,7 +8,10 @@ export type UserRole = "admin" | "manager" | "employee";
  * Evaluates whether a role is authorized for a target pathname,
  * returning the appropriate dashboard redirection URL if blocked.
  */
-export function evaluateRoleAccess(role: UserRole | string, pathname: string): string | null {
+export function evaluateRoleAccess(
+  role: UserRole | string,
+  pathname: string
+): string | null {
   const isAdminRoute = pathname.startsWith("/admin");
   const isManagerRoute = pathname.startsWith("/manager");
   const isEmployeeRoute = pathname.startsWith("/employee");
@@ -53,8 +56,10 @@ export function evaluateCanonicalRedirect(
   headers: Headers,
   canonicalAppUrl: string | undefined = process.env.NEXT_PUBLIC_APP_URL
 ): string | null {
-  const host = headers.get("x-forwarded-host") || headers.get("host") || url.host;
-  const proto = headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
+  const host =
+    headers.get("x-forwarded-host") || headers.get("host") || url.host;
+  const proto =
+    headers.get("x-forwarded-proto") || url.protocol.replace(":", "");
 
   // Skip local development
   if (
@@ -106,7 +111,10 @@ export function evaluateCanonicalRedirect(
 
 export async function middleware(request: NextRequest) {
   // 1. Enforce canonical hostname & HTTPS permanent redirect (308) in production
-  const canonicalRedirectUrl = evaluateCanonicalRedirect(request.nextUrl, request.headers);
+  const canonicalRedirectUrl = evaluateCanonicalRedirect(
+    request.nextUrl,
+    request.headers
+  );
   if (canonicalRedirectUrl) {
     return NextResponse.redirect(new URL(canonicalRedirectUrl), 308);
   }

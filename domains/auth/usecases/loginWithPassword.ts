@@ -28,12 +28,17 @@ export async function loginWithPasswordUseCase(
       result.role === "employee"
         ? "/employee/dashboard"
         : result.role === "manager"
-        ? "/manager/dashboard"
-        : "/admin/dashboard";
+          ? "/manager/dashboard"
+          : "/admin/dashboard";
 
     // ── SECURITY FIX: Log successful login event only if valid tenant orgId exists
     const orgId = result.user?.app_metadata?.org_id as string;
-    if (orgId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orgId)) {
+    if (
+      orgId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        orgId
+      )
+    ) {
       await recordActivityLogUseCase({
         orgId,
         actorId: result.user?.id || null,

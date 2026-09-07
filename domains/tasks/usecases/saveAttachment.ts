@@ -1,6 +1,9 @@
 import { RequestContext } from "@/shared/types/context";
 import { Attachment, CreateAttachmentDTO } from "../entities/Attachment";
-import { IAttachmentRepository, attachmentRepository } from "../repository/attachmentRepository";
+import {
+  IAttachmentRepository,
+  attachmentRepository,
+} from "../repository/attachmentRepository";
 import { ITaskRepository, taskRepository } from "../repository/taskRepository";
 import { recordActivityLogUseCase } from "@/domains/activity";
 import { ValidationError, NotFoundError } from "@/shared/errors/domainErrors";
@@ -14,7 +17,11 @@ export async function saveAttachmentUseCase(
   repo: IAttachmentRepository = attachmentRepository,
   taskRepo: ITaskRepository = taskRepository
 ): Promise<Attachment> {
-  if (data.fileSize === undefined || data.fileSize === null || data.fileSize <= 0) {
+  if (
+    data.fileSize === undefined ||
+    data.fileSize === null ||
+    data.fileSize <= 0
+  ) {
     throw new ValidationError("File size must be greater than 0 bytes.");
   }
 
@@ -36,7 +43,11 @@ export async function saveAttachmentUseCase(
     action: "attachment.uploaded",
     entity: "task_attachments",
     entityId: attachment.id,
-    diff: { task_id: taskId, file_name: data.fileName, file_size: data.fileSize },
+    diff: {
+      task_id: taskId,
+      file_name: data.fileName,
+      file_size: data.fileSize,
+    },
   });
 
   return attachment;

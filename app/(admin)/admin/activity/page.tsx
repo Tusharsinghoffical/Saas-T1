@@ -31,7 +31,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
-import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
+import {
+  useAutoRefresh,
+  AutoRefreshBadge,
+} from "@/components/ui/AutoRefreshControl";
 
 interface ActivityLogRecord {
   id: string;
@@ -70,7 +73,9 @@ export default function ActivityLogPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Inspect Diff Modal
-  const [selectedLog, setSelectedLog] = useState<ActivityLogRecord | null>(null);
+  const [selectedLog, setSelectedLog] = useState<ActivityLogRecord | null>(
+    null
+  );
 
   const fetchLogs = useCallback(
     async (targetPage = 1) => {
@@ -103,14 +108,17 @@ export default function ActivityLogPage() {
   );
 
   // Initial data load on mount
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchLogs);
 
   // Live Realtime Channel for Activity Logs
   useEffect(() => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    const hasSupabase = Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
+    const hasSupabase =
+      Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
 
     if (!hasSupabase) {
       setIsConnected(true);
@@ -188,55 +196,115 @@ export default function ActivityLogPage() {
   const getActionConfig = (action: string) => {
     switch (action) {
       case "task.created":
-        return { label: "Task Created", color: "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800" };
+        return {
+          label: "Task Created",
+          color:
+            "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
+        };
       case "task.updated":
-        return { label: "Task Updated", color: "text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800" };
+        return {
+          label: "Task Updated",
+          color:
+            "text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800",
+        };
       case "task.status_changed":
-        return { label: "Status Changed", color: "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800" };
+        return {
+          label: "Status Changed",
+          color:
+            "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800",
+        };
       case "task.deleted":
-        return { label: "Task Deleted", color: "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800" };
+        return {
+          label: "Task Deleted",
+          color:
+            "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800",
+        };
       case "comment.created":
-        return { label: "Comment Added", color: "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800" };
+        return {
+          label: "Comment Added",
+          color:
+            "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800",
+        };
       case "attachment.uploaded":
-        return { label: "Attachment Uploaded", color: "text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800" };
+        return {
+          label: "Attachment Uploaded",
+          color:
+            "text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800",
+        };
       case "member.created":
-        return { label: "Member Added", color: "text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800" };
+        return {
+          label: "Member Added",
+          color:
+            "text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800",
+        };
       case "member.invited":
-        return { label: "Member Invited", color: "text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800" };
+        return {
+          label: "Member Invited",
+          color:
+            "text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800",
+        };
       case "member.role_updated":
-        return { label: "Role Updated", color: "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800" };
+        return {
+          label: "Role Updated",
+          color:
+            "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800",
+        };
       case "member.team_updated":
-        return { label: "Team Updated", color: "text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800" };
+        return {
+          label: "Team Updated",
+          color:
+            "text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800",
+        };
       case "member.removed":
-        return { label: "Member Removed", color: "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800" };
+        return {
+          label: "Member Removed",
+          color:
+            "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800",
+        };
       case "org.updated":
-        return { label: "Org Settings", color: "text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700" };
+        return {
+          label: "Org Settings",
+          color:
+            "text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700",
+        };
       case "auth.login_success":
-        return { label: "Login Success", color: "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800" };
+        return {
+          label: "Login Success",
+          color:
+            "text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
+        };
       case "auth.login_failed":
-        return { label: "Login Failed", color: "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800" };
+        return {
+          label: "Login Failed",
+          color:
+            "text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800",
+        };
       default:
-        return { label: action, color: "text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700" };
+        return {
+          label: action,
+          color:
+            "text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700",
+        };
     }
   };
 
   const getEntityIcon = (entity: string) => {
     switch (entity) {
       case "tasks":
-        return <FileText className="w-3.5 h-3.5 text-primary" />;
+        return <FileText className="h-3.5 w-3.5 text-primary" />;
       case "task_comments":
-        return <MessageSquare className="w-3.5 h-3.5 text-amber-500" />;
+        return <MessageSquare className="h-3.5 w-3.5 text-amber-500" />;
       case "task_attachments":
-        return <Paperclip className="w-3.5 h-3.5 text-teal-500" />;
+        return <Paperclip className="h-3.5 w-3.5 text-teal-500" />;
       case "profiles":
       case "team_members":
-        return <Users className="w-3.5 h-3.5 text-purple-500" />;
+        return <Users className="h-3.5 w-3.5 text-purple-500" />;
       case "organizations":
-        return <Building2 className="w-3.5 h-3.5 text-blue-500" />;
+        return <Building2 className="h-3.5 w-3.5 text-blue-500" />;
       case "auth":
-        return <LogIn className="w-3.5 h-3.5 text-emerald-500" />;
+        return <LogIn className="h-3.5 w-3.5 text-emerald-500" />;
       default:
-        return <Activity className="w-3.5 h-3.5 text-slate-400" />;
+        return <Activity className="h-3.5 w-3.5 text-slate-400" />;
     }
   };
 
@@ -268,7 +336,9 @@ export default function ActivityLogPage() {
   }, [logs]);
 
   const uniqueActorsCount = useMemo(() => {
-    const actors = new Set(logs.map((l) => getActorName(l)).filter((n) => n !== "System"));
+    const actors = new Set(
+      logs.map((l) => getActorName(l)).filter((n) => n !== "System")
+    );
     return actors.size;
   }, [logs]);
 
@@ -278,28 +348,28 @@ export default function ActivityLogPage() {
     switch (status) {
       case "completed":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+          <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />
             Completed
           </span>
         );
       case "in_progress":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-500" />
             In Progress
           </span>
         );
       case "in_review":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+          <span className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-bold text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300">
             In Review
           </span>
         );
       case "pending":
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
             Pending
           </span>
         );
@@ -313,21 +383,21 @@ export default function ActivityLogPage() {
       case "urgent":
       case "high":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-            <Flame className="w-2.5 h-2.5 text-rose-500" />
+          <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
+            <Flame className="h-2.5 w-2.5 text-rose-500" />
             High
           </span>
         );
       case "medium":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
             Medium
           </span>
         );
       case "low":
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
             Low
           </span>
         );
@@ -340,16 +410,21 @@ export default function ActivityLogPage() {
     const keys = Object.keys(diff);
 
     if (keys.length === 0) {
-      return <span className="text-slate-400 italic text-[11px]">— No extra details —</span>;
+      return (
+        <span className="text-[11px] italic text-slate-400">
+          — No extra details —
+        </span>
+      );
     }
 
     // 1. Comments
     if (log.action === "comment.created" || log.entity === "task_comments") {
-      const commentText = diff.body || diff.content || diff.text || "Added a comment";
+      const commentText =
+        diff.body || diff.content || diff.text || "Added a comment";
       return (
-        <div className="flex items-center gap-1.5 max-w-md">
-          <MessageSquare className="w-3 h-3 text-amber-500 flex-shrink-0" />
-          <span className="text-slate-800 dark:text-slate-200 font-medium italic truncate text-[11px] bg-slate-50 dark:bg-slate-800/80 px-2 py-1 rounded-lg border border-slate-200/60 dark:border-slate-700">
+        <div className="flex max-w-md items-center gap-1.5">
+          <MessageSquare className="h-3 w-3 flex-shrink-0 text-amber-500" />
+          <span className="truncate rounded-lg border border-slate-200/60 bg-slate-50 px-2 py-1 text-[11px] font-medium italic text-slate-800 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200">
             &ldquo;{commentText}&rdquo;
           </span>
         </div>
@@ -358,43 +433,55 @@ export default function ActivityLogPage() {
 
     // 2. Tasks
     if (log.action.startsWith("task.") || log.entity === "tasks") {
-      const title = diff.title || (log.entityId ? `Task #${log.entityId.slice(0, 6)}` : null);
+      const title =
+        diff.title ||
+        (log.entityId ? `Task #${log.entityId.slice(0, 6)}` : null);
       return (
-        <div className="flex items-center gap-2 flex-wrap max-w-lg">
+        <div className="flex max-w-lg flex-wrap items-center gap-2">
           {title && (
-            <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[240px] text-[11px]" title={title}>
+            <span
+              className="max-w-[240px] truncate text-[11px] font-semibold text-slate-800 dark:text-slate-200"
+              title={title}
+            >
               {title}
             </span>
           )}
           {diff.status && renderStatusBadge(diff.status)}
           {diff.priority && renderPriorityBadge(diff.priority)}
-          {diff.assigneeIds && Array.isArray(diff.assigneeIds) && diff.assigneeIds.length > 0 && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-              <Users className="w-2.5 h-2.5" />
-              {diff.assigneeIds.length} Assignee{diff.assigneeIds.length > 1 ? "s" : ""}
-            </span>
-          )}
+          {diff.assigneeIds &&
+            Array.isArray(diff.assigneeIds) &&
+            diff.assigneeIds.length > 0 && (
+              <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                <Users className="h-2.5 w-2.5" />
+                {diff.assigneeIds.length} Assignee
+                {diff.assigneeIds.length > 1 ? "s" : ""}
+              </span>
+            )}
         </div>
       );
     }
 
     // 3. Members & Profiles
-    if (log.action.startsWith("member.") || log.entity === "profiles" || log.entity === "team_members") {
+    if (
+      log.action.startsWith("member.") ||
+      log.entity === "profiles" ||
+      log.entity === "team_members"
+    ) {
       return (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2">
           {diff.fullName && (
-            <span className="font-semibold text-slate-800 dark:text-slate-200 text-[11px]">
+            <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
               {diff.fullName}
             </span>
           )}
           {diff.role && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 uppercase">
-              <Shield className="w-2.5 h-2.5" />
+            <span className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-700 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300">
+              <Shield className="h-2.5 w-2.5" />
               {diff.role}
             </span>
           )}
           {diff.teamName && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800">
+            <span className="inline-flex items-center gap-1 rounded-md border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[10px] font-bold text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300">
               Team: {diff.teamName}
             </span>
           )}
@@ -408,13 +495,20 @@ export default function ActivityLogPage() {
     }
 
     // 4. Attachments
-    if (log.action.startsWith("attachment.") || log.entity === "task_attachments") {
+    if (
+      log.action.startsWith("attachment.") ||
+      log.entity === "task_attachments"
+    ) {
       return (
         <div className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300">
-          <Paperclip className="w-3 h-3 text-teal-500" />
-          <span className="font-semibold">{diff.file_name || diff.fileName || "File Attachment"}</span>
+          <Paperclip className="h-3 w-3 text-teal-500" />
+          <span className="font-semibold">
+            {diff.file_name || diff.fileName || "File Attachment"}
+          </span>
           {diff.file_size && (
-            <span className="text-[10px] text-slate-400">({Math.round(diff.file_size / 1024)} KB)</span>
+            <span className="text-[10px] text-slate-400">
+              ({Math.round(diff.file_size / 1024)} KB)
+            </span>
           )}
         </div>
       );
@@ -439,19 +533,22 @@ export default function ActivityLogPage() {
 
     // 6. Generic formatted properties (NO raw curly braces)
     return (
-      <div className="flex items-center gap-1.5 flex-wrap max-w-md">
+      <div className="flex max-w-md flex-wrap items-center gap-1.5">
         {keys.map((k) => {
           const val = diff[k];
           if (val === null || val === undefined) return null;
-          const displayVal = typeof val === "object" ? JSON.stringify(val) : String(val);
+          const displayVal =
+            typeof val === "object" ? JSON.stringify(val) : String(val);
           const formattedKey = k.replace(/_/g, " ");
           return (
             <span
               key={k}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             >
-              <span className="text-slate-400 capitalize">{formattedKey}:</span>
-              <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[120px]">{displayVal}</span>
+              <span className="capitalize text-slate-400">{formattedKey}:</span>
+              <span className="max-w-[120px] truncate font-semibold text-slate-900 dark:text-white">
+                {displayVal}
+              </span>
             </span>
           );
         })}
@@ -462,32 +559,35 @@ export default function ActivityLogPage() {
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Activity & Audit Trail
             </h1>
             <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold transition-all ${
                 isConnected
-                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 shadow-sm shadow-emerald-500/10"
-                  : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 shadow-sm shadow-emerald-500/10 dark:text-emerald-400"
+                  : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400"
               }`}
             >
-              <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`} />
+              <Radio
+                className={`h-3 w-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`}
+              />
               {isConnected ? "Realtime Audit Stream" : "Connecting…"}
             </span>
-            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+            <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[11px] font-bold text-primary">
               {totalCount} Total Events
             </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Immutable, cryptographically verifiable log of all workspace mutations, task updates & team changes.
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Immutable, cryptographically verifiable log of all workspace
+            mutations, task updates & team changes.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Manual Refresh */}
           <AutoRefreshBadge
             isRefreshing={isRefreshing || isLoading}
@@ -498,59 +598,83 @@ export default function ActivityLogPage() {
             type="button"
             onClick={handleExportCsv}
             disabled={isExporting}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition shadow-sm"
+            className="dark:hover:bg-slate-750 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            <Download className="w-3.5 h-3.5 text-primary" />
+            <Download className="h-3.5 w-3.5 text-primary" />
             <span>{isExporting ? "Exporting CSV…" : "Export CSV"}</span>
           </button>
         </div>
       </div>
 
       {/* ── Metric Snapshot Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Recorded</div>
-          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">{totalCount}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Across all workspace entities</div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            Total Recorded
+          </div>
+          <div className="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
+            {totalCount}
+          </div>
+          <div className="mt-1 text-[11px] text-slate-400">
+            Across all workspace entities
+          </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-500/20 shadow-sm">
-          <div className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Today&apos;s Activity</div>
-          <div className="mt-2 text-3xl font-extrabold text-emerald-700 dark:text-emerald-400">{todayCount}</div>
-          <div className="text-[11px] text-emerald-600/70 dark:text-emerald-500 mt-1">Events in last 24h</div>
+        <div className="rounded-2xl border border-emerald-200/60 bg-emerald-50/60 p-4 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-950/20">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+            Today&apos;s Activity
+          </div>
+          <div className="mt-2 text-3xl font-extrabold text-emerald-700 dark:text-emerald-400">
+            {todayCount}
+          </div>
+          <div className="mt-1 text-[11px] text-emerald-600/70 dark:text-emerald-500">
+            Events in last 24h
+          </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-500/20 shadow-sm">
-          <div className="text-[11px] font-semibold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">Task Operations</div>
-          <div className="mt-2 text-3xl font-extrabold text-indigo-700 dark:text-indigo-400">{taskActionCount}</div>
-          <div className="text-[11px] text-indigo-600/70 dark:text-indigo-500 mt-1">Created, edited, completed</div>
+        <div className="rounded-2xl border border-indigo-200/60 bg-indigo-50/60 p-4 shadow-sm dark:border-indigo-500/20 dark:bg-indigo-950/20">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+            Task Operations
+          </div>
+          <div className="mt-2 text-3xl font-extrabold text-indigo-700 dark:text-indigo-400">
+            {taskActionCount}
+          </div>
+          <div className="mt-1 text-[11px] text-indigo-600/70 dark:text-indigo-500">
+            Created, edited, completed
+          </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-500/20 shadow-sm">
-          <div className="text-[11px] font-semibold text-purple-700 dark:text-purple-400 uppercase tracking-wider">Active Actors</div>
-          <div className="mt-2 text-3xl font-extrabold text-purple-700 dark:text-purple-400">{uniqueActorsCount}</div>
-          <div className="text-[11px] text-purple-600/70 dark:text-purple-500 mt-1">Contributing members</div>
+        <div className="rounded-2xl border border-purple-200/60 bg-purple-50/60 p-4 shadow-sm dark:border-purple-500/20 dark:bg-purple-950/20">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-400">
+            Active Actors
+          </div>
+          <div className="mt-2 text-3xl font-extrabold text-purple-700 dark:text-purple-400">
+            {uniqueActorsCount}
+          </div>
+          <div className="mt-1 text-[11px] text-purple-600/70 dark:text-purple-500">
+            Contributing members
+          </div>
         </div>
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row">
+        <div className="relative w-full flex-1">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search activity by actor, action, or diff payload…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pl-10 pr-4 text-xs text-slate-900 placeholder-slate-400 transition focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white"
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <select
             value={entityFilter}
             onChange={(e) => setEntityFilter(e.target.value)}
-            className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer font-medium"
+            className="cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
           >
             <option value="">All Entities</option>
             <option value="tasks">Tasks</option>
@@ -564,7 +688,7 @@ export default function ActivityLogPage() {
           <select
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer font-medium"
+            className="cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
           >
             <option value="">All Actions</option>
             <option value="task.created">Task Created</option>
@@ -585,33 +709,38 @@ export default function ActivityLogPage() {
       </div>
 
       {/* ── Audit Table ── */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50/70 dark:bg-slate-800/40 text-slate-400 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider">
+            <thead className="border-b border-slate-100 bg-slate-50/70 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-slate-800 dark:bg-slate-800/40">
               <tr>
-                <th className="py-3.5 px-5">Timestamp</th>
-                <th className="py-3.5 px-5">Actor</th>
-                <th className="py-3.5 px-5">Action</th>
-                <th className="py-3.5 px-5">Entity</th>
-                <th className="py-3.5 px-5">Details & Changes</th>
-                <th className="py-3.5 px-5 text-right">Inspect</th>
+                <th className="px-5 py-3.5">Timestamp</th>
+                <th className="px-5 py-3.5">Actor</th>
+                <th className="px-5 py-3.5">Action</th>
+                <th className="px-5 py-3.5">Entity</th>
+                <th className="px-5 py-3.5">Details & Changes</th>
+                <th className="px-5 py-3.5 text-right">Inspect</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {isLoading ? (
                 <tr>
                   <td colSpan={6} className="py-16 text-center text-slate-400">
-                    <RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
+                    <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin text-primary" />
                     <span>Loading audit records…</span>
                   </td>
                 </tr>
               ) : filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-16 text-center text-slate-400">
-                    <Activity className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-                    <p className="font-semibold text-slate-600 dark:text-slate-300">No activity records found</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Actions like creating tasks, editing team members, and updates will appear here in real-time.</p>
+                    <Activity className="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-600" />
+                    <p className="font-semibold text-slate-600 dark:text-slate-300">
+                      No activity records found
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-400">
+                      Actions like creating tasks, editing team members, and
+                      updates will appear here in real-time.
+                    </p>
                   </td>
                 </tr>
               ) : (
@@ -627,11 +756,14 @@ export default function ActivityLogPage() {
                     .toUpperCase();
 
                   return (
-                    <tr key={log.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                    <tr
+                      key={log.id}
+                      className="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40"
+                    >
                       {/* Timestamp */}
-                      <td className="py-3.5 px-5 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[11px]">
+                      <td className="whitespace-nowrap px-5 py-3.5 text-[11px] text-slate-500 dark:text-slate-400">
                         <div className="flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                          <Clock className="h-3 w-3 flex-shrink-0 text-slate-400" />
                           <span>
                             {new Date(createdAt).toLocaleString(undefined, {
                               month: "short",
@@ -645,9 +777,9 @@ export default function ActivityLogPage() {
                       </td>
 
                       {/* Actor */}
-                      <td className="py-3.5 px-5 font-semibold text-slate-900 dark:text-white whitespace-nowrap">
+                      <td className="whitespace-nowrap px-5 py-3.5 font-semibold text-slate-900 dark:text-white">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/20 to-violet-500/20 text-primary flex items-center justify-center font-bold text-[10px] border border-primary/15">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full border border-primary/15 bg-gradient-to-br from-primary/20 to-violet-500/20 text-[10px] font-bold text-primary">
                             {initials}
                           </div>
                           <span className="text-[12px]">{actorName}</span>
@@ -655,36 +787,36 @@ export default function ActivityLogPage() {
                       </td>
 
                       {/* Action */}
-                      <td className="py-3.5 px-5 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-5 py-3.5">
                         <span
-                          className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold border ${actCfg.color}`}
+                          className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-[10px] font-bold ${actCfg.color}`}
                         >
                           {actCfg.label}
                         </span>
                       </td>
 
                       {/* Entity */}
-                      <td className="py-3.5 px-5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-5 py-3.5 text-slate-600 dark:text-slate-300">
                         <div className="flex items-center gap-1.5 font-mono text-[11px]">
                           {getEntityIcon(log.entity)}
-                          <span className="capitalize">{log.entity.replace("_", " ")}</span>
+                          <span className="capitalize">
+                            {log.entity.replace("_", " ")}
+                          </span>
                         </div>
                       </td>
 
                       {/* Clean Human-Readable Details (No JSON curly braces) */}
-                      <td className="py-3.5 px-5">
-                        {renderLogDetails(log)}
-                      </td>
+                      <td className="px-5 py-3.5">{renderLogDetails(log)}</td>
 
                       {/* Inspect */}
-                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                      <td className="whitespace-nowrap px-5 py-3.5 text-right">
                         <button
                           type="button"
                           onClick={() => setSelectedLog(log)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-primary/10 transition text-[11px] font-semibold"
+                          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800 dark:text-slate-300"
                           title="Inspect Event Details"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="h-3.5 w-3.5" />
                           <span>Inspect</span>
                         </button>
                       </td>
@@ -697,27 +829,34 @@ export default function ActivityLogPage() {
         </div>
 
         {/* Pagination Bar */}
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/20 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/40 p-4 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-800/20 dark:text-slate-400">
           <div>
-            Showing page <span className="font-bold text-slate-700 dark:text-slate-200">{page}</span> of{" "}
-            <span className="font-bold text-slate-700 dark:text-slate-200">{totalPages}</span> ({totalCount} total)
+            Showing page{" "}
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {page}
+            </span>{" "}
+            of{" "}
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {totalPages}
+            </span>{" "}
+            ({totalCount} total)
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => fetchLogs(Math.max(1, page - 1))}
               disabled={page <= 1 || isLoading}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-1 font-semibold text-xs"
+              className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold transition hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="h-3.5 w-3.5" />
               <span>Previous</span>
             </button>
             <button
               onClick={() => fetchLogs(Math.min(totalPages, page + 1))}
               disabled={page >= totalPages || isLoading}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700 transition flex items-center gap-1 font-semibold text-xs"
+              className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold transition hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
             >
               <span>Next</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -733,29 +872,45 @@ export default function ActivityLogPage() {
         {selectedLog && (
           <div className="space-y-4 text-xs">
             {/* Event Summary Grid */}
-            <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700">
+            <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Action</span>
-                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block">{getActionConfig(selectedLog.action).label}</span>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Action
+                </span>
+                <span className="mt-0.5 block font-bold text-slate-900 dark:text-white">
+                  {getActionConfig(selectedLog.action).label}
+                </span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Actor</span>
-                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block">{getActorName(selectedLog)}</span>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Actor
+                </span>
+                <span className="mt-0.5 block font-bold text-slate-900 dark:text-white">
+                  {getActorName(selectedLog)}
+                </span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Entity</span>
-                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block capitalize">{selectedLog.entity.replace("_", " ")}</span>
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Entity
+                </span>
+                <span className="mt-0.5 block font-bold capitalize text-slate-900 dark:text-white">
+                  {selectedLog.entity.replace("_", " ")}
+                </span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Timestamp</span>
-                <span className="font-bold text-slate-900 dark:text-white mt-0.5 block">
+                <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Timestamp
+                </span>
+                <span className="mt-0.5 block font-bold text-slate-900 dark:text-white">
                   {new Date(getCreatedAt(selectedLog)).toLocaleString()}
                 </span>
               </div>
               {selectedLog.entityId || selectedLog.entity_id ? (
                 <div className="col-span-2">
-                  <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Entity ID</span>
-                  <code className="text-slate-700 dark:text-slate-300 font-mono text-[11px] break-all bg-white dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 inline-block mt-0.5">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Entity ID
+                  </span>
+                  <code className="mt-0.5 inline-block break-all rounded border border-slate-200 bg-white px-2 py-1 font-mono text-[11px] text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                     {selectedLog.entityId || selectedLog.entity_id}
                   </code>
                 </div>
@@ -764,13 +919,13 @@ export default function ActivityLogPage() {
 
             {/* Structured Property Cards (Formatted, No raw JSON) */}
             <div>
-              <div className="font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-primary" />
+              <div className="mb-2 flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                <Layers className="h-3.5 w-3.5 text-primary" />
                 <span>Changed Properties & Values</span>
               </div>
 
               {selectedLog.diff && Object.keys(selectedLog.diff).length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                   {Object.entries(selectedLog.diff).map(([key, val]) => {
                     const formattedKey = key.replace(/_/g, " ");
                     const isStatus = key === "status";
@@ -779,9 +934,9 @@ export default function ActivityLogPage() {
                     return (
                       <div
                         key={key}
-                        className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between"
+                        className="shadow-xs flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
                       >
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider capitalize">
+                        <span className="text-[10px] font-bold uppercase capitalize tracking-wider text-slate-400">
                           {formattedKey}
                         </span>
                         <div className="mt-1">
@@ -790,11 +945,11 @@ export default function ActivityLogPage() {
                           ) : isPriority ? (
                             renderPriorityBadge(String(val))
                           ) : typeof val === "object" ? (
-                            <pre className="text-[11px] font-mono text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-all">
+                            <pre className="whitespace-pre-wrap break-all font-mono text-[11px] text-slate-700 dark:text-slate-300">
                               {JSON.stringify(val, null, 2)}
                             </pre>
                           ) : (
-                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">
+                            <span className="break-words text-xs font-semibold text-slate-800 dark:text-slate-200">
                               {String(val)}
                             </span>
                           )}
@@ -804,7 +959,7 @@ export default function ActivityLogPage() {
                   })}
                 </div>
               ) : (
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 text-slate-400 italic text-center">
+                <div className="dark:bg-slate-850 rounded-xl bg-slate-50 p-4 text-center italic text-slate-400">
                   No property mutations recorded for this event.
                 </div>
               )}
@@ -815,4 +970,3 @@ export default function ActivityLogPage() {
     </div>
   );
 }
-

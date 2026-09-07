@@ -18,9 +18,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://tasq-one.onrender.com"
+  ),
   title: "TASQ-ONE — Multi-Tenant Work OS for SMBs",
-  description: "AI-assisted multi-tenant SaaS task management platform for small and medium businesses.",
+  description:
+    "AI-assisted multi-tenant SaaS task management platform for small and medium businesses.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -34,7 +37,8 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "TASQ-ONE — Multi-Tenant Work OS for SMBs",
-    description: "AI-assisted multi-tenant SaaS task management platform for small and medium businesses.",
+    description:
+      "AI-assisted multi-tenant SaaS task management platform for small and medium businesses.",
     images: [
       {
         url: "/ONE_Header.png",
@@ -47,7 +51,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: "TASQ-ONE — Multi-Tenant Work OS",
-    description: "AI-assisted multi-tenant SaaS task management platform for small and medium businesses.",
+    description:
+      "AI-assisted multi-tenant SaaS task management platform for small and medium businesses.",
     images: ["/ONE_Header.png"],
   },
 };
@@ -58,7 +63,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} font-sans`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${inter.variable} font-sans`}
+      suppressHydrationWarning
+    >
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/ONE_Header.png" type="image/png" />

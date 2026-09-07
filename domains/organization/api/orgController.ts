@@ -18,7 +18,13 @@ export class OrgController {
     // SSRF to arbitrary internal network endpoints. ──────────────────────
     const auth = await requireRole(["admin"]);
 
-    const { name, timezone, slack_webhook_url, slack_notifications_enabled, test } = body;
+    const {
+      name,
+      timezone,
+      slack_webhook_url,
+      slack_notifications_enabled,
+      test,
+    } = body;
 
     // Handle Test Message Action (now gated behind admin auth)
     if (test) {

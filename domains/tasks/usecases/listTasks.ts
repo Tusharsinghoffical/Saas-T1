@@ -1,7 +1,10 @@
 import { RequestContext } from "@/shared/types/context";
 import { Task, TaskFilterDTO } from "../entities/Task";
 import { ITaskRepository, taskRepository } from "../repository/taskRepository";
-import { userRepository, IUserRepository } from "@/domains/users/repository/userRepository";
+import {
+  userRepository,
+  IUserRepository,
+} from "@/domains/users/repository/userRepository";
 
 export async function listTasksUseCase(
   context: RequestContext,
@@ -23,6 +26,7 @@ export async function listTasksUseCase(
 
   let result = await repo.listTasks(context.orgId, filters);
   if (
+    process.env.NODE_ENV !== "production" &&
     result.tasks.length === 0 &&
     !filters.search &&
     !filters.status &&
@@ -31,7 +35,10 @@ export async function listTasksUseCase(
   ) {
     try {
       const { seedWorkspaceDataUseCase } = await import("./seedWorkspaceData");
-      const seedResult = await seedWorkspaceDataUseCase(context.orgId, context.userId);
+      const seedResult = await seedWorkspaceDataUseCase(
+        context.orgId,
+        context.userId
+      );
       if (seedResult.success && seedResult.tasksCount > 0) {
         result = await repo.listTasks(context.orgId, filters);
       }

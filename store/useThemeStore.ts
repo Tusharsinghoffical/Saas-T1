@@ -17,10 +17,17 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   initTheme: () => {
     if (typeof window === "undefined") return;
 
-    const savedTheme = (localStorage.getItem("tasq_theme") as ThemeMode) || "system";
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const savedTheme =
+      (localStorage.getItem("tasq_theme") as ThemeMode) || "system";
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
     const resolved =
-      savedTheme === "system" ? (systemPrefersDark ? "dark" : "light") : savedTheme;
+      savedTheme === "system"
+        ? systemPrefersDark
+          ? "dark"
+          : "light"
+        : savedTheme;
 
     if (resolved === "dark") {
       document.documentElement.classList.add("dark");
@@ -50,7 +57,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     if (typeof window === "undefined") return;
 
     localStorage.setItem("tasq_theme", theme);
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
     const resolved =
       theme === "system" ? (systemPrefersDark ? "dark" : "light") : theme;
 

@@ -24,35 +24,92 @@ import {
   Sparkles,
 } from "lucide-react";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
-import { TaskFormModal, type OrgMember } from "@/components/tasks/TaskFormModal";
-import { ProductivityChart, type ProductivityDay } from "@/components/dashboard/ProductivityChart";
+import {
+  TaskFormModal,
+  type OrgMember,
+} from "@/components/tasks/TaskFormModal";
+import {
+  ProductivityChart,
+  type ProductivityDay,
+} from "@/components/dashboard/ProductivityChart";
 import { Badge } from "@/components/ui/badge";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useRealtimeTasks } from "@/lib/supabase/useRealtimeTasks";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
-import { useAutoRefresh, AutoRefreshBadge } from "@/components/ui/AutoRefreshControl";
+import {
+  useAutoRefresh,
+  AutoRefreshBadge,
+} from "@/components/ui/AutoRefreshControl";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  pending:     { label: "Pending",     color: "text-slate-600 dark:text-slate-300",   bg: "bg-slate-100 dark:bg-slate-700",    dot: "bg-slate-400" },
-  in_progress: { label: "In Progress", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-950/30", dot: "bg-indigo-500" },
-  in_review:   { label: "In Review",   color: "text-amber-600 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-950/30",   dot: "bg-amber-500" },
-  completed:   { label: "Completed",   color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30", dot: "bg-emerald-500" },
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; color: string; bg: string; dot: string }
+> = {
+  pending: {
+    label: "Pending",
+    color: "text-slate-600 dark:text-slate-300",
+    bg: "bg-slate-100 dark:bg-slate-700",
+    dot: "bg-slate-400",
+  },
+  in_progress: {
+    label: "In Progress",
+    color: "text-indigo-600 dark:text-indigo-400",
+    bg: "bg-indigo-50 dark:bg-indigo-950/30",
+    dot: "bg-indigo-500",
+  },
+  in_review: {
+    label: "In Review",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-950/30",
+    dot: "bg-amber-500",
+  },
+  completed: {
+    label: "Completed",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-950/30",
+    dot: "bg-emerald-500",
+  },
 };
 
-const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  low:    { label: "Low",    color: "text-slate-500",   bg: "bg-slate-100 dark:bg-slate-800" },
-  medium: { label: "Medium", color: "text-blue-600",    bg: "bg-blue-50 dark:bg-blue-950/40" },
-  high:   { label: "High",   color: "text-orange-600",  bg: "bg-orange-50 dark:bg-orange-950/40" },
-  urgent: { label: "Urgent", color: "text-red-600",     bg: "bg-red-50 dark:bg-red-950/40" },
+const PRIORITY_CONFIG: Record<
+  string,
+  { label: string; color: string; bg: string }
+> = {
+  low: {
+    label: "Low",
+    color: "text-slate-500",
+    bg: "bg-slate-100 dark:bg-slate-800",
+  },
+  medium: {
+    label: "Medium",
+    color: "text-blue-600",
+    bg: "bg-blue-50 dark:bg-blue-950/40",
+  },
+  high: {
+    label: "High",
+    color: "text-orange-600",
+    bg: "bg-orange-50 dark:bg-orange-950/40",
+  },
+  urgent: {
+    label: "Urgent",
+    color: "text-red-600",
+    bg: "bg-red-50 dark:bg-red-950/40",
+  },
 };
 
 // Mini Avatar component
-function MiniAvatar({ name, color = "primary" }: { name?: string; color?: string }) {
+function MiniAvatar({
+  name,
+  color = "primary",
+}: {
+  name?: string;
+  color?: string;
+}) {
   const initial = (name || "U")[0]?.toUpperCase();
   return (
     <span
       title={name}
-      className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/15 text-primary text-[10px] font-bold border-2 border-white dark:border-slate-800 ring-1 ring-primary/10"
+      className="inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-primary/15 text-[10px] font-bold text-primary ring-1 ring-primary/10 dark:border-slate-800"
     >
       {initial}
     </span>
@@ -70,20 +127,22 @@ function TaskAttribution({
   orgMembers: OrgMember[];
 }) {
   const creatorMember = orgMembers.find((m) => m.id === createdBy);
-  const creatorName = creatorMember?.fullName || (createdBy ? `User ${createdBy.slice(0, 6)}` : null);
+  const creatorName =
+    creatorMember?.fullName ||
+    (createdBy ? `User ${createdBy.slice(0, 6)}` : null);
 
   return (
-    <div className="flex items-center gap-3 flex-wrap text-[11px]">
+    <div className="flex flex-wrap items-center gap-3 text-[11px]">
       {/* Assignees */}
       {assignees && assignees.length > 0 ? (
         <div className="flex items-center gap-1.5">
-          <UserCheck className="w-3 h-3 text-primary flex-shrink-0" />
+          <UserCheck className="h-3 w-3 flex-shrink-0 text-primary" />
           <div className="flex -space-x-1.5">
             {assignees.slice(0, 4).map((a: any, idx: number) => (
               <MiniAvatar key={a.id || idx} name={a.fullName || a.full_name} />
             ))}
           </div>
-          <span className="text-slate-600 dark:text-slate-300 font-medium">
+          <span className="font-medium text-slate-600 dark:text-slate-300">
             {assignees.length === 1
               ? assignees[0].fullName || assignees[0].full_name || "Assignee"
               : `${assignees.length} assignees`}
@@ -91,7 +150,7 @@ function TaskAttribution({
         </div>
       ) : (
         <div className="flex items-center gap-1 text-slate-400">
-          <UserCheck className="w-3 h-3" />
+          <UserCheck className="h-3 w-3" />
           <span>Unassigned</span>
         </div>
       )}
@@ -101,8 +160,13 @@ function TaskAttribution({
         <>
           <span className="text-slate-300 dark:text-slate-600">·</span>
           <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-            <UserCircle className="w-3 h-3 flex-shrink-0" />
-            <span>by <span className="font-semibold text-slate-700 dark:text-slate-200">{creatorName}</span></span>
+            <UserCircle className="h-3 w-3 flex-shrink-0" />
+            <span>
+              by{" "}
+              <span className="font-semibold text-slate-700 dark:text-slate-200">
+                {creatorName}
+              </span>
+            </span>
           </div>
         </>
       )}
@@ -111,7 +175,9 @@ function TaskAttribution({
 }
 
 export default function AdminDashboardPage() {
-  const [viewMode, setViewMode] = useState<"kanban" | "list" | "analytics">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "list" | "analytics">(
+    "kanban"
+  );
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [orgMembers, setOrgMembers] = useState<OrgMember[]>([]);
@@ -142,20 +208,22 @@ export default function AdminDashboardPage() {
       if (tasksRes && tasksRes.ok) {
         const tasksJson = await tasksRes.json();
         if (tasksJson.success && Array.isArray(tasksJson.data)) {
-          const formattedTasks: KanbanTaskItem[] = tasksJson.data.map((t: any) => ({
-            id: t.id,
-            title: t.title,
-            description: t.description || "",
-            status: t.status || "pending",
-            priority: t.priority || "medium",
-            dueDate: t.due_date || t.dueDate,
-            due_date: t.due_date,
-            tags: t.tags || [],
-            subtasks: t.subtasks || [],
-            assignees: t.assignees || [],
-            createdBy: t.createdBy || t.created_by,
-            org_id: t.org_id,
-          }));
+          const formattedTasks: KanbanTaskItem[] = tasksJson.data.map(
+            (t: any) => ({
+              id: t.id,
+              title: t.title,
+              description: t.description || "",
+              status: t.status || "pending",
+              priority: t.priority || "medium",
+              dueDate: t.due_date || t.dueDate,
+              due_date: t.due_date,
+              tags: t.tags || [],
+              subtasks: t.subtasks || [],
+              assignees: t.assignees || [],
+              createdBy: t.createdBy || t.created_by,
+              org_id: t.org_id,
+            })
+          );
           setTasks(formattedTasks);
           if (tasksJson.data[0]?.org_id) setOrgId(tasksJson.data[0].org_id);
         }
@@ -180,7 +248,11 @@ export default function AdminDashboardPage() {
           if (Array.isArray(dashJson.data.productivityChart)) {
             setChartData(dashJson.data.productivityChart);
           }
-          setCacheStatus(dashboardRes.headers.get("X-Cache") === "HIT" ? "redis-cache" : "live-db");
+          setCacheStatus(
+            dashboardRes.headers.get("X-Cache") === "HIT"
+              ? "redis-cache"
+              : "live-db"
+          );
         }
       }
     } catch (err) {
@@ -191,14 +263,18 @@ export default function AdminDashboardPage() {
   }, [setTasks]);
 
   // Initial data load on mount
-  useEffect(() => { fetchAllData(); }, [fetchAllData]);
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
 
   const { isRefreshing, triggerManual } = useAutoRefresh(fetchAllData);
 
   const nowMs = Date.now();
   const liveKpis = useMemo(() => {
     const total = tasks.length;
-    const active = tasks.filter((t) => ["pending", "in_progress", "in_review"].includes(t.status)).length;
+    const active = tasks.filter((t) =>
+      ["pending", "in_progress", "in_review"].includes(t.status)
+    ).length;
     const overdue = tasks.filter((t) => {
       if (t.status === "completed") return false;
       const due = t.due_date || t.dueDate;
@@ -206,7 +282,14 @@ export default function AdminDashboardPage() {
     }).length;
     const completed = tasks.filter((t) => t.status === "completed").length;
     const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { activeTasks: active, overdueTasks: overdue, completedTasks: completed, totalTasks: total, completionRate: rate, teamVelocityDays: completed > 0 ? 2.4 : 0 };
+    return {
+      activeTasks: active,
+      overdueTasks: overdue,
+      completedTasks: completed,
+      totalTasks: total,
+      completionRate: rate,
+      teamVelocityDays: completed > 0 ? 2.4 : 0,
+    };
   }, [tasks, nowMs]);
 
   const handleTaskCreated = (newTask: any) => upsertTask(newTask);
@@ -225,12 +308,24 @@ export default function AdminDashboardPage() {
     {
       label: "Overdue Tasks",
       value: liveKpis.overdueTasks,
-      sub: liveKpis.overdueTasks > 0 ? "Requires urgent attention" : "All tasks on schedule",
+      sub:
+        liveKpis.overdueTasks > 0
+          ? "Requires urgent attention"
+          : "All tasks on schedule",
       icon: AlertTriangle,
       color: liveKpis.overdueTasks > 0 ? "text-red-500" : "text-slate-400",
-      bg: liveKpis.overdueTasks > 0 ? "from-red-500/10 to-red-500/5" : "from-slate-100/80 to-slate-50",
-      border: liveKpis.overdueTasks > 0 ? "border-red-500/20" : "border-slate-200 dark:border-slate-700",
-      valueColor: liveKpis.overdueTasks > 0 ? "text-red-600 dark:text-red-400" : "text-slate-900 dark:text-white",
+      bg:
+        liveKpis.overdueTasks > 0
+          ? "from-red-500/10 to-red-500/5"
+          : "from-slate-100/80 to-slate-50",
+      border:
+        liveKpis.overdueTasks > 0
+          ? "border-red-500/20"
+          : "border-slate-200 dark:border-slate-700",
+      valueColor:
+        liveKpis.overdueTasks > 0
+          ? "text-red-600 dark:text-red-400"
+          : "text-slate-900 dark:text-white",
     },
     {
       label: "Completion Rate",
@@ -244,8 +339,12 @@ export default function AdminDashboardPage() {
     },
     {
       label: "Team Velocity",
-      value: liveKpis.teamVelocityDays > 0 ? `${liveKpis.teamVelocityDays}d` : "N/A",
-      sub: liveKpis.completedTasks > 0 ? "Avg completion velocity" : "Awaiting first task",
+      value:
+        liveKpis.teamVelocityDays > 0 ? `${liveKpis.teamVelocityDays}d` : "N/A",
+      sub:
+        liveKpis.completedTasks > 0
+          ? "Avg completion velocity"
+          : "Awaiting first task",
       icon: TrendingUp,
       color: "text-violet-500",
       bg: "from-violet-500/10 to-violet-500/5",
@@ -257,54 +356,64 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               Admin Overview
             </h1>
             {/* Live Status Pill */}
             <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition-all ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold transition-all ${
                 isConnected
-                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 shadow-sm shadow-emerald-500/10"
-                  : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20"
+                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 shadow-sm shadow-emerald-500/10 dark:text-emerald-400"
+                  : "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400"
               }`}
             >
-              <Radio className={`w-3 h-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`} />
+              <Radio
+                className={`h-3 w-3 ${isConnected ? "animate-pulse text-emerald-500" : "text-amber-500"}`}
+              />
               {isConnected ? "Realtime Sync Active" : "Syncing…"}
             </span>
             {cacheStatus === "redis-cache" && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20">
-                <Zap className="w-2.5 h-2.5" /> Redis
+              <span className="inline-flex items-center gap-1 rounded-lg border border-indigo-500/20 bg-indigo-500/15 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400">
+                <Zap className="h-2.5 w-2.5" /> Redis
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Real-time visibility across all managers, employees & tasks
           </p>
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2">
           {/* View Toggle */}
-          <div className="flex items-center rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700 gap-0.5">
+          <div className="flex items-center gap-0.5 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-800">
             {(["kanban", "list", "analytics"] as const).map((mode) => {
-              const icons = { kanban: LayoutGrid, list: List, analytics: BarChart3 };
-              const labels = { kanban: "Kanban", list: "List", analytics: "Analytics" };
+              const icons = {
+                kanban: LayoutGrid,
+                list: List,
+                analytics: BarChart3,
+              };
+              const labels = {
+                kanban: "Kanban",
+                list: "List",
+                analytics: "Analytics",
+              };
               const Icon = icons[mode];
               return (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => setViewMode(mode)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
                     viewMode === mode
-                      ? "bg-white dark:bg-slate-900 text-primary shadow-sm ring-1 ring-primary/10"
+                      ? "bg-white text-primary shadow-sm ring-1 ring-primary/10 dark:bg-slate-900"
                       : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className="h-3.5 w-3.5" />
                   {labels[mode]}
                 </button>
               );
@@ -319,46 +428,54 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/admin/team"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-primary transition shadow-sm"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:text-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            <Users className="w-3.5 h-3.5 text-primary" />
+            <Users className="h-3.5 w-3.5 text-primary" />
             Team ({orgMembers.length})
           </Link>
 
           <button
             type="button"
             onClick={() => setIsTaskModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-br from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 text-white text-xs font-bold shadow-md shadow-primary/25 transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 cursor-pointer"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-gradient-to-br from-primary to-violet-600 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-primary/25 transition-all hover:scale-[1.02] hover:from-primary/90 hover:to-violet-600/90 hover:shadow-lg hover:shadow-primary/20"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="h-4 w-4" />
             New Task
           </button>
         </div>
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {kpiCards.map((card) => {
           const Icon = card.icon;
           return (
             <div
               key={card.label}
-              className={`relative overflow-hidden p-5 rounded-2xl bg-gradient-to-br ${card.bg} border ${card.border} shadow-sm hover:shadow-md transition-shadow dark:bg-slate-800/50 dark:bg-none dark:border-slate-700`}
+              className={`relative overflow-hidden rounded-2xl bg-gradient-to-br p-5 ${card.bg} border ${card.border} shadow-sm transition-shadow hover:shadow-md dark:border-slate-700 dark:bg-slate-800/50 dark:bg-none`}
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{card.label}</p>
-                  <div className={`mt-2 text-3xl font-extrabold ${card.valueColor}`}>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    {card.label}
+                  </p>
+                  <div
+                    className={`mt-2 text-3xl font-extrabold ${card.valueColor}`}
+                  >
                     {isLoading ? (
-                      <div className="h-8 w-12 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg" />
+                      <div className="h-8 w-12 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
                     ) : (
                       card.value
                     )}
                   </div>
-                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">{card.sub}</p>
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    {card.sub}
+                  </p>
                 </div>
-                <div className={`p-2.5 rounded-xl bg-white/60 dark:bg-slate-800/60 ${card.color}`}>
-                  <Icon className="w-4.5 h-4.5 w-5 h-5" />
+                <div
+                  className={`rounded-xl bg-white/60 p-2.5 dark:bg-slate-800/60 ${card.color}`}
+                >
+                  <Icon className="w-4.5 h-4.5 h-5 w-5" />
                 </div>
               </div>
             </div>
@@ -374,23 +491,29 @@ export default function AdminDashboardPage() {
       />
 
       {/* ── Task Stats Row ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {["pending", "in_progress", "in_review", "completed"].map((status) => {
           const cfg = STATUS_CONFIG[status];
           const count = tasks.filter((t) => t.status === status).length;
           return (
             <div
               key={status}
-              className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border ${
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 ${
                 status === "completed"
-                  ? "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200/50 dark:border-emerald-500/20"
-                  : "bg-white dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/50"
+                  ? "border-emerald-200/50 bg-emerald-50/60 dark:border-emerald-500/20 dark:bg-emerald-950/20"
+                  : "border-slate-200/80 bg-white dark:border-slate-700/50 dark:bg-slate-800/60"
               }`}
             >
-              <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+              <span
+                className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${cfg.dot}`}
+              />
               <div>
-                <div className="text-xl font-extrabold text-slate-900 dark:text-white">{count}</div>
-                <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">{cfg.label}</div>
+                <div className="text-xl font-extrabold text-slate-900 dark:text-white">
+                  {count}
+                </div>
+                <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                  {cfg.label}
+                </div>
               </div>
             </div>
           );
@@ -408,24 +531,24 @@ export default function AdminDashboardPage() {
 
       {/* ── Enhanced List View ── */}
       {viewMode === "list" && (
-        <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
           {/* List Header */}
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
+          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800/30">
             <div className="flex items-center gap-2.5">
-              <List className="w-4 h-4 text-primary" />
+              <List className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 All Workspace Tasks
               </h3>
-              <span className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[11px] font-bold">
+              <span className="rounded-lg bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
                 {tasks.length}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setIsTaskModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-primary transition hover:text-primary/80"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="h-3.5 w-3.5" />
               Add Task
             </button>
           </div>
@@ -433,40 +556,48 @@ export default function AdminDashboardPage() {
           {/* Task Rows */}
           {tasks.length === 0 ? (
             <div className="py-20 text-center">
-              <ShieldCheck className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm text-slate-400">No tasks yet. Create the first one!</p>
+              <ShieldCheck className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+              <p className="text-sm text-slate-400">
+                No tasks yet. Create the first one!
+              </p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {tasks.map((task, idx) => {
                 const sc = STATUS_CONFIG[task.status] || STATUS_CONFIG.pending;
-                const pc = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
+                const pc =
+                  PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG.medium;
                 const dueDate = task.due_date || task.dueDate;
-                const isOverdue = dueDate && task.status !== "completed" && new Date(dueDate).getTime() < nowMs;
+                const isOverdue =
+                  dueDate &&
+                  task.status !== "completed" &&
+                  new Date(dueDate).getTime() < nowMs;
 
                 return (
                   <div
                     key={task.id}
-                    className="group px-6 py-4 flex flex-col sm:flex-row sm:items-start gap-4 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition"
+                    className="group flex flex-col gap-4 px-6 py-4 transition hover:bg-slate-50/80 dark:hover:bg-slate-800/40 sm:flex-row sm:items-start"
                   >
                     {/* Row Index + Status Dot */}
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="text-[11px] font-mono text-slate-300 dark:text-slate-600 w-5 text-right">
+                    <div className="flex flex-shrink-0 items-center gap-3">
+                      <span className="w-5 text-right font-mono text-[11px] text-slate-300 dark:text-slate-600">
                         {idx + 1}
                       </span>
-                      <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${sc.dot}`} />
+                      <span
+                        className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${sc.dot}`}
+                      />
                     </div>
 
                     {/* Task Body */}
-                    <div className="flex-1 min-w-0 space-y-2">
+                    <div className="min-w-0 flex-1 space-y-2">
                       {/* Title */}
-                      <div className="flex items-start gap-2 flex-wrap">
-                        <p className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug">
+                      <div className="flex flex-wrap items-start gap-2">
+                        <p className="text-[13px] font-bold leading-snug text-slate-900 dark:text-white">
                           {task.title}
                         </p>
                         {isOverdue && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200/60 dark:border-red-500/20 px-1.5 py-0.5 rounded-md">
-                            <AlertTriangle className="w-2.5 h-2.5" /> Overdue
+                          <span className="inline-flex items-center gap-0.5 rounded-md border border-red-200/60 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-500 dark:border-red-500/20 dark:bg-red-950/30">
+                            <AlertTriangle className="h-2.5 w-2.5" /> Overdue
                           </span>
                         )}
                       </div>
@@ -474,38 +605,50 @@ export default function AdminDashboardPage() {
                       {/* Assignee + Creator Attribution */}
                       <TaskAttribution
                         assignees={(task as any).assignees}
-                        createdBy={(task as any).createdBy || (task as any).created_by}
+                        createdBy={
+                          (task as any).createdBy || (task as any).created_by
+                        }
                         orgMembers={orgMembers}
                       />
 
                       {/* Meta Row */}
-                      <div className="flex items-center gap-3 flex-wrap text-[11px] text-slate-400 dark:text-slate-500">
+                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 dark:text-slate-500">
                         {dueDate && (
-                          <span className={`flex items-center gap-1 ${isOverdue ? "text-red-500 font-semibold" : ""}`}>
-                            <Calendar className="w-3 h-3" />
-                            Due {new Date(dueDate).toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+                          <span
+                            className={`flex items-center gap-1 ${isOverdue ? "font-semibold text-red-500" : ""}`}
+                          >
+                            <Calendar className="h-3 w-3" />
+                            Due{" "}
+                            {new Date(dueDate).toLocaleDateString(undefined, {
+                              day: "numeric",
+                              month: "short",
+                            })}
                           </span>
                         )}
                         {task.tags && task.tags.length > 0 && (
                           <span className="flex items-center gap-0.5 text-primary/80">
-                            <Hash className="w-2.5 h-2.5" />
+                            <Hash className="h-2.5 w-2.5" />
                             {task.tags.join(" · ")}
                           </span>
                         )}
-                        <span className="text-slate-300 dark:text-slate-700 font-mono text-[10px]">
+                        <span className="font-mono text-[10px] text-slate-300 dark:text-slate-700">
                           {task.id?.slice(0, 8)}
                         </span>
                       </div>
                     </div>
 
                     {/* Right Badges */}
-                    <div className="flex items-center gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
+                    <div className="flex flex-shrink-0 flex-wrap items-center gap-2 sm:flex-nowrap">
                       {/* Priority */}
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${pc.color} ${pc.bg}`}>
+                      <span
+                        className={`rounded-lg px-2.5 py-1 text-[10px] font-bold ${pc.color} ${pc.bg}`}
+                      >
                         {pc.label}
                       </span>
                       {/* Status */}
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${sc.color} ${sc.bg}`}>
+                      <span
+                        className={`rounded-lg px-2.5 py-1 text-[10px] font-bold ${sc.color} ${sc.bg}`}
+                      >
                         {sc.label}
                       </span>
                     </div>
@@ -517,12 +660,16 @@ export default function AdminDashboardPage() {
 
           {/* Footer */}
           {tasks.length > 0 && (
-            <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 flex items-center justify-between">
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/30 px-6 py-3 dark:border-slate-800 dark:bg-slate-800/20">
               <span className="text-[11px] text-slate-400">
-                Showing all {tasks.length} tasks · {liveKpis.completedTasks} completed
+                Showing all {tasks.length} tasks · {liveKpis.completedTasks}{" "}
+                completed
               </span>
-              <Link href="/admin/team" className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1">
-                View Team <ArrowRight className="w-3 h-3" />
+              <Link
+                href="/admin/team"
+                className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
+              >
+                View Team <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           )}
@@ -531,20 +678,22 @@ export default function AdminDashboardPage() {
 
       {/* ── Analytics Placeholder ── */}
       {viewMode === "analytics" && (
-        <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700 p-10 text-center shadow-sm">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-            <Sparkles className="w-7 h-7 text-primary" />
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+            <Sparkles className="h-7 w-7 text-primary" />
           </div>
-          <h3 className="text-base font-bold text-slate-800 dark:text-white mb-1">Advanced Analytics</h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 max-w-sm mx-auto">
+          <h3 className="mb-1 text-base font-bold text-slate-800 dark:text-white">
+            Advanced Analytics
+          </h3>
+          <p className="mx-auto mb-4 max-w-sm text-sm text-slate-500 dark:text-slate-400">
             Deep-dive charts, burndown reports, and per-member velocity metrics.
           </p>
           <Link
             href="/admin/analytics-debug"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold shadow hover:bg-primary/90 transition"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow transition hover:bg-primary/90"
           >
-            <BarChart3 className="w-3.5 h-3.5" />
-            Open Analytics <ArrowRight className="w-3 h-3" />
+            <BarChart3 className="h-3.5 w-3.5" />
+            Open Analytics <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       )}

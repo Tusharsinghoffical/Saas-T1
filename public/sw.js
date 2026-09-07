@@ -4,13 +4,7 @@
  */
 
 const CACHE_NAME = "tasq-one-cache-v2";
-const STATIC_ASSETS = [
-  "/",
-  "/login",
-  "/signup",
-  "/manifest.json",
-  "/icon.svg",
-];
+const STATIC_ASSETS = ["/", "/login", "/signup", "/manifest.json", "/icon.svg"];
 
 // 1. Install event: pre-cache static application shell
 self.addEventListener("install", (event) => {
@@ -43,7 +37,10 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   // Ignore non-GET or cross-origin analytics/APIs
-  if (event.request.method !== "GET" || !url.origin.includes(self.location.origin)) {
+  if (
+    event.request.method !== "GET" ||
+    !url.origin.includes(self.location.origin)
+  ) {
     return;
   }
 
@@ -58,7 +55,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   // API Routes: Network-First with Cache Fallback for offline task list viewing
-  if (url.pathname.startsWith("/api/v1/tasks") || url.pathname.startsWith("/api/v1/dashboard")) {
+  if (
+    url.pathname.startsWith("/api/v1/tasks") ||
+    url.pathname.startsWith("/api/v1/dashboard")
+  ) {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -102,7 +102,9 @@ self.addEventListener("fetch", (event) => {
           fetch(event.request).then((response) => {
             if (response.ok) {
               const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+              caches
+                .open(CACHE_NAME)
+                .then((cache) => cache.put(event.request, clone));
             }
             return response;
           })

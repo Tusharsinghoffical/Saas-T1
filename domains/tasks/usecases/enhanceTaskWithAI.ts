@@ -23,12 +23,18 @@ export async function enhanceTaskWithAIUseCase(
 }> {
   const text = (rawText || "").trim();
   if (!text) {
-    throw new ValidationError("Please enter a task title or description to enhance.");
+    throw new ValidationError(
+      "Please enter a task title or description to enhance."
+    );
   }
 
   // 1. Rate Limit Bucket per Org (Max 30 calls per hour)
   const rateLimitKey = `ai:ratelimit:${context.orgId}`;
-  const rateLimit = await checkRateLimit(rateLimitKey, AI_RATE_LIMIT_PER_HOUR, 3600);
+  const rateLimit = await checkRateLimit(
+    rateLimitKey,
+    AI_RATE_LIMIT_PER_HOUR,
+    3600
+  );
 
   if (!rateLimit.success) {
     throw new RateLimitError(
@@ -76,7 +82,11 @@ export async function enhanceTaskWithAIUseCase(
       title: text.slice(0, 50),
       priority: "medium",
       suggestedTags: ["general"],
-      checklist: ["Review requirements", "Implement changes", "Verify completion"],
+      checklist: [
+        "Review requirements",
+        "Implement changes",
+        "Verify completion",
+      ],
       isFallback: true,
       fallbackReason: completion.error || "Groq timeout",
     };

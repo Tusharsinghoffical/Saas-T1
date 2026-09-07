@@ -2,8 +2,14 @@ import { RequestContext } from "@/shared/types/context";
 import { checkRateLimit } from "@/infrastructure/redis/redisClient";
 import { groqChatCompletion } from "@/infrastructure/ai/groqClient";
 import { workloadSuggestionPrompt } from "@/infrastructure/ai/promptTemplates";
-import { userRepository, IUserRepository } from "@/domains/users/repository/userRepository";
-import { taskRepository, ITaskRepository } from "@/domains/tasks/repository/taskRepository";
+import {
+  userRepository,
+  IUserRepository,
+} from "@/domains/users/repository/userRepository";
+import {
+  taskRepository,
+  ITaskRepository,
+} from "@/domains/tasks/repository/taskRepository";
 import { RateLimitError } from "@/shared/errors/domainErrors";
 
 const AI_RATE_LIMIT_PER_HOUR = 30;
@@ -15,7 +21,12 @@ export async function suggestAssigneeUseCase(
   userRepo: IUserRepository = userRepository,
   taskRepo: ITaskRepository = taskRepository
 ): Promise<{
-  candidates: { id: string; name: string; openTaskCount: number; skills?: string[] }[];
+  candidates: {
+    id: string;
+    name: string;
+    openTaskCount: number;
+    skills?: string[];
+  }[];
   recommendedAssignee?: string;
   recommendedUserId?: string | null;
   confidenceScore: number;
@@ -27,7 +38,11 @@ export async function suggestAssigneeUseCase(
 }> {
   // 1. Rate Limit Bucket per Org (Max 30 calls per hour)
   const rateLimitKey = `ai:ratelimit:${context.orgId}`;
-  const rateLimit = await checkRateLimit(rateLimitKey, AI_RATE_LIMIT_PER_HOUR, 3600);
+  const rateLimit = await checkRateLimit(
+    rateLimitKey,
+    AI_RATE_LIMIT_PER_HOUR,
+    3600
+  );
 
   if (!rateLimit.success) {
     throw new RateLimitError(
@@ -45,7 +60,9 @@ export async function suggestAssigneeUseCase(
     openTaskCount: countMap[m.id] || 0,
   }));
 
-  const sortedCandidates = [...candidates].sort((a, b) => a.openTaskCount - b.openTaskCount);
+  const sortedCandidates = [...candidates].sort(
+    (a, b) => a.openTaskCount - b.openTaskCount
+  );
   const lowestBacklogCandidate = sortedCandidates[0];
 
   // 2. Groq AI call with 5-second Timeout Fallback
@@ -112,7 +129,8 @@ export async function suggestAssigneeUseCase(
 
   return {
     candidates,
-    recommendedAssignee: parsedResult.recommendedAssignee || lowestBacklogCandidate?.name,
+    recommendedAssignee:
+      parsedResult.recommendedAssignee || lowestBacklogCandidate?.name,
     recommendedUserId: matchedUser?.id || lowestBacklogCandidate?.id,
     confidenceScore: parsedResult.confidenceScore || 0.9,
     reasoning: parsedResult.reasoning,

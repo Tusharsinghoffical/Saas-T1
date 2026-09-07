@@ -40,62 +40,73 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white bg-[radial-gradient(#d1d5db_1px,transparent_1px)] [background-size:24px_24px] text-slate-900 selection:bg-indigo-500/20 selection:text-indigo-900 font-sans antialiased">
+    <div className="min-h-screen bg-white bg-[radial-gradient(#d1d5db_1px,transparent_1px)] font-sans text-slate-900 antialiased [background-size:24px_24px] selection:bg-indigo-500/20 selection:text-indigo-900">
       <MarketingNav />
 
       {/* Hero */}
-      <section className="py-16 sm:py-24 text-center max-w-5xl mx-auto px-4 sm:px-6 space-y-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-mono font-bold text-emerald-700 uppercase tracking-wide">
-          <Sparkles className="w-3.5 h-3.5" />
+      <section className="mx-auto max-w-5xl space-y-6 px-4 py-16 text-center sm:px-6 sm:py-24">
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3.5 py-1 font-mono text-xs font-bold uppercase tracking-wide text-emerald-700">
+          <Sparkles className="h-3.5 w-3.5" />
           <span>Simple, Transparent Pricing</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-black text-slate-950 tracking-tight leading-tight">
+        <h1 className="text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-5xl">
           Launch for Free. Scale As Your Deliverables Grow.
         </h1>
-        <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          No hidden fees, no per-seat surprise bills. Get started with our ₹0 Free Starter Pilot today.
+        <p className="mx-auto max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
+          No hidden fees, no per-seat surprise bills. Get started with our ₹0
+          Free Starter Pilot today.
         </p>
       </section>
 
       {/* Pricing Cards */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+      <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6">
+        <div className="grid grid-cols-1 items-stretch gap-8 lg:grid-cols-3">
           {/* Plan 1: Free Starter Pilot (Active) */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-white border-2 border-emerald-500 shadow-xl flex flex-col justify-between relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-emerald-500 text-white font-bold text-[10px] uppercase tracking-wider px-4 py-1 rounded-bl-xl">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-3xl border-2 border-emerald-500 bg-white p-8 shadow-xl sm:p-10">
+            <div className="absolute right-0 top-0 rounded-bl-xl bg-emerald-500 px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
               Active Pilot
             </div>
             <div className="space-y-6">
               <div>
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-600">Starter Tier</span>
-                <h3 className="text-2xl font-black text-slate-900 mt-1">₹0 Free Pilot</h3>
-                <p className="text-xs text-slate-500 mt-1">Perfect for founders, small agencies, and pilot teams.</p>
+                <span className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-600">
+                  Starter Tier
+                </span>
+                <h3 className="mt-1 text-2xl font-black text-slate-900">
+                  ₹0 Free Pilot
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Perfect for founders, small agencies, and pilot teams.
+                </p>
               </div>
 
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl sm:text-5xl font-black text-slate-900">₹0</span>
-                <span className="text-xs text-slate-500 font-bold">/ forever</span>
+                <span className="text-4xl font-black text-slate-900 sm:text-5xl">
+                  ₹0
+                </span>
+                <span className="text-xs font-bold text-slate-500">
+                  / forever
+                </span>
               </div>
 
-              <ul className="space-y-3 pt-4 border-t border-slate-100 text-xs text-slate-700">
+              <ul className="space-y-3 border-t border-slate-100 pt-4 text-xs text-slate-700">
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
                   <span>Up to 5 Team Members</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
                   <span>Unlimited Tasks &amp; Sprint Boards</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
                   <span>Groq AI Task Decomposer (Llama 3.3 70B)</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
                   <span>Due Today Morning Checklist</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-emerald-600" />
                   <span>PostgreSQL Row-Level Security Isolation</span>
                 </li>
               </ul>
@@ -104,43 +115,53 @@ export default function PricingPage() {
             <div className="pt-8">
               <Link
                 href="/signup"
-                className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 font-bold text-white text-xs shadow-md transition-all flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3.5 text-xs font-bold text-white shadow-md transition-all hover:bg-emerald-700"
               >
                 <span>Get Started Free</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
 
           {/* Plan 2: SMB Pro (Phase 2) */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-slate-50 border border-slate-200 shadow-sm flex flex-col justify-between opacity-95">
+          <div className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-slate-50 p-8 opacity-95 shadow-sm sm:p-10">
             <div className="space-y-6">
               <div>
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-600">Phase 2 Tier</span>
-                <h3 className="text-2xl font-black text-slate-900 mt-1">SMB Pro</h3>
-                <p className="text-xs text-slate-500 mt-1">For scaling teams with multi-project workflows.</p>
+                <span className="font-mono text-xs font-bold uppercase tracking-wider text-indigo-600">
+                  Phase 2 Tier
+                </span>
+                <h3 className="mt-1 text-2xl font-black text-slate-900">
+                  SMB Pro
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  For scaling teams with multi-project workflows.
+                </p>
               </div>
 
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl sm:text-5xl font-black text-slate-900">₹999</span>
-                <span className="text-xs text-slate-500 font-bold">/ month</span>
+                <span className="text-4xl font-black text-slate-900 sm:text-5xl">
+                  ₹999
+                </span>
+                <span className="text-xs font-bold text-slate-500">
+                  / month
+                </span>
               </div>
 
-              <ul className="space-y-3 pt-4 border-t border-slate-200 text-xs text-slate-700">
+              <ul className="space-y-3 border-t border-slate-200 pt-4 text-xs text-slate-700">
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-indigo-600" />
                   <span>Unlimited Team Members</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-indigo-600" />
                   <span>Slack Broadcast Integration</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-indigo-600" />
                   <span>10GB Cloudflare R2 Storage</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-indigo-600" />
                   <span>Automated AI Weekly Summaries</span>
                 </li>
               </ul>
@@ -149,7 +170,7 @@ export default function PricingPage() {
             <div className="pt-8">
               <button
                 disabled
-                className="w-full py-3.5 px-4 rounded-2xl bg-slate-200 text-slate-500 font-bold text-xs cursor-not-allowed"
+                className="w-full cursor-not-allowed rounded-2xl bg-slate-200 px-4 py-3.5 text-xs font-bold text-slate-500"
               >
                 Coming in Phase 2
               </button>
@@ -157,34 +178,44 @@ export default function PricingPage() {
           </div>
 
           {/* Plan 3: Enterprise Scale */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-slate-50 border border-slate-200 shadow-sm flex flex-col justify-between opacity-95">
+          <div className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-slate-50 p-8 opacity-95 shadow-sm sm:p-10">
             <div className="space-y-6">
               <div>
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-purple-600">Enterprise</span>
-                <h3 className="text-2xl font-black text-slate-900 mt-1">Custom Scale</h3>
-                <p className="text-xs text-slate-500 mt-1">Dedicated cloud tenant &amp; SLA guarantee.</p>
+                <span className="font-mono text-xs font-bold uppercase tracking-wider text-purple-600">
+                  Enterprise
+                </span>
+                <h3 className="mt-1 text-2xl font-black text-slate-900">
+                  Custom Scale
+                </h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Dedicated cloud tenant &amp; SLA guarantee.
+                </p>
               </div>
 
               <div className="flex items-baseline gap-1">
-                <span className="text-4xl sm:text-5xl font-black text-slate-900">₹2,499</span>
-                <span className="text-xs text-slate-500 font-bold">/ month</span>
+                <span className="text-4xl font-black text-slate-900 sm:text-5xl">
+                  ₹2,499
+                </span>
+                <span className="text-xs font-bold text-slate-500">
+                  / month
+                </span>
               </div>
 
-              <ul className="space-y-3 pt-4 border-t border-slate-200 text-xs text-slate-700">
+              <ul className="space-y-3 border-t border-slate-200 pt-4 text-xs text-slate-700">
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-purple-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-purple-600" />
                   <span>Custom Subdomains &amp; SSO</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-purple-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-purple-600" />
                   <span>99.9% Uptime SLA</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-purple-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-purple-600" />
                   <span>Immutable Audit Log Export</span>
                 </li>
                 <li className="flex items-center gap-2.5">
-                  <Check className="w-4 h-4 text-purple-600 shrink-0" />
+                  <Check className="h-4 w-4 shrink-0 text-purple-600" />
                   <span>Priority 24/7 Support</span>
                 </li>
               </ul>
@@ -193,7 +224,7 @@ export default function PricingPage() {
             <div className="pt-8">
               <a
                 href="mailto:tasqoneworkos@gmail.com?subject=Enterprise%20Inquiry"
-                className="w-full py-3.5 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3.5 text-xs font-bold text-white transition-all hover:bg-slate-800"
               >
                 <span>Contact Enterprise</span>
               </a>
@@ -202,32 +233,36 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ Section */}
-        <div className="mt-20 max-w-4xl mx-auto space-y-8">
-          <div className="text-center space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Frequently Asked Questions</h2>
-            <p className="text-xs sm:text-sm text-slate-500">Everything you need to know about TASQ-ONE pricing and plans.</p>
+        <div className="mx-auto mt-20 max-w-4xl space-y-8">
+          <div className="space-y-2 text-center">
+            <h2 className="text-2xl font-extrabold text-slate-900 sm:text-3xl">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xs text-slate-500 sm:text-sm">
+              Everything you need to know about TASQ-ONE pricing and plans.
+            </p>
           </div>
 
           <div className="space-y-4">
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
-                className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-xs transition-all"
+                className="shadow-xs overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all"
               >
                 <button
                   type="button"
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-slate-900 hover:bg-slate-50 cursor-pointer"
+                  className="flex w-full cursor-pointer items-center justify-between gap-4 p-5 text-left text-sm font-bold text-slate-900 hover:bg-slate-50"
                 >
                   <span>{faq.q}</span>
                   <ChevronDown
-                    className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                    className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
                       openFaq === idx ? "rotate-180 text-indigo-600" : ""
                     }`}
                   />
                 </button>
                 {openFaq === idx && (
-                  <div className="px-5 pb-5 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3 animate-fade-in">
+                  <div className="animate-fade-in border-t border-slate-100 px-5 pb-5 pt-3 text-xs leading-relaxed text-slate-600">
                     {faq.a}
                   </div>
                 )}

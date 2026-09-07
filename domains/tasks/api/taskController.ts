@@ -28,7 +28,8 @@ export class TaskController {
 
     if (!filterResult.success) {
       throw new ValidationError(
-        filterResult.error.issues[0]?.message || "Invalid task filter parameters"
+        filterResult.error.issues[0]?.message ||
+          "Invalid task filter parameters"
       );
     }
 

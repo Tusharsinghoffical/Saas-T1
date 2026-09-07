@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
       "X-Cache": result.source === "cache" ? "HIT" : "MISS",
       // ── SECURITY FIX: No public CDN caching for private tenant data ──
       "Cache-Control": "private, no-cache, no-store, must-revalidate",
-      "Pragma": "no-cache",
-      "Expires": "0",
+      Pragma: "no-cache",
+      Expires: "0",
     };
 
     return NextResponse.json(

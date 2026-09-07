@@ -17,7 +17,11 @@ import {
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Logo } from "@/components/ui/Logo";
 
-export default function ManagerLayout({ children }: { children: React.ReactNode }) {
+export default function ManagerLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
 
   const [managerInfo, setManagerInfo] = useState<{
@@ -48,38 +52,43 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
       .catch(() => {});
   }, []);
 
-  const initials = managerInfo.fullName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "MG";
+  const initials =
+    managerInfo.fullName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "MG";
 
   const navItems = [
-    { name: "Team Kanban Board", href: "/manager/dashboard", icon: LayoutDashboard },
+    {
+      name: "Team Kanban Board",
+      href: "/manager/dashboard",
+      icon: LayoutDashboard,
+    },
     { name: "My Team", href: "/manager/team", icon: Users },
   ];
 
   return (
-    <div className="min-h-screen flex bg-background-light dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+    <div className="flex min-h-screen bg-background-light text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       {/* Sticky Premium Sidebar */}
-      <aside className="w-64 border-r border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex flex-col hidden md:flex sticky top-0 h-screen overflow-y-auto flex-shrink-0 z-30 shadow-xs">
+      <aside className="shadow-xs sticky top-0 z-30 flex hidden h-screen w-64 flex-shrink-0 flex-col overflow-y-auto border-r border-slate-200/80 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 md:flex">
         {/* Brand Header */}
-        <div className="h-20 px-5 flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800">
+        <div className="flex h-20 items-center justify-between border-b border-slate-200/80 px-5 dark:border-slate-800">
           <Logo size="md" href="/manager/dashboard" />
         </div>
 
         {/* Workspace Scope Indicator */}
-        <div className="px-4 pt-4 pb-2">
-          <div className="p-2.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-              <Briefcase className="w-3.5 h-3.5" />
+        <div className="px-4 pb-2 pt-4">
+          <div className="flex items-center gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50/80 p-2.5 dark:border-indigo-900/50 dark:bg-indigo-950/40">
+            <div className="shadow-xs flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white">
+              <Briefcase className="h-3.5 w-3.5" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] font-bold text-indigo-950 dark:text-indigo-200 truncate">
+              <div className="truncate text-[11px] font-bold text-indigo-950 dark:text-indigo-200">
                 {managerInfo.teamName}
               </div>
-              <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium">
+              <div className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400">
                 Active Sprint Operations
               </div>
             </div>
@@ -87,8 +96,8 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 px-4 py-3 space-y-1.5">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 pb-1">
+        <nav className="flex-1 space-y-1.5 px-4 py-3">
+          <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             Workspace Hub
           </div>
           {navItems.map((item) => {
@@ -98,13 +107,13 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl transition ${
+                className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold transition ${
                   isActive
-                    ? "bg-primary/10 text-primary dark:text-primary-400 font-bold border border-primary/20"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+                    ? "border border-primary/20 bg-primary/10 font-bold text-primary dark:text-primary-400"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                 }`}
               >
-                <Icon className="w-4 h-4 text-primary" />
+                <Icon className="h-4 w-4 text-primary" />
                 <span>{item.name}</span>
               </Link>
             );
@@ -112,23 +121,23 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
         </nav>
 
         {/* User Card & Logout */}
-        <div className="p-3.5 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/50 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="dark:bg-slate-850/50 flex items-center justify-between gap-2 border-t border-slate-200/80 bg-slate-50/50 p-3.5 dark:border-slate-800">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div className="relative flex-shrink-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-teal-500 p-[1.5px] shadow-xs">
-                <div className="w-full h-full rounded-[10px] bg-slate-900 text-white font-bold flex items-center justify-center text-xs tracking-wider">
+              <div className="shadow-xs h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-teal-500 p-[1.5px]">
+                <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-slate-900 text-xs font-bold tracking-wider text-white">
                   {initials}
                 </div>
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900" />
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
             </div>
 
-            <div className="text-xs min-w-0 flex-1">
-              <div className="font-bold text-slate-900 dark:text-white truncate">
+            <div className="min-w-0 flex-1 text-xs">
+              <div className="truncate font-bold text-slate-900 dark:text-white">
                 {managerInfo.fullName}
               </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
-                <Shield className="w-2.5 h-2.5 text-indigo-500" />
+              <div className="flex items-center gap-1 truncate text-[10px] text-slate-500 dark:text-slate-400">
+                <Shield className="h-2.5 w-2.5 text-indigo-500" />
                 <span className="capitalize">{managerInfo.role}</span>
               </div>
             </div>
@@ -136,22 +145,22 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
           <Link
             href="/login"
-            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition flex-shrink-0"
+            className="flex-shrink-0 rounded-xl p-2 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-600"
             title="Logout"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="h-4 w-4" />
           </Link>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Sticky Top Header */}
-        <header className="h-16 border-b border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+        <header className="shadow-xs sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
               <span>Manager Operations Hub</span>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/20">
+              <span className="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-0.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
                 {managerInfo.teamName}
               </span>
             </div>
@@ -162,7 +171,9 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">{children}</main>
+        <main className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

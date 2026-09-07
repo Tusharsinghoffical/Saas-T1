@@ -1,9 +1,18 @@
 import { groqChatCompletion } from "@/infrastructure/ai/groqClient";
 import { weeklySummaryPrompt } from "@/infrastructure/ai/promptTemplates";
-import { sendEmail, buildNotificationEmailHtml } from "@/infrastructure/email/resendClient";
+import {
+  sendEmail,
+  buildNotificationEmailHtml,
+} from "@/infrastructure/email/resendClient";
 import { recordActivityLogUseCase } from "@/domains/activity";
-import { orgRepository, IOrgRepository } from "@/domains/organization/repository/orgRepository";
-import { taskRepository, ITaskRepository } from "@/domains/tasks/repository/taskRepository";
+import {
+  orgRepository,
+  IOrgRepository,
+} from "@/domains/organization/repository/orgRepository";
+import {
+  taskRepository,
+  ITaskRepository,
+} from "@/domains/tasks/repository/taskRepository";
 
 export async function generateWeeklySummaryUseCase(
   orgRepo: IOrgRepository = orgRepository,
@@ -44,8 +53,13 @@ export async function generateWeeklySummaryUseCase(
       } catch {
         summaryData = {
           headline: `Weekly Progress Digest for ${org.name}`,
-          keyHighlights: [`${stats.completedCount} tasks completed in the past 7 days`],
-          risks: stats.overdueCount > 0 ? [`${stats.overdueCount} tasks currently overdue`] : [],
+          keyHighlights: [
+            `${stats.completedCount} tasks completed in the past 7 days`,
+          ],
+          risks:
+            stats.overdueCount > 0
+              ? [`${stats.overdueCount} tasks currently overdue`]
+              : [],
           recommendations: ["Review team priorities for next sprint"],
         };
       }

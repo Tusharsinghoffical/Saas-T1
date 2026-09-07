@@ -24,9 +24,12 @@ export class NotificationController {
       throw new ValidationError("recipientUserId is required.");
     }
 
-    const recipientProfile = await userRepository.getProfileById(recipientUserId);
+    const recipientProfile =
+      await userRepository.getProfileById(recipientUserId);
     if (!recipientProfile || recipientProfile.orgId !== auth.orgId) {
-      throw new ForbiddenError("Recipient does not belong to your organization.");
+      throw new ForbiddenError(
+        "Recipient does not belong to your organization."
+      );
     }
 
     return await dispatchEmailNotificationUseCase(body);

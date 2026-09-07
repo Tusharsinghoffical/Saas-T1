@@ -71,22 +71,22 @@ External services and clients are encapsulated in `infrastructure/`, completely 
 
 All route handlers are strictly reduced to parsing the HTTP request and invoking the matching domain controller:
 
-| Route Path | Method | Delegated Controller & Action |
-| :--- | :---: | :--- |
-| `/api/v1/health` | GET | Direct status check (`{ status: "healthy" }`) |
-| `/api/v1/tasks` | GET, POST | `taskController.listTasks()`, `taskController.createTask()` |
-| `/api/v1/tasks/[id]` | GET, PATCH, DELETE | `taskController.getTask()`, `taskController.updateTask()`, `taskController.deleteTask()` |
-| `/api/v1/tasks/[id]/attachments` | POST | `taskController.getPresignedAttachmentUrl()` |
-| `/api/v1/tasks/[id]/comments` | POST | `taskController.addComment()` |
-| `/api/v1/dashboard/admin` | GET | `dashboardController.getAdminDashboard()` |
-| `/api/v1/dashboard/manager` | GET | `dashboardController.getManagerDashboard()` |
-| `/api/v1/dashboard/me` | GET | `dashboardController.getEmployeeDashboard()` |
-| `/api/v1/org/settings` | GET, PATCH | `orgController.getSettings()`, `orgController.updateSettings()` |
-| `/api/v1/notifications` | GET, PATCH | `notificationController.getNotifications()`, `notificationController.markRead()` |
-| `/api/v1/activity` | GET | `activityController.getLogs()` |
-| `/api/v1/ai/enhance-task` | POST | `aiController.enhanceTask()` |
-| `/api/v1/ai/workload-suggestion` | POST | `aiController.suggestAssignee()` |
-| `/api/v1/ai/weekly-summary` | POST | `aiController.weeklySummary()` |
+| Route Path                       |       Method       | Delegated Controller & Action                                                            |
+| :------------------------------- | :----------------: | :--------------------------------------------------------------------------------------- |
+| `/api/v1/health`                 |        GET         | Direct status check (`{ status: "healthy" }`)                                            |
+| `/api/v1/tasks`                  |     GET, POST      | `taskController.listTasks()`, `taskController.createTask()`                              |
+| `/api/v1/tasks/[id]`             | GET, PATCH, DELETE | `taskController.getTask()`, `taskController.updateTask()`, `taskController.deleteTask()` |
+| `/api/v1/tasks/[id]/attachments` |        POST        | `taskController.getPresignedAttachmentUrl()`                                             |
+| `/api/v1/tasks/[id]/comments`    |        POST        | `taskController.addComment()`                                                            |
+| `/api/v1/dashboard/admin`        |        GET         | `dashboardController.getAdminDashboard()`                                                |
+| `/api/v1/dashboard/manager`      |        GET         | `dashboardController.getManagerDashboard()`                                              |
+| `/api/v1/dashboard/me`           |        GET         | `dashboardController.getEmployeeDashboard()`                                             |
+| `/api/v1/org/settings`           |     GET, PATCH     | `orgController.getSettings()`, `orgController.updateSettings()`                          |
+| `/api/v1/notifications`          |     GET, PATCH     | `notificationController.getNotifications()`, `notificationController.markRead()`         |
+| `/api/v1/activity`               |        GET         | `activityController.getLogs()`                                                           |
+| `/api/v1/ai/enhance-task`        |        POST        | `aiController.enhanceTask()`                                                             |
+| `/api/v1/ai/workload-suggestion` |        POST        | `aiController.suggestAssignee()`                                                         |
+| `/api/v1/ai/weekly-summary`      |        POST        | `aiController.weeklySummary()`                                                           |
 
 ---
 

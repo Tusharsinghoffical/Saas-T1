@@ -12,7 +12,10 @@ export interface TaskState {
   setTasks: (tasks: KanbanTaskItem[]) => void;
   upsertTask: (task: KanbanTaskItem) => void;
   removeTask: (taskId: string) => void;
-  updateTaskStatusOptimistic: (taskId: string, status: KanbanTaskItem["status"]) => void;
+  updateTaskStatusOptimistic: (
+    taskId: string,
+    status: KanbanTaskItem["status"]
+  ) => void;
   setConnectionStatus: (isConnected: boolean) => void;
   setIsLoading: (isLoading: boolean) => void;
   setActiveFilter: (filter: string | null) => void;

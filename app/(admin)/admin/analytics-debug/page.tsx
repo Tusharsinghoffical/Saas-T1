@@ -25,7 +25,8 @@ import { Badge } from "@/components/ui/badge";
 export default function AnalyticsDebugPage() {
   const [events, setEvents] = useState<AnalyticsEventRecord[]>([]);
   const [isOptedOut, setIsOptedOut] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<AnalyticsEventRecord | null>(null);
+  const [selectedEvent, setSelectedEvent] =
+    useState<AnalyticsEventRecord | null>(null);
 
   const refreshEvents = () => {
     setEvents(getRecentEvents());
@@ -53,27 +54,31 @@ export default function AnalyticsDebugPage() {
     setIsOptedOut(next);
   };
 
-  const handleFireSampleEvent = (eventName: string, props: Record<string, any>) => {
+  const handleFireSampleEvent = (
+    eventName: string,
+    props: Record<string, any>
+  ) => {
     captureEvent(eventName, props);
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl space-y-6">
       {/* Dev-Only Banner */}
-      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400">
-            <Code2 className="w-5 h-5" />
+          <div className="rounded-xl bg-amber-500/20 p-2 text-amber-600 dark:text-amber-400">
+            <Code2 className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
               <span>PostHog Analytics Debugger</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold uppercase tracking-wider">
+              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
                 QA / Internal Only
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              Live inspection stream of PostHog events dispatched by client actions.
+            <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+              Live inspection stream of PostHog events dispatched by client
+              actions.
             </p>
           </div>
         </div>
@@ -82,20 +87,20 @@ export default function AnalyticsDebugPage() {
           <button
             type="button"
             onClick={handleToggleOptOut}
-            className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+            className={`flex min-h-[36px] items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition ${
               isOptedOut
-                ? "bg-urgent/10 text-urgent border border-urgent/20"
-                : "bg-success/10 text-success border border-success/20"
+                ? "border border-urgent/20 bg-urgent/10 text-urgent"
+                : "border border-success/20 bg-success/10 text-success"
             }`}
           >
             {isOptedOut ? (
               <>
-                <ShieldAlert className="w-4 h-4" />
+                <ShieldAlert className="h-4 w-4" />
                 <span>Opted Out</span>
               </>
             ) : (
               <>
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="h-4 w-4" />
                 <span>Tracking Active</span>
               </>
             )}
@@ -103,18 +108,18 @@ export default function AnalyticsDebugPage() {
           <button
             type="button"
             onClick={() => clearRecentEvents()}
-            className="min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-urgent hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5"
+            className="flex min-h-[36px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-urgent dark:hover:bg-slate-800"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4" />
             <span>Clear Log</span>
           </button>
         </div>
       </div>
 
       {/* Trigger Sample Events Bar */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <Play className="w-3.5 h-3.5 text-primary" />
+      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+          <Play className="h-3.5 w-3.5 text-primary" />
           <span>Trigger Sample Test Events</span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -127,7 +132,7 @@ export default function AnalyticsDebugPage() {
                 invitesCount: 4,
               })
             }
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition"
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800"
           >
             + org_signup_completed
           </button>
@@ -140,7 +145,7 @@ export default function AnalyticsDebugPage() {
                 hasDueDate: true,
               })
             }
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition"
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800"
           >
             + task_created
           </button>
@@ -153,7 +158,7 @@ export default function AnalyticsDebugPage() {
                 newStatus: "in_review",
               })
             }
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition"
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800"
           >
             + task_status_changed
           </button>
@@ -165,7 +170,7 @@ export default function AnalyticsDebugPage() {
                 durationDays: 2,
               })
             }
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition"
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800"
           >
             + task_completed
           </button>
@@ -177,7 +182,7 @@ export default function AnalyticsDebugPage() {
                 enhancedLength: 210,
               })
             }
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition"
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800"
           >
             + ai_enhance_used
           </button>
@@ -189,7 +194,7 @@ export default function AnalyticsDebugPage() {
                 type: "task.assigned",
               })
             }
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary transition"
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800"
           >
             + notification_clicked
           </button>
@@ -197,10 +202,10 @@ export default function AnalyticsDebugPage() {
       </div>
 
       {/* Events Stream Table */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4 text-primary" />
+            <Activity className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               Captured Events Stream ({events.length})
             </h3>
@@ -208,19 +213,22 @@ export default function AnalyticsDebugPage() {
           <button
             type="button"
             onClick={refreshEvents}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-primary transition"
+            className="rounded-lg p-1.5 text-slate-400 transition hover:text-primary"
             title="Refresh stream"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="h-4 w-4" />
           </button>
         </div>
 
         {events.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 space-y-2">
-            <Activity className="w-8 h-8 mx-auto opacity-40 animate-pulse" />
-            <p className="text-xs">No analytics events captured yet in this session.</p>
+          <div className="space-y-2 p-12 text-center text-slate-400">
+            <Activity className="mx-auto h-8 w-8 animate-pulse opacity-40" />
+            <p className="text-xs">
+              No analytics events captured yet in this session.
+            </p>
             <p className="text-[11px] text-slate-500">
-              Click any of the trigger buttons above or perform actions in the app.
+              Click any of the trigger buttons above or perform actions in the
+              app.
             </p>
           </div>
         ) : (
@@ -229,24 +237,24 @@ export default function AnalyticsDebugPage() {
               <div
                 key={evt.id}
                 onClick={() => setSelectedEvent(evt)}
-                className="p-4 flex items-center justify-between gap-4 hover:bg-slate-50 dark:hover:bg-slate-850 transition cursor-pointer text-xs"
+                className="dark:hover:bg-slate-850 flex cursor-pointer items-center justify-between gap-4 p-4 text-xs transition hover:bg-slate-50"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 rounded-xl bg-primary/10 text-primary font-mono text-[11px] font-bold flex-shrink-0">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex-shrink-0 rounded-xl bg-primary/10 p-2 font-mono text-[11px] font-bold text-primary">
                     EVENT
                   </div>
                   <div className="min-w-0">
-                    <span className="font-bold text-slate-900 dark:text-white font-mono">
+                    <span className="font-mono font-bold text-slate-900 dark:text-white">
                       {evt.name}
                     </span>
-                    <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                    <div className="mt-0.5 truncate text-[10px] text-slate-400">
                       {JSON.stringify(evt.properties)}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-shrink-0">
-                  <Clock className="w-3.5 h-3.5" />
+                <div className="flex flex-shrink-0 items-center gap-2 text-[11px] text-slate-400">
+                  <Clock className="h-3.5 w-3.5" />
                   <span>{new Date(evt.timestamp).toLocaleTimeString()}</span>
                 </div>
               </div>
@@ -257,10 +265,10 @@ export default function AnalyticsDebugPage() {
 
       {/* Inspect Event Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white font-mono">
+        <div className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <h4 className="font-mono text-sm font-bold text-slate-900 dark:text-white">
                 {selectedEvent.name}
               </h4>
               <button
@@ -273,15 +281,19 @@ export default function AnalyticsDebugPage() {
             </div>
 
             <div>
-              <div className="text-xs font-semibold text-slate-500 mb-1">Timestamp:</div>
-              <div className="text-xs text-slate-700 dark:text-slate-300 font-mono">
+              <div className="mb-1 text-xs font-semibold text-slate-500">
+                Timestamp:
+              </div>
+              <div className="font-mono text-xs text-slate-700 dark:text-slate-300">
                 {selectedEvent.timestamp}
               </div>
             </div>
 
             <div>
-              <div className="text-xs font-semibold text-slate-500 mb-1">Payload Properties:</div>
-              <pre className="p-3.5 rounded-xl bg-slate-950 text-slate-100 text-xs font-mono overflow-x-auto max-h-60 border border-slate-800">
+              <div className="mb-1 text-xs font-semibold text-slate-500">
+                Payload Properties:
+              </div>
+              <pre className="max-h-60 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-3.5 font-mono text-xs text-slate-100">
                 {JSON.stringify(selectedEvent.properties, null, 2)}
               </pre>
             </div>
@@ -289,7 +301,7 @@ export default function AnalyticsDebugPage() {
             <button
               type="button"
               onClick={() => setSelectedEvent(null)}
-              className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+              className="w-full rounded-xl bg-slate-100 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               Close
             </button>

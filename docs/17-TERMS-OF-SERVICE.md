@@ -25,14 +25,17 @@ TASQ-ONE is a multi-tenant task management platform providing task creation and 
 ## 3. Accounts & Roles
 
 ### 3.1 Company Registration
+
 - Only an authorized company representative may register a new Workspace via "Register Your Company." Doing so creates you as the `admin` of that Workspace.
 - You must provide accurate registration information and are responsible for keeping your login credentials secure.
 
 ### 3.2 Team Members (Managers & Employees)
+
 - Individual employees **cannot self-register**. Team members are added exclusively via invite from an existing `admin` or `manager` of your Workspace.
 - By accepting an invite, you agree to these Terms and acknowledge that your organization's admin controls your access, role, and removal from the Workspace.
 
 ### 3.3 Account Responsibility
+
 - The Workspace admin is responsible for all activity that occurs under their organization's account, including actions taken by managers and employees they invite.
 - You must notify us promptly at [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com) of any unauthorized access to your account.
 
@@ -41,6 +44,7 @@ TASQ-ONE is a multi-tenant task management platform providing task creation and 
 ## 4. Acceptable Use
 
 You agree not to:
+
 - Use the Service for any unlawful purpose, or in violation of any applicable law (including Indian law).
 - Attempt to access another organization's Workspace data, bypass rate limits, or probe/test the Service's security without authorization.
 - Upload malware, or content that infringes on the intellectual property or rights of others.
@@ -83,7 +87,7 @@ Violation of this section may result in suspension or termination of your accoun
 - TO THE MAXIMUM EXTENT PERMITTED BY LAW, TASQ-ONE'S TOTAL LIABILITY FOR ANY CLAIM ARISING FROM YOUR USE OF THE SERVICE SHALL NOT EXCEED THE AMOUNT YOU PAID US IN THE 12 MONTHS PRECEDING THE CLAIM (WHICH, ON THE FREE STARTER PILOT, IS ZERO).
 - We are not liable for indirect, incidental, special, or consequential damages, including loss of data, profits, or business opportunity, arising from your use of or inability to use the Service.
 
-*(This clause requires legal review to ensure enforceability under Indian contract law, particularly the Indian Contract Act, 1872 and Consumer Protection Act, 2019 where applicable.)*
+_(This clause requires legal review to ensure enforceability under Indian contract law, particularly the Indian Contract Act, 1872 and Consumer Protection Act, 2019 where applicable.)_
 
 ---
 
@@ -111,7 +115,7 @@ We may modify the Service or these Terms from time to time. We will notify Works
 
 These Terms are governed by the laws of India. Any disputes arising from these Terms or your use of the Service shall be subject to the exclusive jurisdiction of the courts of [Insert city, e.g. Delhi/Pune], India.
 
-*(Consider adding an arbitration clause per the Arbitration and Conciliation Act, 1996, if desired — a lawyer should draft this based on your business structure.)*
+_(Consider adding an arbitration clause per the Arbitration and Conciliation Act, 1996, if desired — a lawyer should draft this based on your business structure.)_
 
 ---
 

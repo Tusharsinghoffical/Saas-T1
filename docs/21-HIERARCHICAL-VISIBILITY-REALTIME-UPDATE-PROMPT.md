@@ -3,7 +3,8 @@
 Continues numbering from `15-FINAL-REALITY-CHECK-PROMPT.md` (Prompt 41 = reality-check).
 
 ## Context
-The role hierarchy (Admin governs org → Manager governs team → Employee executes, control flows down / visibility flows up) is already implemented per `01-PRD.md`, `07-DDS-ARCHITECTURE.md`, and Prompts 6–17. This prompt closes two specific gaps between that hierarchy's *stated* requirement (instant bottom-up visibility, explicit manager-employee scoping) and what was actually built (a 60-second cached dashboard, and team-based rather than guaranteed-complete manager scoping).
+
+The role hierarchy (Admin governs org → Manager governs team → Employee executes, control flows down / visibility flows up) is already implemented per `01-PRD.md`, `07-DDS-ARCHITECTURE.md`, and Prompts 6–17. This prompt closes two specific gaps between that hierarchy's _stated_ requirement (instant bottom-up visibility, explicit manager-employee scoping) and what was actually built (a 60-second cached dashboard, and team-based rather than guaranteed-complete manager scoping).
 
 ---
 
@@ -38,4 +39,5 @@ Current state: manager-scoped visibility works through teams + team_members, whi
 ---
 
 ## Note
+
 This is a refinement prompt, not a new build — it assumes Prompts 1–41 are already implemented. If dashboard real-time sync or team-assignment guarantees were somehow already fully solved in an earlier pass (worth checking before assuming the gap exists — re-read `getAdminDashboard.ts` and the team-assignment flow first), report that instead of making redundant changes.

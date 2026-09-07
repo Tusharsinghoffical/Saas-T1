@@ -1,11 +1,25 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
 import { logger } from "@/infrastructure/logger/logger";
-import { ActivityLog, ActivityLogInput, ActivityFilterDTO } from "../entities/ActivityLog";
+import {
+  ActivityLog,
+  ActivityLogInput,
+  ActivityFilterDTO,
+} from "../entities/ActivityLog";
 
 export interface IActivityRepository {
   recordLog(input: ActivityLogInput): Promise<boolean>;
-  listLogs(orgId: string, filters: ActivityFilterDTO): Promise<{ logs: ActivityLog[]; total: number }>;
-  getAllLogsForCsv(orgId: string, entity?: string | null, action?: string | null): Promise<ActivityLog[]>;
+  listLogs(
+    orgId: string,
+    filters: ActivityFilterDTO
+  ): Promise<{ logs: ActivityLog[]; total: number }>;
+  getAllLogsForCsv(
+    orgId: string,
+    entity?: string | null,
+    action?: string | null
+  ): Promise<ActivityLog[]>;
 }
 
 export class SupabaseActivityRepository implements IActivityRepository {
@@ -34,14 +48,17 @@ export class SupabaseActivityRepository implements IActivityRepository {
       if (!input.orgId) return false;
 
       // UUID format validation for PostgreSQL UUID columns
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const isValidOrgUuid = uuidRegex.test(input.orgId);
       if (!isValidOrgUuid) {
         return false;
       }
 
       const client = this.getClient();
-      const isEntityUuid = input.entityId ? uuidRegex.test(input.entityId) : false;
+      const isEntityUuid = input.entityId
+        ? uuidRegex.test(input.entityId)
+        : false;
       const isActorUuid = input.actorId ? uuidRegex.test(input.actorId) : false;
 
       const payload: Record<string, any> = {
@@ -53,17 +70,24 @@ export class SupabaseActivityRepository implements IActivityRepository {
         diff: input.diff || null,
       };
 
-      const { error } = await (client.from("activity_logs") as any).insert(payload);
+      const { error } = await (client.from("activity_logs") as any).insert(
+        payload
+      );
 
       if (error) {
-        if (error.message?.includes("column") || error.message?.includes("schema cache")) {
+        if (
+          error.message?.includes("column") ||
+          error.message?.includes("schema cache")
+        ) {
           const minimalPayload: any = {
             org_id: input.orgId,
             action: input.action,
           };
           if (isActorUuid) minimalPayload.actor_id = input.actorId;
           try {
-            const { error: retryErr } = await (client.from("activity_logs") as any).insert(minimalPayload);
+            const { error: retryErr } = await (
+              client.from("activity_logs") as any
+            ).insert(minimalPayload);
             if (!retryErr) return true;
           } catch {}
         }
@@ -80,7 +104,10 @@ export class SupabaseActivityRepository implements IActivityRepository {
    * Helper: If activity_logs has 0 rows for the org, generate authentic audit records
    * from existing tasks, profiles, and comments so the activity trail is rich and accurate.
    */
-  private async backfillFromWorkspace(client: any, orgId: string): Promise<ActivityLog[]> {
+  private async backfillFromWorkspace(
+    client: any,
+    orgId: string
+  ): Promise<ActivityLog[]> {
     const generated: ActivityLog[] = [];
     const dbInserts: any[] = [];
 
@@ -92,8 +119,11 @@ export class SupabaseActivityRepository implements IActivityRepository {
         .order("created_at", { ascending: true });
 
       const profileList = profiles || [];
-      const profileMap = new Map<string, { id: string; fullName: string; avatarUrl: string | null }>();
-      
+      const profileMap = new Map<
+        string,
+        { id: string; fullName: string; avatarUrl: string | null }
+      >();
+
       for (const p of profileList) {
         profileMap.set(p.id, {
           id: p.id,
@@ -107,7 +137,11 @@ export class SupabaseActivityRepository implements IActivityRepository {
           id: logId,
           orgId,
           actorId: p.id,
-          actor: { id: p.id, fullName: p.full_name || "Team Member", avatarUrl: p.avatar_url },
+          actor: {
+            id: p.id,
+            fullName: p.full_name || "Team Member",
+            avatarUrl: p.avatar_url,
+          },
           action: p.role === "admin" ? "member.created" : "member.invited",
           entity: "profiles",
           entityId: p.id,
@@ -134,15 +168,22 @@ export class SupabaseActivityRepository implements IActivityRepository {
 
       // 2. Fetch tasks for this org
       const { data: tasks } = await (client.from("tasks") as any)
-        .select("id, title, status, priority, created_by, created_at, updated_at")
+        .select(
+          "id, title, status, priority, created_by, created_at, updated_at"
+        )
         .eq("org_id", orgId)
         .order("created_at", { ascending: false });
 
       const taskList = tasks || [];
       for (const t of taskList) {
-        const actor = t.created_by && profileMap.has(t.created_by)
-          ? profileMap.get(t.created_by)!
-          : { id: t.created_by || "system", fullName: "Admin User", avatarUrl: null };
+        const actor =
+          t.created_by && profileMap.has(t.created_by)
+            ? profileMap.get(t.created_by)!
+            : {
+                id: t.created_by || "system",
+                fullName: "Admin User",
+                avatarUrl: null,
+              };
 
         // Task created event
         const taskCreatedLog: ActivityLog = {
@@ -210,9 +251,14 @@ export class SupabaseActivityRepository implements IActivityRepository {
 
         if (comments && Array.isArray(comments)) {
           for (const c of comments) {
-            const actor = c.user_id && profileMap.has(c.user_id)
-              ? profileMap.get(c.user_id)!
-              : { id: c.user_id || "system", fullName: "Team Member", avatarUrl: null };
+            const actor =
+              c.user_id && profileMap.has(c.user_id)
+                ? profileMap.get(c.user_id)!
+                : {
+                    id: c.user_id || "system",
+                    fullName: "Team Member",
+                    avatarUrl: null,
+                  };
 
             const commentLog: ActivityLog = {
               id: `backfill-comm-${c.id}`,
@@ -285,56 +331,22 @@ export class SupabaseActivityRepository implements IActivityRepository {
 
     // Sort descending by createdAt
     return generated.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }
 
-  async listLogs(orgId: string, filters: ActivityFilterDTO): Promise<{ logs: ActivityLog[]; total: number }> {
+  async listLogs(
+    orgId: string,
+    filters: ActivityFilterDTO
+  ): Promise<{ logs: ActivityLog[]; total: number }> {
     if (!this.hasSupabase()) {
-      const mockLogs: ActivityLog[] = [
-        {
-          id: "log-1",
-          orgId,
-          actor: { id: "user-1", fullName: "Tushar Singh (Admin)", avatarUrl: null },
-          action: "task.created",
-          entity: "tasks",
-          entityId: "task-1",
-          diff: { title: "Configure production deployment", priority: "high", status: "in_progress" },
-          createdAt: new Date(Date.now() - 60000 * 12).toISOString(),
-        },
-        {
-          id: "log-2",
-          orgId,
-          actor: { id: "user-2", fullName: "Alex Smith", avatarUrl: null },
-          action: "task.updated",
-          entity: "tasks",
-          entityId: "task-2",
-          diff: { status: "in_progress" },
-          createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString(),
-        },
-        {
-          id: "log-3",
-          orgId,
-          actor: { id: "user-3", fullName: "Rohan Patel", avatarUrl: null },
-          action: "comment.created",
-          entity: "task_comments",
-          entityId: "com-3",
-          diff: { task_id: "task-3", body: "Configured Upstash Redis client with 60s TTL." },
-          createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-        },
-        {
-          id: "log-4",
-          orgId,
-          actor: { id: "user-1", fullName: "Tushar Singh (Admin)", avatarUrl: null },
-          action: "member.created",
-          entity: "profiles",
-          entityId: "att-4",
-          diff: { role: "admin", note: "Workspace administrator active" },
-          createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-        },
-      ];
-
-      return { logs: mockLogs, total: mockLogs.length };
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Supabase configuration missing in production. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+        );
+      }
+      return { logs: [], total: 0 };
     }
 
     try {
@@ -342,7 +354,10 @@ export class SupabaseActivityRepository implements IActivityRepository {
 
       // Query raw activity_logs directly without fragile schema join
       let query = (client.from("activity_logs") as any)
-        .select("id, org_id, actor_id, action, entity, entity_id, diff, created_at", { count: "exact" })
+        .select(
+          "id, org_id, actor_id, action, entity, entity_id, diff, created_at",
+          { count: "exact" }
+        )
         .eq("org_id", orgId)
         .order("created_at", { ascending: false });
 
@@ -358,7 +373,10 @@ export class SupabaseActivityRepository implements IActivityRepository {
           const backfilled = await this.backfillFromWorkspace(client, orgId);
           if (backfilled.length > 0) {
             const fromIdx = (filters.page - 1) * filters.limit;
-            const paginated = backfilled.slice(fromIdx, fromIdx + filters.limit);
+            const paginated = backfilled.slice(
+              fromIdx,
+              fromIdx + filters.limit
+            );
             return { logs: paginated, total: backfilled.length };
           }
         } catch {}
@@ -368,7 +386,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
       let logsList = rawLogs || [];
 
       // If activity_logs is empty, automatically backfill from workspace tasks, profiles & comments!
-      if (logsList.length === 0 && (!filters.entity && !filters.action)) {
+      if (logsList.length === 0 && !filters.entity && !filters.action) {
         const backfilled = await this.backfillFromWorkspace(client, orgId);
         if (backfilled.length > 0) {
           const fromIdx = (filters.page - 1) * filters.limit;
@@ -382,7 +400,10 @@ export class SupabaseActivityRepository implements IActivityRepository {
         new Set(logsList.map((l: any) => l.actor_id).filter(Boolean))
       );
 
-      const profileMap = new Map<string, { id: string; fullName: string; avatarUrl: string | null }>();
+      const profileMap = new Map<
+        string,
+        { id: string; fullName: string; avatarUrl: string | null }
+      >();
 
       if (actorIds.length > 0) {
         try {
@@ -414,7 +435,11 @@ export class SupabaseActivityRepository implements IActivityRepository {
         diff: l.diff,
         createdAt: l.created_at,
         actor: l.actor_id
-          ? profileMap.get(l.actor_id) || { id: l.actor_id, fullName: "Team Member", avatarUrl: null }
+          ? profileMap.get(l.actor_id) || {
+              id: l.actor_id,
+              fullName: "Team Member",
+              avatarUrl: null,
+            }
           : { id: "system", fullName: "System", avatarUrl: null },
       }));
 
@@ -425,14 +450,21 @@ export class SupabaseActivityRepository implements IActivityRepository {
       try {
         const client = this.getClient();
         const backfilled = await this.backfillFromWorkspace(client, orgId);
-        return { logs: backfilled.slice(0, filters.limit), total: backfilled.length };
+        return {
+          logs: backfilled.slice(0, filters.limit),
+          total: backfilled.length,
+        };
       } catch {
         return { logs: [], total: 0 };
       }
     }
   }
 
-  async getAllLogsForCsv(orgId: string, entity?: string | null, action?: string | null): Promise<ActivityLog[]> {
+  async getAllLogsForCsv(
+    orgId: string,
+    entity?: string | null,
+    action?: string | null
+  ): Promise<ActivityLog[]> {
     if (!this.hasSupabase()) {
       const { logs } = await this.listLogs(orgId, { page: 1, limit: 1000 });
       return logs;
@@ -441,7 +473,9 @@ export class SupabaseActivityRepository implements IActivityRepository {
     try {
       const client = this.getClient();
       let query = (client.from("activity_logs") as any)
-        .select("id, org_id, actor_id, action, entity, entity_id, diff, created_at")
+        .select(
+          "id, org_id, actor_id, action, entity, entity_id, diff, created_at"
+        )
         .eq("org_id", orgId)
         .order("created_at", { ascending: false })
         .limit(1000);
@@ -463,7 +497,10 @@ export class SupabaseActivityRepository implements IActivityRepository {
         new Set(logsList.map((l: any) => l.actor_id).filter(Boolean))
       );
 
-      const profileMap = new Map<string, { id: string; fullName: string; avatarUrl: string | null }>();
+      const profileMap = new Map<
+        string,
+        { id: string; fullName: string; avatarUrl: string | null }
+      >();
 
       if (actorIds.length > 0) {
         try {
@@ -495,7 +532,11 @@ export class SupabaseActivityRepository implements IActivityRepository {
         diff: l.diff,
         createdAt: l.created_at,
         actor: l.actor_id
-          ? profileMap.get(l.actor_id) || { id: l.actor_id, fullName: "Team Member", avatarUrl: null }
+          ? profileMap.get(l.actor_id) || {
+              id: l.actor_id,
+              fullName: "Team Member",
+              avatarUrl: null,
+            }
           : { id: "system", fullName: "System", avatarUrl: null },
       }));
     } catch (err: any) {
@@ -506,4 +547,3 @@ export class SupabaseActivityRepository implements IActivityRepository {
 }
 
 export const activityRepository = new SupabaseActivityRepository();
-

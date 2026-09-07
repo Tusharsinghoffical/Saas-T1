@@ -34,9 +34,12 @@ export function _getMemoryRateLimitSize(): number {
 
 // Periodic TTL sweep (every 5 minutes). unref() ensures it does not keep test runners or scripts alive.
 if (typeof setInterval !== "undefined") {
-  const timer = setInterval(() => {
-    sweepExpiredRateLimits();
-  }, 5 * 60 * 1000);
+  const timer = setInterval(
+    () => {
+      sweepExpiredRateLimits();
+    },
+    5 * 60 * 1000
+  );
   if (timer && typeof timer.unref === "function") {
     timer.unref();
   }
@@ -139,12 +142,20 @@ export async function redisSet(
         signal: AbortSignal.timeout(800),
       }
     ).catch((err: unknown) => {
-      logger.warn({ event: "redis_write_failed", key, error: (err as Error)?.message ?? String(err) });
+      logger.warn({
+        event: "redis_write_failed",
+        key,
+        error: (err as Error)?.message ?? String(err),
+      });
     });
 
     return true;
   } catch (err: unknown) {
-    logger.warn({ event: "redis_write_failed", key, error: (err as Error)?.message ?? String(err) });
+    logger.warn({
+      event: "redis_write_failed",
+      key,
+      error: (err as Error)?.message ?? String(err),
+    });
     return true;
   }
 }
@@ -164,11 +175,19 @@ export async function redisDel(key: string): Promise<boolean> {
       cache: "no-store",
       signal: AbortSignal.timeout(600),
     }).catch((err: unknown) => {
-      logger.warn({ event: "redis_del_failed", key, error: (err as Error)?.message ?? String(err) });
+      logger.warn({
+        event: "redis_del_failed",
+        key,
+        error: (err as Error)?.message ?? String(err),
+      });
     });
     return true;
   } catch (err: unknown) {
-    logger.warn({ event: "redis_del_failed", key, error: (err as Error)?.message ?? String(err) });
+    logger.warn({
+      event: "redis_del_failed",
+      key,
+      error: (err as Error)?.message ?? String(err),
+    });
     return false;
   }
 }
@@ -176,7 +195,10 @@ export async function redisDel(key: string): Promise<boolean> {
 /**
  * Invalidates cached dashboard data for an organization or team across all roles.
  */
-export async function invalidateOrgDashboardCache(orgId: string, teamId?: string | null) {
+export async function invalidateOrgDashboardCache(
+  orgId: string,
+  teamId?: string | null
+) {
   // Clear memory cache keys matching this organization's dashboard
   Array.from(memoryCache.keys()).forEach((key) => {
     if (
@@ -224,7 +246,8 @@ export async function checkRateLimit(
   if (failClosed && !isValid) {
     logger.error({
       event: "rate_limiter_unavailable",
-      message: "UPSTASH_REDIS_REST_URL or TOKEN is missing with FAIL_CLOSED_RATE_LIMIT enabled.",
+      message:
+        "UPSTASH_REDIS_REST_URL or TOKEN is missing with FAIL_CLOSED_RATE_LIMIT enabled.",
     });
     throw new Error("Rate limiting service unavailable.");
   }
@@ -292,12 +315,19 @@ export async function checkRateLimit(
       count: 1,
       expiresAt: now + windowSeconds * 1000,
     });
-    return { success: true, remaining: limit - 1, resetInSeconds: windowSeconds };
+    return {
+      success: true,
+      remaining: limit - 1,
+      resetInSeconds: windowSeconds,
+    };
   }
 
   entry.count += 1;
   const remaining = Math.max(0, limit - entry.count);
-  const resetInSeconds = Math.max(1, Math.round((entry.expiresAt - now) / 1000));
+  const resetInSeconds = Math.max(
+    1,
+    Math.round((entry.expiresAt - now) / 1000)
+  );
 
   return {
     success: entry.count <= limit,

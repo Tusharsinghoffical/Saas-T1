@@ -20,7 +20,11 @@ async function handleWeeklySummary(request: NextRequest) {
     const result = await aiController.weeklySummary(authHeader);
     return NextResponse.json(result);
   } catch (error: any) {
-    const status = error?.statusCode || (error?.name === "UnauthorizedError" ? 401 : 500);
-    return NextResponse.json({ success: false, error: error.message }, { status });
+    const status =
+      error?.statusCode || (error?.name === "UnauthorizedError" ? 401 : 500);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status }
+    );
   }
 }

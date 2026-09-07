@@ -10,7 +10,9 @@ export async function updateOrgSettingsUseCase(
   repo: IOrgRepository = orgRepository
 ): Promise<Organization> {
   if (targetOrgId && targetOrgId !== context.orgId) {
-    throw new ForbiddenError("Cannot update settings of an organization you do not belong to.");
+    throw new ForbiddenError(
+      "Cannot update settings of an organization you do not belong to."
+    );
   }
   const updatedOrg = await repo.updateOrg(context.orgId, updates);
   return updatedOrg;

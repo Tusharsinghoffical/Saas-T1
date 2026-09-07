@@ -1,7 +1,14 @@
-import { createClient, createAdminClient } from "@/infrastructure/supabase/supabaseServer";
+import {
+  createClient,
+  createAdminClient,
+} from "@/infrastructure/supabase/supabaseServer";
 import { UserRole } from "@/infrastructure/supabase/database.types";
 import { RequestContext } from "@/shared/types/context";
-import { UnauthorizedError, ForbiddenError, DomainError } from "@/shared/errors/domainErrors";
+import {
+  UnauthorizedError,
+  ForbiddenError,
+  DomainError,
+} from "@/shared/errors/domainErrors";
 import { NextResponse } from "next/server";
 
 export { type RequestContext };
@@ -17,7 +24,10 @@ export class AuthError extends DomainError {
 }
 
 // In-memory cache for resolved user contexts (15s TTL) to prevent hammering Supabase auth on parallel requests
-const authContextCache = new Map<string, { context: RequestContext; expiresAt: number }>();
+const authContextCache = new Map<
+  string,
+  { context: RequestContext; expiresAt: number }
+>();
 
 export function invalidateAuthCache(userId?: string) {
   if (userId) {
@@ -37,7 +47,9 @@ export async function requireAuth(): Promise<RequestContext> {
     Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
 
   if (!hasSupabase) {
-    throw new UnauthorizedError("Authentication required: Supabase configuration missing.");
+    throw new UnauthorizedError(
+      "Authentication required: Supabase configuration missing."
+    );
   }
 
   const supabase = createClient();
@@ -61,11 +73,9 @@ export async function requireAuth(): Promise<RequestContext> {
     (user.app_metadata?.org_id as string) ||
     (user.user_metadata?.org_id as string);
 
-  let role = (
-    (user.app_metadata?.role as string) ||
+  let role = ((user.app_metadata?.role as string) ||
     (user.user_metadata?.role as string) ||
-    null
-  ) as UserRole | null;
+    null) as UserRole | null;
 
   // 2. Fallback to profiles table via regular client
   if (!orgId || !role) {
@@ -116,7 +126,9 @@ export async function requireAuth(): Promise<RequestContext> {
     // If role is verified but org_id is unassigned, link to primary organization
     try {
       const adminClient = createAdminClient();
-      const { data: primaryOrg } = await (adminClient.from("organizations") as any)
+      const { data: primaryOrg } = await (
+        adminClient.from("organizations") as any
+      )
         .select("id")
         .limit(1)
         .maybeSingle();
@@ -185,14 +197,29 @@ export async function requireRole(
  * in an `_debug` field for easier troubleshooting.
  */
 export function handleAuthError(error: unknown) {
-  if ((error as any)?.digest === "DYNAMIC_SERVER_USAGE" || (error as any)?.message?.includes("DYNAMIC_SERVER_USAGE")) {
+  if (
+    (error as any)?.digest === "DYNAMIC_SERVER_USAGE" ||
+    (error as any)?.message?.includes("DYNAMIC_SERVER_USAGE")
+  ) {
     throw error;
   }
 
   const err = error as any;
-  const isDomainError = error instanceof DomainError || err?.name === "DomainError" || err?.name === "ValidationError" || err?.name === "UnauthorizedError" || err?.name === "ForbiddenError" || err?.name === "NotFoundError" || err?.name === "RateLimitError";
+  const isDomainError =
+    error instanceof DomainError ||
+    err?.name === "DomainError" ||
+    err?.name === "ValidationError" ||
+    err?.name === "UnauthorizedError" ||
+    err?.name === "ForbiddenError" ||
+    err?.name === "NotFoundError" ||
+    err?.name === "RateLimitError";
 
-  if (isDomainError || (typeof err?.statusCode === "number" && err.statusCode >= 400 && err.statusCode < 500)) {
+  if (
+    isDomainError ||
+    (typeof err?.statusCode === "number" &&
+      err.statusCode >= 400 &&
+      err.statusCode < 500)
+  ) {
     return NextResponse.json(
       {
         success: false,

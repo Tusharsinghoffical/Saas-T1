@@ -1,5 +1,9 @@
 import { RequestContext } from "@/shared/types/context";
-import { ForbiddenError, NotFoundError, ValidationError } from "@/shared/errors/domainErrors";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "@/shared/errors/domainErrors";
 import { IUserRepository, userRepository } from "../repository/userRepository";
 import { recordActivityLogUseCase } from "@/domains/activity";
 
@@ -10,12 +14,16 @@ export async function removeUserUseCase(
 ): Promise<{ success: boolean; message: string }> {
   // 1. Employee cannot remove anyone
   if (context.role === "employee") {
-    throw new ForbiddenError("Employees are not authorized to remove team members.");
+    throw new ForbiddenError(
+      "Employees are not authorized to remove team members."
+    );
   }
 
   // 2. Cannot remove self
   if (context.userId === targetUserId) {
-    throw new ValidationError("You cannot remove your own account from the workspace.");
+    throw new ValidationError(
+      "You cannot remove your own account from the workspace."
+    );
   }
 
   // 3. Fetch target profile
@@ -25,8 +33,13 @@ export async function removeUserUseCase(
   }
 
   // 4. Manager cannot remove admin or manager
-  if (context.role === "manager" && (targetUser.role === "admin" || targetUser.role === "manager")) {
-    throw new ForbiddenError("Managers can only remove members with the 'employee' role.");
+  if (
+    context.role === "manager" &&
+    (targetUser.role === "admin" || targetUser.role === "manager")
+  ) {
+    throw new ForbiddenError(
+      "Managers can only remove members with the 'employee' role."
+    );
   }
 
   // 5. Perform soft delete
@@ -51,4 +64,3 @@ export async function removeUserUseCase(
     message: `${targetUser.fullName || targetUser.email || "Member"} has been deactivated.`,
   };
 }
-

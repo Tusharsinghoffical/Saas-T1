@@ -11,6 +11,7 @@ This document describes the commercial subscription structure of TASQ-ONE and th
 ## 1. Subscription Plans
 
 ### 1.1 Free Starter Pilot (Current, Active)
+
 - **Price:** ₹0/month
 - **Team size:** Up to 5 members per Workspace
 - **Includes:** Unlimited tasks and Kanban boards, core Groq AI Task Decomposer, full RLS-based data security, PWA access, in-app + email notifications.
@@ -18,11 +19,13 @@ This document describes the commercial subscription structure of TASQ-ONE and th
 - **Support:** Best-effort community/email support (see Section 4).
 
 ### 1.2 SMB Pro Tier (Planned — Phase 2)
+
 - **Price:** ₹999/month (indicative — subject to change before launch)
 - **Includes:** Unlimited team members, priority AI processing, automated Slack release cards, 10GB Cloudflare R2 storage.
 - **Not yet available** — this SLA section will be finalized and re-published before this tier goes live.
 
 ### 1.3 Enterprise Scale (Planned — Phase 2)
+
 - **Price:** ₹2,499/month (indicative — subject to change before launch)
 - **Includes:** Custom domain support, SSO, immutable audit log export, dedicated SLA terms (to be negotiated per enterprise customer).
 - **Not yet available.**
@@ -32,15 +35,19 @@ This document describes the commercial subscription structure of TASQ-ONE and th
 ## 2. Service Availability Commitment
 
 ### 2.1 Free Starter Pilot
+
 - The Free Starter Pilot is offered on a **best-effort basis**. We do not commit to a specific uptime percentage or service credits at this tier, consistent with operating on free-tier cloud infrastructure (Render, Supabase, Upstash, Cloudflare, Resend, Groq free tiers).
 - We will make reasonable efforts to maintain high availability and to communicate planned maintenance windows in advance where possible.
 
 ### 2.2 Future Paid Tiers
+
 - Once paid tiers launch, we intend to commit to a stated uptime target (e.g., 99.5% monthly uptime, to be finalized based on our infrastructure at the time) with defined service credits for shortfalls, published in an updated version of this SLA.
 - Enterprise customers may negotiate custom SLA terms as part of a separate agreement.
 
 ### 2.3 Exclusions from Any Uptime Commitment
+
 Regardless of tier, the following are excluded from any uptime calculation:
+
 - Scheduled maintenance windows communicated at least [Insert notice period] in advance.
 - Outages caused by third-party sub-processor failures outside our reasonable control (e.g., a Supabase or Cloudflare regional outage).
 - Force majeure events.
@@ -58,11 +65,11 @@ Regardless of tier, the following are excluded from any uptime calculation:
 
 ## 4. Support
 
-| Tier | Support channel | Target response time |
-|---|---|---|
-| Free Starter Pilot | Email ([tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com)) | Best-effort, no guaranteed SLA |
-| SMB Pro (planned) | Priority email support | Target: within 1 business day (to be finalized at launch) |
-| Enterprise (planned) | Dedicated support channel | Custom, per enterprise agreement |
+| Tier                 | Support channel                                                   | Target response time                                      |
+| -------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- |
+| Free Starter Pilot   | Email ([tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com)) | Best-effort, no guaranteed SLA                            |
+| SMB Pro (planned)    | Priority email support                                            | Target: within 1 business day (to be finalized at launch) |
+| Enterprise (planned) | Dedicated support channel                                         | Custom, per enterprise agreement                          |
 
 ---
 
@@ -92,6 +99,7 @@ Regardless of tier, the following are excluded from any uptime calculation:
 ## 8. Relationship to Other Documents
 
 This SLA is part of a set of documents governing your use of TASQ-ONE:
+
 - **Terms of Service** — overarching legal agreement.
 - **Terms & Conditions (Acceptable Use Policy)** — day-to-day usage rules.
 - **Privacy Policy** — data handling practices.

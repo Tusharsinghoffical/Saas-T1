@@ -108,7 +108,9 @@ export function captureEvent(
   // 2. Persist in local QA ring buffer for the /admin/analytics-debug dashboard
   try {
     const existingRaw = localStorage.getItem(RECENT_EVENTS_KEY);
-    const existing: AnalyticsEventRecord[] = existingRaw ? JSON.parse(existingRaw) : [];
+    const existing: AnalyticsEventRecord[] = existingRaw
+      ? JSON.parse(existingRaw)
+      : [];
     const updated = [eventRecord, ...existing].slice(0, MAX_DEBUG_EVENTS);
     localStorage.setItem(RECENT_EVENTS_KEY, JSON.stringify(updated));
 

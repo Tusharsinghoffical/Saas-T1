@@ -52,7 +52,9 @@ vi.mock("@/infrastructure/supabase/supabaseServer", () => ({
           maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
           order: vi.fn().mockReturnValue({
             limit: vi.fn().mockReturnValue({
-              maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({ data: null, error: null }),
             }),
           }),
         }),
@@ -125,7 +127,9 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
       getProfileById: vi.fn(),
       listOrgMembers: vi.fn(),
       softDeleteUser: vi.fn().mockResolvedValue(true),
-      inviteUser: vi.fn().mockResolvedValue({ success: true, message: "Invite sent" }),
+      inviteUser: vi
+        .fn()
+        .mockResolvedValue({ success: true, message: "Invite sent" }),
       acceptInvite: vi.fn().mockResolvedValue({ success: true }),
       createUserWithPassword: vi.fn(),
       updateUserRole: vi.fn(),
@@ -141,13 +145,25 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         email: "admin@org.com",
       };
 
-      const resEmp = await inviteUserUseCase(adminCtx, { email: "emp@org.com", role: "employee" }, mockRepo);
+      const resEmp = await inviteUserUseCase(
+        adminCtx,
+        { email: "emp@org.com", role: "employee" },
+        mockRepo
+      );
       expect(resEmp.success).toBe(true);
 
-      const resMgr = await inviteUserUseCase(adminCtx, { email: "mgr@org.com", role: "manager" }, mockRepo);
+      const resMgr = await inviteUserUseCase(
+        adminCtx,
+        { email: "mgr@org.com", role: "manager" },
+        mockRepo
+      );
       expect(resMgr.success).toBe(true);
 
-      const resAdm = await inviteUserUseCase(adminCtx, { email: "adm2@org.com", role: "admin" }, mockRepo);
+      const resAdm = await inviteUserUseCase(
+        adminCtx,
+        { email: "adm2@org.com", role: "admin" },
+        mockRepo
+      );
       expect(resAdm.success).toBe(true);
     });
 
@@ -160,18 +176,34 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
       };
 
       // Allowed: Employee
-      const res = await inviteUserUseCase(managerCtx, { email: "worker@org.com", role: "employee" }, mockRepo);
+      const res = await inviteUserUseCase(
+        managerCtx,
+        { email: "worker@org.com", role: "employee" },
+        mockRepo
+      );
       expect(res.success).toBe(true);
 
       // Blocked: Manager inviting Admin
       await expect(
-        inviteUserUseCase(managerCtx, { email: "sneak@org.com", role: "admin" }, mockRepo)
-      ).rejects.toThrow("Managers can only invite team members with the 'employee' role.");
+        inviteUserUseCase(
+          managerCtx,
+          { email: "sneak@org.com", role: "admin" },
+          mockRepo
+        )
+      ).rejects.toThrow(
+        "Managers can only invite team members with the 'employee' role."
+      );
 
       // Blocked: Manager inviting Manager
       await expect(
-        inviteUserUseCase(managerCtx, { email: "lead2@org.com", role: "manager" }, mockRepo)
-      ).rejects.toThrow("Managers can only invite team members with the 'employee' role.");
+        inviteUserUseCase(
+          managerCtx,
+          { email: "lead2@org.com", role: "manager" },
+          mockRepo
+        )
+      ).rejects.toThrow(
+        "Managers can only invite team members with the 'employee' role."
+      );
     });
 
     it("Employee cannot invite anyone", async () => {
@@ -183,7 +215,11 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
       };
 
       await expect(
-        inviteUserUseCase(employeeCtx, { email: "friend@org.com", role: "employee" }, mockRepo)
+        inviteUserUseCase(
+          employeeCtx,
+          { email: "friend@org.com", role: "employee" },
+          mockRepo
+        )
       ).rejects.toThrow("Employees are not authorized to invite team members.");
     });
   });
@@ -245,7 +281,9 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         assignUserToTeam: vi.fn().mockResolvedValue(true),
       };
 
-      await expect(removeUserUseCase(managerCtx, "admin-2", mockRepo)).rejects.toThrow(
+      await expect(
+        removeUserUseCase(managerCtx, "admin-2", mockRepo)
+      ).rejects.toThrow(
         "Managers can only remove members with the 'employee' role."
       );
     });
@@ -270,7 +308,9 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         assignUserToTeam: vi.fn().mockResolvedValue(true),
       };
 
-      await expect(removeUserUseCase(adminCtx, "admin-1", mockRepo)).rejects.toThrow(
+      await expect(
+        removeUserUseCase(adminCtx, "admin-1", mockRepo)
+      ).rejects.toThrow(
         "You cannot remove your own account from the workspace."
       );
     });
@@ -288,17 +328,22 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
 
       const sqlContent = fs.readFileSync(migrationPath, "utf-8");
       expect(sqlContent).toContain("deleted_at timestamptz");
-      expect(sqlContent).toContain("create index if not exists idx_profiles_active");
+      expect(sqlContent).toContain(
+        "create index if not exists idx_profiles_active"
+      );
       expect(sqlContent).toContain("where deleted_at is null");
       expect(sqlContent).toContain("references public.profiles(id)");
     });
   });
 
-// ── 5. P0.2 PRIVILEGE ESCALATION REGRESSION TESTS ─────────────────────────
+  // ── 5. P0.2 PRIVILEGE ESCALATION REGRESSION TESTS ─────────────────────────
   describe("P0.2 Privilege Escalation Fail-Closed Regression Suite", () => {
     it("Profile lookup failure in middleware falls back to least-privilege 'employee' role", () => {
       // Simulate profile lookup returning null or throwing in middleware.ts:133-136
-      const simulateMiddlewareRoleResolution = (profileFound: boolean, profileRole?: string) => {
+      const simulateMiddlewareRoleResolution = (
+        profileFound: boolean,
+        profileRole?: string
+      ) => {
         let role: string | undefined = undefined;
         if (!role) {
           try {
@@ -326,7 +371,8 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
 
     it("requireAuth throws ForbiddenError when user profile has no role, never escalating to admin", async () => {
       const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      process.env.NEXT_PUBLIC_SUPABASE_URL = "https://mock-test-instance.supabase.co";
+      process.env.NEXT_PUBLIC_SUPABASE_URL =
+        "https://mock-test-instance.supabase.co";
 
       const { requireAuth } = await import("@/shared/middleware/rbacGuard");
       const { ForbiddenError } = await import("@/shared/errors/domainErrors");
@@ -348,12 +394,15 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
 
       const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       try {
-        process.env.NEXT_PUBLIC_SUPABASE_URL = "https://your-project-ref.supabase.co"; // placeholder
+        process.env.NEXT_PUBLIC_SUPABASE_URL =
+          "https://your-project-ref.supabase.co"; // placeholder
         const req = new NextRequest("http://localhost:3000/admin/dashboard");
         const res = await middleware(req);
         // Must redirect to /login?error=database_unreachable
         expect(res.headers.get("location")).toContain("/login");
-        expect(res.headers.get("location")).toContain("error=database_unreachable");
+        expect(res.headers.get("location")).toContain(
+          "error=database_unreachable"
+        );
       } finally {
         process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
       }
@@ -368,8 +417,14 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         host: "tasqone.com",
         "x-forwarded-proto": "http",
       });
-      const redirect1 = evaluateCanonicalRedirect(url1, headers1, "https://tasqone.com");
-      expect(redirect1).toBe("https://tasqone.com/tasks?priority=high&sort=asc");
+      const redirect1 = evaluateCanonicalRedirect(
+        url1,
+        headers1,
+        "https://tasqone.com"
+      );
+      expect(redirect1).toBe(
+        "https://tasqone.com/tasks?priority=high&sort=asc"
+      );
 
       // 2. WWW to Apex canonical
       const url2 = new URL("https://www.tasqone.com/login?redirect=/admin");
@@ -377,7 +432,11 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         host: "www.tasqone.com",
         "x-forwarded-proto": "https",
       });
-      const redirect2 = evaluateCanonicalRedirect(url2, headers2, "https://tasqone.com");
+      const redirect2 = evaluateCanonicalRedirect(
+        url2,
+        headers2,
+        "https://tasqone.com"
+      );
       expect(redirect2).toBe("https://tasqone.com/login?redirect=/admin");
 
       // 3. Localhost bypass
@@ -386,7 +445,11 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         host: "localhost:3000",
         "x-forwarded-proto": "http",
       });
-      const redirectLocal = evaluateCanonicalRedirect(urlLocal, headersLocal, "https://tasqone.com");
+      const redirectLocal = evaluateCanonicalRedirect(
+        urlLocal,
+        headersLocal,
+        "https://tasqone.com"
+      );
       expect(redirectLocal).toBeNull();
 
       // 4. Already canonical HTTPS
@@ -395,10 +458,12 @@ describe("Prompt 38: Strict 3-Way RBAC Routing & Security Matrix", () => {
         host: "tasqone.com",
         "x-forwarded-proto": "https",
       });
-      const redirectCanonical = evaluateCanonicalRedirect(urlCanonical, headersCanonical, "https://tasqone.com");
+      const redirectCanonical = evaluateCanonicalRedirect(
+        urlCanonical,
+        headersCanonical,
+        "https://tasqone.com"
+      );
       expect(redirectCanonical).toBeNull();
     });
   });
 });
-
-

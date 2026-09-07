@@ -11,8 +11,12 @@ export class BillingController {
     }
 
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (!webhookSecret) throw new ValidationError("STRIPE_WEBHOOK_SECRET is not configured on server.");
-    if (!signature) throw new ValidationError("Missing Stripe-Signature header.");
+    if (!webhookSecret)
+      throw new ValidationError(
+        "STRIPE_WEBHOOK_SECRET is not configured on server."
+      );
+    if (!signature)
+      throw new ValidationError("Missing Stripe-Signature header.");
     const parts = signature.split(",").reduce((acc: any, part) => {
       const [k, v] = part.split("=");
       if (k && v) acc[k.trim()] = v.trim();
@@ -20,12 +24,23 @@ export class BillingController {
     }, {});
     const timestamp = parts.t;
     const expectedSig = parts.v1;
-    if (!timestamp || !expectedSig) throw new ValidationError("Invalid Stripe signature header format.");
+    if (!timestamp || !expectedSig)
+      throw new ValidationError("Invalid Stripe signature header format.");
     const currentTime = Math.floor(Date.now() / 1000);
-    if (Math.abs(currentTime - parseInt(timestamp, 10)) > 300) throw new ValidationError("Stripe webhook timestamp out of tolerance.");
+    if (Math.abs(currentTime - parseInt(timestamp, 10)) > 300)
+      throw new ValidationError("Stripe webhook timestamp out of tolerance.");
     const signedPayload = `${timestamp}.${rawBody}`;
-    const computedSig = crypto.createHmac("sha256", webhookSecret).update(signedPayload).digest("hex");
-    if (computedSig.length !== expectedSig.length || !crypto.timingSafeEqual(Buffer.from(computedSig), Buffer.from(expectedSig))) {
+    const computedSig = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(signedPayload)
+      .digest("hex");
+    if (
+      computedSig.length !== expectedSig.length ||
+      !crypto.timingSafeEqual(
+        Buffer.from(computedSig),
+        Buffer.from(expectedSig)
+      )
+    ) {
       throw new ValidationError("Invalid Stripe signature.");
     }
 

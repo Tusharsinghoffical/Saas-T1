@@ -1,5 +1,8 @@
 import { RequestContext } from "@/shared/types/context";
-import { IActivityRepository, activityRepository } from "../repository/activityRepository";
+import {
+  IActivityRepository,
+  activityRepository,
+} from "../repository/activityRepository";
 
 export async function exportActivityLogsCsvUseCase(
   context: RequestContext,

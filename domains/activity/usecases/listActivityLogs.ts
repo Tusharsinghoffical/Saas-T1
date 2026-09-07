@@ -1,6 +1,9 @@
 import { RequestContext } from "@/shared/types/context";
 import { ActivityLog, ActivityFilterDTO } from "../entities/ActivityLog";
-import { IActivityRepository, activityRepository } from "../repository/activityRepository";
+import {
+  IActivityRepository,
+  activityRepository,
+} from "../repository/activityRepository";
 
 export async function listActivityLogsUseCase(
   context: RequestContext,

@@ -27,9 +27,14 @@ export class AIController {
     const providedHeader = authHeader || "";
     if (
       providedHeader.length !== expectedHeader.length ||
-      !crypto.timingSafeEqual(Buffer.from(providedHeader), Buffer.from(expectedHeader))
+      !crypto.timingSafeEqual(
+        Buffer.from(providedHeader),
+        Buffer.from(expectedHeader)
+      )
     ) {
-      throw new UnauthorizedError("Unauthorized cron invocation: Invalid or missing token.");
+      throw new UnauthorizedError(
+        "Unauthorized cron invocation: Invalid or missing token."
+      );
     }
     return await generateWeeklySummaryUseCase();
   }

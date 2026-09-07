@@ -38,8 +38,8 @@ export function MemberIdBadge({
     role === "admin"
       ? "bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/25 hover:border-purple-500/40"
       : role === "manager"
-      ? "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/25 hover:border-blue-500/40"
-      : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 hover:border-emerald-500/40";
+        ? "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/25 hover:border-blue-500/40"
+        : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/25 hover:border-emerald-500/40";
 
   const sizeStyles =
     size === "sm"
@@ -50,34 +50,34 @@ export function MemberIdBadge({
     <div
       onClick={handleCopy}
       title={`Click to copy ${copyMode === "full" ? "Full UUID" : "Member Code"}: ${id}`}
-      className={`inline-flex items-center border font-mono font-bold cursor-pointer transition-all select-none group ${roleStyles} ${sizeStyles} ${className}`}
+      className={`group inline-flex cursor-pointer select-none items-center border font-mono font-bold transition-all ${roleStyles} ${sizeStyles} ${className}`}
     >
       {showIcon && (
         <span className="opacity-70">
           {role === "admin" ? (
-            <Shield className="w-2.5 h-2.5" />
+            <Shield className="h-2.5 w-2.5" />
           ) : role === "manager" ? (
-            <Briefcase className="w-2.5 h-2.5" />
+            <Briefcase className="h-2.5 w-2.5" />
           ) : (
-            <Hash className="w-2.5 h-2.5" />
+            <Hash className="h-2.5 w-2.5" />
           )}
         </span>
       )}
       <span>{memberCode}</span>
-      <span className="opacity-40 text-[9px] hidden sm:inline font-sans font-normal">
+      <span className="hidden font-sans text-[9px] font-normal opacity-40 sm:inline">
         ({shortId})
       </span>
 
-      <span className="ml-0.5 p-0.5 rounded opacity-60 group-hover:opacity-100 transition-opacity">
+      <span className="ml-0.5 rounded p-0.5 opacity-60 transition-opacity group-hover:opacity-100">
         {copied ? (
-          <Check className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 animate-in zoom-in" />
+          <Check className="animate-in zoom-in h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" />
         ) : (
-          <Copy className="w-2.5 h-2.5" />
+          <Copy className="h-2.5 w-2.5" />
         )}
       </span>
 
       {copied && (
-        <span className="text-[9px] font-sans font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+        <span className="animate-fade-in font-sans text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
           Copied!
         </span>
       )}

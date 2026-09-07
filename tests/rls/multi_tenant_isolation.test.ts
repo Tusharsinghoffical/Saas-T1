@@ -56,26 +56,28 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
   //     To run locally:
   //       DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres" npm test
   // ══════════════════════════════════════════════════════════════════════════
-  describe.skipIf(!databaseUrl)("Real PostgreSQL RLS Enforcement (requires DATABASE_URL)", () => {
-    let pgClient: Client;
-    const orgAId = "11111111-1111-4111-a111-111111111111";
-    const orgBId = "22222222-2222-4222-b222-222222222222";
-    const userAId = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
-    const taskBId = "33333333-3333-4333-b333-333333333333";
+  describe.skipIf(!databaseUrl)(
+    "Real PostgreSQL RLS Enforcement (requires DATABASE_URL)",
+    () => {
+      let pgClient: Client;
+      const orgAId = "11111111-1111-4111-a111-111111111111";
+      const orgBId = "22222222-2222-4222-b222-222222222222";
+      const userAId = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
+      const taskBId = "33333333-3333-4333-b333-333333333333";
 
-    beforeAll(async () => {
-      pgClient = new Client({ connectionString: databaseUrl });
-      await pgClient.connect();
+      beforeAll(async () => {
+        pgClient = new Client({ connectionString: databaseUrl });
+        await pgClient.connect();
 
-      // Seed test organizations & tasks as postgres superuser (bypassing RLS for setup)
-      await pgClient.query(`
+        // Seed test organizations & tasks as postgres superuser (bypassing RLS for setup)
+        await pgClient.query(`
         GRANT USAGE ON SCHEMA public TO authenticated, anon, service_role;
         GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated, anon, service_role;
         GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon, service_role;
       `);
 
-      await pgClient.query("BEGIN;");
-      await pgClient.query(`
+        await pgClient.query("BEGIN;");
+        await pgClient.query(`
         INSERT INTO public.organizations (id, name)
         VALUES 
           ('${orgAId}', 'Test Org A Real DB'),
@@ -83,75 +85,88 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
         ON CONFLICT (id) DO NOTHING;
       `);
 
-      await pgClient.query(`
+        await pgClient.query(`
         INSERT INTO public.tasks (id, org_id, title, status, priority)
         VALUES 
           ('${taskBId}', '${orgBId}', 'Secret Org B Confidential Task', 'pending', 'high')
         ON CONFLICT (id) DO NOTHING;
       `);
-      await pgClient.query("COMMIT;");
-    });
+        await pgClient.query("COMMIT;");
+      });
 
-    afterAll(async () => {
-      if (pgClient) {
-        try {
-          await pgClient.query(`
+      afterAll(async () => {
+        if (pgClient) {
+          try {
+            await pgClient.query(`
             DELETE FROM public.tasks WHERE id = '${taskBId}';
             DELETE FROM public.organizations WHERE id IN ('${orgAId}', '${orgBId}');
           `);
-        } catch {}
-        await pgClient.end();
-      }
-    });
+          } catch {}
+          await pgClient.end();
+        }
+      });
 
-    it("Real Postgres RLS: Org A authenticated JWT context cannot select Org B tasks", async () => {
-      // Execute in an isolated transaction using simulated Supabase PostgREST JWT claims
-      await pgClient.query("BEGIN;");
-      try {
-        await pgClient.query(`SET LOCAL ROLE authenticated;`);
-        await pgClient.query(`SET LOCAL "request.jwt.claim.sub" = '${userAId}';`);
-        await pgClient.query(`SET LOCAL "request.jwt.claim.org_id" = '${orgAId}';`);
-        await pgClient.query(`SET LOCAL "request.jwt.claim.role" = 'authenticated';`);
-
-        const result = await pgClient.query(
-          `SELECT id, title, org_id FROM public.tasks WHERE id = $1;`,
-          [taskBId]
-        );
-
-        // PostgreSQL RLS must filter this row out completely (0 rows returned)
-        expect(result.rows.length).toBe(0);
-      } finally {
-        await pgClient.query("ROLLBACK;");
-      }
-    });
-
-    it("Real Postgres RLS: Org A authenticated JWT context is blocked from inserting tasks into Org B", async () => {
-      await pgClient.query("BEGIN;");
-      try {
-        await pgClient.query(`SET LOCAL ROLE authenticated;`);
-        await pgClient.query(`SET LOCAL "request.jwt.claim.sub" = '${userAId}';`);
-        await pgClient.query(`SET LOCAL "request.jwt.claim.org_id" = '${orgAId}';`);
-        await pgClient.query(`SET LOCAL "request.jwt.claim.role" = 'authenticated';`);
-
-        // Attempting to insert row with org_id = orgBId while authenticated as orgAId
-        let threwRlsError = false;
+      it("Real Postgres RLS: Org A authenticated JWT context cannot select Org B tasks", async () => {
+        // Execute in an isolated transaction using simulated Supabase PostgREST JWT claims
+        await pgClient.query("BEGIN;");
         try {
-          await pgClient.query(`
+          await pgClient.query(`SET LOCAL ROLE authenticated;`);
+          await pgClient.query(
+            `SET LOCAL "request.jwt.claim.sub" = '${userAId}';`
+          );
+          await pgClient.query(
+            `SET LOCAL "request.jwt.claim.org_id" = '${orgAId}';`
+          );
+          await pgClient.query(
+            `SET LOCAL "request.jwt.claim.role" = 'authenticated';`
+          );
+
+          const result = await pgClient.query(
+            `SELECT id, title, org_id FROM public.tasks WHERE id = $1;`,
+            [taskBId]
+          );
+
+          // PostgreSQL RLS must filter this row out completely (0 rows returned)
+          expect(result.rows.length).toBe(0);
+        } finally {
+          await pgClient.query("ROLLBACK;");
+        }
+      });
+
+      it("Real Postgres RLS: Org A authenticated JWT context is blocked from inserting tasks into Org B", async () => {
+        await pgClient.query("BEGIN;");
+        try {
+          await pgClient.query(`SET LOCAL ROLE authenticated;`);
+          await pgClient.query(
+            `SET LOCAL "request.jwt.claim.sub" = '${userAId}';`
+          );
+          await pgClient.query(
+            `SET LOCAL "request.jwt.claim.org_id" = '${orgAId}';`
+          );
+          await pgClient.query(
+            `SET LOCAL "request.jwt.claim.role" = 'authenticated';`
+          );
+
+          // Attempting to insert row with org_id = orgBId while authenticated as orgAId
+          let threwRlsError = false;
+          try {
+            await pgClient.query(`
             INSERT INTO public.tasks (org_id, title, status)
             VALUES ('${orgBId}', 'Malicious Cross-Org Insert', 'pending');
           `);
-        } catch (err: any) {
-          threwRlsError = true;
-          // PostgreSQL Error 42501 is "insufficient_privilege" (RLS policy violation)
-          expect(err.code).toBe("42501");
-        }
+          } catch (err: any) {
+            threwRlsError = true;
+            // PostgreSQL Error 42501 is "insufficient_privilege" (RLS policy violation)
+            expect(err.code).toBe("42501");
+          }
 
-        expect(threwRlsError).toBe(true);
-      } finally {
-        await pgClient.query("ROLLBACK;");
-      }
-    });
-  }); // end describe.skipIf Real PostgreSQL RLS
+          expect(threwRlsError).toBe(true);
+        } finally {
+          await pgClient.query("ROLLBACK;");
+        }
+      });
+    }
+  ); // end describe.skipIf Real PostgreSQL RLS
 
   // ══════════════════════════════════════════════════════════════════════════
   // 2. P0.4 IDOR REGRESSION SUITE (Comments, Attachments, Deletion)
@@ -212,11 +227,21 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
 
     it("P0.4.1: listCommentsUseCase strictly rejects cross-tenant task ID with NotFoundError", async () => {
       await expect(
-        listCommentsUseCase(contextOrgA, crossOrgTaskId, mockCommentRepo, mockTaskRepo)
+        listCommentsUseCase(
+          contextOrgA,
+          crossOrgTaskId,
+          mockCommentRepo,
+          mockTaskRepo
+        )
       ).rejects.toThrow(NotFoundError);
 
       await expect(
-        listCommentsUseCase(contextOrgA, crossOrgTaskId, mockCommentRepo, mockTaskRepo)
+        listCommentsUseCase(
+          contextOrgA,
+          crossOrgTaskId,
+          mockCommentRepo,
+          mockTaskRepo
+        )
       ).rejects.toThrow("Task not found in your organization.");
 
       expect(mockCommentRepo.listComments).not.toHaveBeenCalled();
@@ -248,11 +273,21 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
 
     it("P0.4.3: listAttachmentsUseCase strictly rejects cross-tenant task ID with NotFoundError", async () => {
       await expect(
-        listAttachmentsUseCase(contextOrgA, crossOrgTaskId, mockAttachmentRepo, mockTaskRepo)
+        listAttachmentsUseCase(
+          contextOrgA,
+          crossOrgTaskId,
+          mockAttachmentRepo,
+          mockTaskRepo
+        )
       ).rejects.toThrow(NotFoundError);
 
       await expect(
-        listAttachmentsUseCase(contextOrgA, crossOrgTaskId, mockAttachmentRepo, mockTaskRepo)
+        listAttachmentsUseCase(
+          contextOrgA,
+          crossOrgTaskId,
+          mockAttachmentRepo,
+          mockTaskRepo
+        )
       ).rejects.toThrow("Task not found in your organization.");
 
       expect(mockAttachmentRepo.listAttachments).not.toHaveBeenCalled();
@@ -263,7 +298,11 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
         saveAttachmentUseCase(
           contextOrgA,
           crossOrgTaskId,
-          { fileName: "exploit.pdf", fileUrl: "https://r2/exploit.pdf", fileSize: 1024 },
+          {
+            fileName: "exploit.pdf",
+            fileUrl: "https://r2/exploit.pdf",
+            fileSize: 1024,
+          },
           mockAttachmentRepo,
           mockTaskRepo
         )
@@ -273,7 +312,11 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
         saveAttachmentUseCase(
           contextOrgA,
           crossOrgTaskId,
-          { fileName: "exploit.pdf", fileUrl: "https://r2/exploit.pdf", fileSize: 1024 },
+          {
+            fileName: "exploit.pdf",
+            fileUrl: "https://r2/exploit.pdf",
+            fileSize: 1024,
+          },
           mockAttachmentRepo,
           mockTaskRepo
         )
@@ -299,14 +342,18 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
     });
 
     it("AUDIT-SEC-R2-MIME-WHITELIST: rejects unsafe MIME types (HTML, SVG, JS)", async () => {
-      const { getPresignedUploadUrlUseCase } = await import(
-        "@/domains/tasks/usecases/getPresignedUploadUrl"
-      );
+      const { getPresignedUploadUrlUseCase } =
+        await import("@/domains/tasks/usecases/getPresignedUploadUrl");
       const { ValidationError } = await import("@/shared/errors/domainErrors");
 
       const ownTaskRepo: ITaskRepository = {
         ...mockTaskRepo,
-        getTaskById: vi.fn().mockResolvedValue({ id: "valid-task-id", orgId: contextOrgA.orgId } as any),
+        getTaskById: vi
+          .fn()
+          .mockResolvedValue({
+            id: "valid-task-id",
+            orgId: contextOrgA.orgId,
+          } as any),
       };
 
       // HTML should be rejected
@@ -324,14 +371,19 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
         getPresignedUploadUrlUseCase(
           contextOrgA,
           "valid-task-id",
-          { fileName: "exploit.svg", fileType: "image/svg+xml", fileSize: 1024 },
+          {
+            fileName: "exploit.svg",
+            fileType: "image/svg+xml",
+            fileSize: 1024,
+          },
           ownTaskRepo
         )
       ).rejects.toThrow("Unsupported file type");
     });
 
     it("P0: listOrgMembers returns empty array for empty org and never leaks profiles from another org", async () => {
-      const { SupabaseUserRepository } = await import("@/domains/users/repository/userRepository");
+      const { SupabaseUserRepository } =
+        await import("@/domains/users/repository/userRepository");
       const repo = new SupabaseUserRepository();
 
       // Mock hasSupabase to true
@@ -348,18 +400,25 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
       (repo as any).getClient = () => ({
         from: vi.fn().mockImplementation((table: string) => {
           if (table === "profiles") return mockProfilesQuery;
-          return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: [] }) };
+          return {
+            select: vi.fn().mockReturnThis(),
+            in: vi.fn().mockResolvedValue({ data: [] }),
+          };
         }),
       });
 
       const members = await repo.listOrgMembers("org-empty-a");
       expect(members).toEqual([]);
       // Ensure select was filtered strictly by org-empty-a
-      expect(mockProfilesQuery.eq).toHaveBeenCalledWith("org_id", "org-empty-a");
+      expect(mockProfilesQuery.eq).toHaveBeenCalledWith(
+        "org_id",
+        "org-empty-a"
+      );
     });
 
     it("P0: listOrgMembers never injects auth users from Org B into Org A", async () => {
-      const { SupabaseUserRepository } = await import("@/domains/users/repository/userRepository");
+      const { SupabaseUserRepository } =
+        await import("@/domains/users/repository/userRepository");
       const repo = new SupabaseUserRepository();
 
       (repo as any).hasSupabase = () => true;
@@ -385,7 +444,9 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
               select: vi.fn().mockReturnThis(),
               eq: vi.fn().mockReturnThis(),
               is: vi.fn().mockReturnThis(),
-              order: vi.fn().mockResolvedValue({ data: orgAProfiles, error: null }),
+              order: vi
+                .fn()
+                .mockResolvedValue({ data: orgAProfiles, error: null }),
             };
           }
           if (table === "team_members") {
@@ -429,7 +490,8 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
     });
 
     it("P1 GDPR: exportOrgData strictly isolates data to requesting admin org and blocks non-admins", async () => {
-      const { exportOrgDataUseCase } = await import("@/domains/organization/usecases/exportOrgData");
+      const { exportOrgDataUseCase } =
+        await import("@/domains/organization/usecases/exportOrgData");
 
       // 1. Non-admin attempt -> 403 ForbiddenError
       const employeeContext: RequestContext = {
@@ -456,14 +518,29 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockImplementation((col: string, val: string) => {
             if (col === "id" && val === "org-a") {
-              return { maybeSingle: vi.fn().mockResolvedValue({ data: { id: "org-a", name: "Org Alpha" } }) };
+              return {
+                maybeSingle: vi
+                  .fn()
+                  .mockResolvedValue({
+                    data: { id: "org-a", name: "Org Alpha" },
+                  }),
+              };
             }
             if (col === "org_id") {
-              if (table === "profiles") return { data: [{ id: "u-a1", full_name: "Alice" }] };
-              if (table === "tasks") return { data: [{ id: "t-a1", title: "Alpha Task" }] };
-              if (table === "teams") return { data: [{ id: "team-a1", name: "Alpha Core" }] };
+              if (table === "profiles")
+                return { data: [{ id: "u-a1", full_name: "Alice" }] };
+              if (table === "tasks")
+                return { data: [{ id: "t-a1", title: "Alpha Task" }] };
+              if (table === "teams")
+                return { data: [{ id: "team-a1", name: "Alpha Core" }] };
               if (table === "activity_logs") {
-                return { order: vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [] }) }) };
+                return {
+                  order: vi
+                    .fn()
+                    .mockReturnValue({
+                      limit: vi.fn().mockResolvedValue({ data: [] }),
+                    }),
+                };
               }
             }
             return { data: [] };
@@ -481,9 +558,8 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
     });
 
     it("P1 GDPR: requestOrgDeletion validates admin role and name confirmation", async () => {
-      const { requestOrgDeletionUseCase } = await import(
-        "@/domains/organization/usecases/requestOrgDeletion"
-      );
+      const { requestOrgDeletionUseCase } =
+        await import("@/domains/organization/usecases/requestOrgDeletion");
 
       const managerContext: RequestContext = {
         userId: "mgr-1",
@@ -495,7 +571,9 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
       // Non-admin blocked
       await expect(
         requestOrgDeletionUseCase(managerContext, "Org Alpha")
-      ).rejects.toThrow("Only organization admins can request organization deletion.");
+      ).rejects.toThrow(
+        "Only organization admins can request organization deletion."
+      );
 
       const adminContext: RequestContext = {
         userId: "admin-1",
@@ -508,7 +586,12 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
         from: vi.fn().mockImplementation((table: string) => ({
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockImplementation((col: string, val: string) => ({
-            maybeSingle: vi.fn().mockResolvedValue({ data: { id: "org-a", name: "Org Alpha" }, error: null }),
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({
+                data: { id: "org-a", name: "Org Alpha" },
+                error: null,
+              }),
           })),
           update: vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ error: null }),
@@ -518,17 +601,24 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
 
       // Mismatched confirmation name -> rejected
       await expect(
-        requestOrgDeletionUseCase(adminContext, "Wrong Name", undefined, mockClient)
+        requestOrgDeletionUseCase(
+          adminContext,
+          "Wrong Name",
+          undefined,
+          mockClient
+        )
       ).rejects.toThrow("Organization name confirmation mismatch");
 
       // Valid confirmation name -> succeeds with 30 day purge window
-      const deletionResult = await requestOrgDeletionUseCase(adminContext, "Org Alpha", "Closing down", mockClient);
+      const deletionResult = await requestOrgDeletionUseCase(
+        adminContext,
+        "Org Alpha",
+        "Closing down",
+        mockClient
+      );
       expect(deletionResult.success).toBe(true);
       expect(deletionResult.orgId).toBe("org-a");
       expect(deletionResult.scheduledPurgeDate).toBeDefined();
     });
   });
 });
-
-
-

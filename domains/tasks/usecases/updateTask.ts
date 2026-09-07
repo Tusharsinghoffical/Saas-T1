@@ -10,7 +10,10 @@ import { invalidateOrgDashboardCache } from "@/infrastructure/redis/redisClient"
 import { recordActivityLogUseCase } from "@/domains/activity";
 import { ForbiddenError, ValidationError } from "@/shared/errors/domainErrors";
 
-import { IUserRepository, userRepository } from "@/domains/users/repository/userRepository";
+import {
+  IUserRepository,
+  userRepository,
+} from "@/domains/users/repository/userRepository";
 
 export async function updateTaskUseCase(
   context: RequestContext,
@@ -22,7 +25,9 @@ export async function updateTaskUseCase(
   // Validate that newly assigned users are not deactivated
   if (updates.assigneeIds && updates.assigneeIds.length > 0) {
     const profiles = await Promise.all(
-      updates.assigneeIds.map((id) => userRepo.getProfileById(id).catch(() => null))
+      updates.assigneeIds.map((id) =>
+        userRepo.getProfileById(id).catch(() => null)
+      )
     );
     for (const p of profiles) {
       if (p?.deletedAt) {
@@ -33,7 +38,8 @@ export async function updateTaskUseCase(
     }
   }
 
-  const isManagerOrAdmin = context.role === "admin" || context.role === "manager";
+  const isManagerOrAdmin =
+    context.role === "admin" || context.role === "manager";
 
   // 1. Employee access rule: employees may only update status on tasks they are assigned to
   if (!isManagerOrAdmin) {
@@ -55,17 +61,24 @@ export async function updateTaskUseCase(
     const isAssigned = canEmployeeUpdateTask(context.userId, assignedUserIds);
 
     if (!isAssigned && assignedUserIds.length > 0) {
-      throw new ForbiddenError("Forbidden: You can only update tasks assigned to you.");
+      throw new ForbiddenError(
+        "Forbidden: You can only update tasks assigned to you."
+      );
     }
   }
 
   // 2. Dependency blocking rule: cannot move to in_progress or completed if dependencies are incomplete
   if (updates.status === "in_progress" || updates.status === "completed") {
     const dependencies = await repo.getDependencies(taskId);
-    const validation = validateDependencyPrerequisites(updates.status, dependencies);
+    const validation = validateDependencyPrerequisites(
+      updates.status,
+      dependencies
+    );
 
     if (!validation.allowed) {
-      const blockers = validation.blockingDependencies.map((b) => `"${b.title}"`).join(", ");
+      const blockers = validation.blockingDependencies
+        .map((b) => `"${b.title}"`)
+        .join(", ");
       throw new ValidationError(
         `Move Blocked: Cannot move task to ${updates.status} until prerequisite task(s) ${blockers} are Completed.`
       );

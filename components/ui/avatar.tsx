@@ -8,7 +8,13 @@ export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: "xs" | "sm" | "md" | "lg";
 }
 
-export function Avatar({ name = "User", src, size = "md", className, ...props }: AvatarProps) {
+export function Avatar({
+  name = "User",
+  src,
+  size = "md",
+  className,
+  ...props
+}: AvatarProps) {
   const sizeStyles = {
     xs: "w-5 h-5 text-[9px]",
     sm: "w-7 h-7 text-xs",
@@ -28,13 +34,13 @@ export function Avatar({ name = "User", src, size = "md", className, ...props }:
     return (
       <div
         className={cn(
-          "relative rounded-full overflow-hidden flex-shrink-0 ring-2 ring-white dark:ring-slate-900",
+          "relative flex-shrink-0 overflow-hidden rounded-full ring-2 ring-white dark:ring-slate-900",
           sizeStyles[size],
           className
         )}
         {...props}
       >
-        <img src={src} alt={name} className="w-full h-full object-cover" />
+        <img src={src} alt={name} className="h-full w-full object-cover" />
       </div>
     );
   }
@@ -42,7 +48,7 @@ export function Avatar({ name = "User", src, size = "md", className, ...props }:
   return (
     <div
       className={cn(
-        "relative rounded-full bg-primary/15 text-primary font-bold flex items-center justify-center flex-shrink-0 ring-2 ring-white dark:ring-slate-900 select-none",
+        "relative flex flex-shrink-0 select-none items-center justify-center rounded-full bg-primary/15 font-bold text-primary ring-2 ring-white dark:ring-slate-900",
         sizeStyles[size],
         className
       )}
@@ -60,7 +66,10 @@ export function AvatarGroup({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("flex items-center -space-x-2 overflow-hidden", className)} {...props}>
+    <div
+      className={cn("flex items-center -space-x-2 overflow-hidden", className)}
+      {...props}
+    >
       {children}
     </div>
   );

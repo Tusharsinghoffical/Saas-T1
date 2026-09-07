@@ -1,7 +1,10 @@
 import { RequestContext } from "@/shared/types/context";
 import { Task, CreateTaskDTO } from "../entities/Task";
 import { ITaskRepository, taskRepository } from "../repository/taskRepository";
-import { IUserRepository, userRepository } from "@/domains/users/repository/userRepository";
+import {
+  IUserRepository,
+  userRepository,
+} from "@/domains/users/repository/userRepository";
 import { invalidateOrgDashboardCache } from "@/infrastructure/redis/redisClient";
 import { recordActivityLogUseCase } from "@/domains/activity";
 
@@ -16,7 +19,9 @@ export async function createTaskUseCase(
   // Validate that no assignee is a soft-deleted/deactivated employee
   if (data.assigneeIds && data.assigneeIds.length > 0) {
     const profiles = await Promise.all(
-      data.assigneeIds.map((id) => userRepo.getProfileById(id).catch(() => null))
+      data.assigneeIds.map((id) =>
+        userRepo.getProfileById(id).catch(() => null)
+      )
     );
     for (const p of profiles) {
       if (p?.deletedAt) {
@@ -47,13 +52,21 @@ export async function createTaskUseCase(
     teamId: resolvedTeamId || null,
   };
 
-  const task = await repo.createTask(context.orgId, context.userId, taskPayload);
+  const task = await repo.createTask(
+    context.orgId,
+    context.userId,
+    taskPayload
+  );
 
   // If assignees were specified, ensure they are also assigned to the squad
   if (data.assigneeIds && data.assigneeIds.length > 0 && resolvedTeamId) {
     for (const assigneeId of data.assigneeIds) {
       try {
-        await userRepo.assignUserToTeam(assigneeId, context.orgId, resolvedTeamId);
+        await userRepo.assignUserToTeam(
+          assigneeId,
+          context.orgId,
+          resolvedTeamId
+        );
       } catch {
         // Non-blocking
       }

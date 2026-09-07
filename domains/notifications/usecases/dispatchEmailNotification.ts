@@ -1,20 +1,35 @@
 import { DispatchNotificationDTO } from "../entities/Notification";
-import { INotificationRepository, notificationRepository } from "../repository/notificationRepository";
-import { sendEmail, buildNotificationEmailHtml } from "@/infrastructure/email/resendClient";
+import {
+  INotificationRepository,
+  notificationRepository,
+} from "../repository/notificationRepository";
+import {
+  sendEmail,
+  buildNotificationEmailHtml,
+} from "@/infrastructure/email/resendClient";
 import { sendSlackNotification } from "@/infrastructure/slack/slackClient";
 import { ValidationError } from "@/shared/errors/domainErrors";
 
 export async function dispatchEmailNotificationUseCase(
   data: DispatchNotificationDTO,
   repo: INotificationRepository = notificationRepository
-): Promise<{ success: boolean; id?: string; error?: string; skipped?: boolean; reason?: string }> {
+): Promise<{
+  success: boolean;
+  id?: string;
+  error?: string;
+  skipped?: boolean;
+  reason?: string;
+}> {
   const { recipientUserId, type, title, message, taskId } = data;
 
   if (!recipientUserId || !type || !title || !message) {
-    throw new ValidationError("Missing required notification payload parameters.");
+    throw new ValidationError(
+      "Missing required notification payload parameters."
+    );
   }
 
-  const { email, preferences, orgId, fullName } = await repo.getUserPreferencesAndEmail(recipientUserId);
+  const { email, preferences, orgId, fullName } =
+    await repo.getUserPreferencesAndEmail(recipientUserId);
 
   // Check user preference for this event type
   const prefKey = type.replace(".", "_") as keyof typeof preferences;
@@ -47,7 +62,10 @@ export async function dispatchEmailNotificationUseCase(
   if (orgId) {
     try {
       const orgSettings = await repo.getOrgSlackSettings(orgId);
-      if (orgSettings?.slackWebhookUrl && orgSettings?.slackNotificationsEnabled !== false) {
+      if (
+        orgSettings?.slackWebhookUrl &&
+        orgSettings?.slackNotificationsEnabled !== false
+      ) {
         sendSlackNotification({
           webhookUrl: orgSettings.slackWebhookUrl,
           type,

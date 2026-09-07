@@ -3,7 +3,10 @@ import { Subscription } from "../entities/Organization";
 
 export interface ISubscriptionRepository {
   upsertSubscription(sub: Subscription): Promise<void>;
-  updateSubscriptionByStripeId(stripeSubId: string, updates: Partial<Subscription>): Promise<void>;
+  updateSubscriptionByStripeId(
+    stripeSubId: string,
+    updates: Partial<Subscription>
+  ): Promise<void>;
 }
 
 export class SupabaseSubscriptionRepository implements ISubscriptionRepository {
@@ -13,7 +16,12 @@ export class SupabaseSubscriptionRepository implements ISubscriptionRepository {
   }
 
   async upsertSubscription(sub: Subscription): Promise<void> {
-    if (!this.hasSupabase()) return;
+    if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("Supabase configuration missing in production.");
+      }
+      return;
+    }
 
     const adminClient = createAdminClient();
     await (adminClient.from("subscriptions") as any).upsert({
@@ -26,8 +34,16 @@ export class SupabaseSubscriptionRepository implements ISubscriptionRepository {
     });
   }
 
-  async updateSubscriptionByStripeId(stripeSubId: string, updates: Partial<Subscription>): Promise<void> {
-    if (!this.hasSupabase()) return;
+  async updateSubscriptionByStripeId(
+    stripeSubId: string,
+    updates: Partial<Subscription>
+  ): Promise<void> {
+    if (!this.hasSupabase()) {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error("Supabase configuration missing in production.");
+      }
+      return;
+    }
 
     const adminClient = createAdminClient();
     const dbPayload: Record<string, any> = {
@@ -36,9 +52,12 @@ export class SupabaseSubscriptionRepository implements ISubscriptionRepository {
 
     if (updates.status !== undefined) dbPayload.status = updates.status;
     if (updates.plan !== undefined) dbPayload.plan = updates.plan;
-    if (updates.cancelAtPeriodEnd !== undefined) dbPayload.cancel_at_period_end = updates.cancelAtPeriodEnd;
-    if (updates.currentPeriodStart !== undefined) dbPayload.current_period_start = updates.currentPeriodStart;
-    if (updates.currentPeriodEnd !== undefined) dbPayload.current_period_end = updates.currentPeriodEnd;
+    if (updates.cancelAtPeriodEnd !== undefined)
+      dbPayload.cancel_at_period_end = updates.cancelAtPeriodEnd;
+    if (updates.currentPeriodStart !== undefined)
+      dbPayload.current_period_start = updates.currentPeriodStart;
+    if (updates.currentPeriodEnd !== undefined)
+      dbPayload.current_period_end = updates.currentPeriodEnd;
 
     await (adminClient.from("subscriptions") as any)
       .update(dbPayload)
