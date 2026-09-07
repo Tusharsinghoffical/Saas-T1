@@ -130,7 +130,7 @@ export function DashboardSidebar({
         <div className="flex flex-col overflow-hidden">
           {/* Brand Header */}
           <div
-            className={`flex h-16 items-center border-b border-slate-200/70 dark:border-slate-800/80 ${
+            className={`flex h-[76px] items-center border-b border-slate-200/70 dark:border-slate-800/80 ${
               isCollapsed
                 ? "justify-center px-2"
                 : "justify-between px-4 sm:px-5"
@@ -139,14 +139,14 @@ export function DashboardSidebar({
             {isCollapsed ? (
               <Link
                 href={homeHref}
-                className="group flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-600 text-sm font-black text-white shadow-md shadow-primary/25 transition-transform hover:scale-105"
+                className="group flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-600 text-base font-black text-white shadow-md shadow-primary/25 transition-transform hover:scale-105"
                 title="TASQ-ONE Workspace"
               >
                 T1
               </Link>
             ) : (
-              <div className="flex items-center gap-2">
-                <Logo size="sm" href={homeHref} />
+              <div className="flex min-w-0 flex-1 items-center py-1">
+                <Logo size="md" href={homeHref} className="max-w-[195px]" />
               </div>
             )}
 

@@ -3,7 +3,6 @@
 import React from "react";
 import { Menu, Radio, Sparkles, ChevronRight } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface DashboardHeaderProps {
   onOpenMobileMenu?: () => void;
@@ -82,9 +81,6 @@ export function DashboardHeader({
 
       {/* Right side: Actions & Controls */}
       <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Theme Toggle Button */}
-        <ThemeToggle />
-
         {/* Notification Bell */}
         <NotificationBell />
 

@@ -19,18 +19,18 @@ export function Logo({
 }: LogoProps) {
   // Enhanced, prominent sizing to ensure brand logo stands out clearly
   const sizeConfig = {
-    sm: { height: 48, className: "h-11 sm:h-12 w-auto max-w-[200px]" },
+    sm: { height: 56, className: "h-12 sm:h-14 w-auto max-w-[220px]" },
     md: {
-      height: 72,
-      className: "h-14 sm:h-16 md:h-[72px] w-auto max-w-[300px]",
+      height: 80,
+      className: "h-14 sm:h-16 md:h-[76px] w-auto max-w-[320px]",
     },
     lg: {
-      height: 96,
-      className: "h-18 sm:h-22 md:h-[96px] w-auto max-w-[400px]",
+      height: 104,
+      className: "h-20 sm:h-24 md:h-[104px] w-auto max-w-[420px]",
     },
     xl: {
-      height: 120,
-      className: "h-24 sm:h-28 md:h-[120px] w-auto max-w-[480px]",
+      height: 130,
+      className: "h-26 sm:h-30 md:h-[130px] w-auto max-w-[500px]",
     },
   }[size];
 
