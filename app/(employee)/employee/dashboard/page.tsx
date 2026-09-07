@@ -26,13 +26,13 @@ import {
   ListFilter,
   Lock,
   MessageSquare,
-  ArrowUpDown,
-  Filter,
   Radio,
   Layers,
   Flame,
   Shield,
   Tag,
+  X,
+  BadgeCheck,
 } from "lucide-react";
 import { TaskDetail } from "@/components/tasks/TaskDetail";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
@@ -124,6 +124,81 @@ const STATUS_THEME: Record<
   },
 };
 
+// ─── Smart Task Content & Title Parser ──────────────────────────────
+export function formatTaskDisplay(title: string, description?: string | null) {
+  let cleanTitle = title ? title.trim() : "Untitled Task";
+  let isAiEnhanced = false;
+  let cleanObjective = "";
+  let acceptanceCriteriaCount = 0;
+  let cleanDescription = description ? description.trim() : "";
+
+  // 1. Detect if AI enhanced
+  if (/^enhanced:\s*/i.test(cleanTitle)) {
+    isAiEnhanced = true;
+    cleanTitle = cleanTitle.replace(/^enhanced:\s*/i, "").trim();
+  }
+
+  // 2. Extract core draft text if title contains raw draft prompt boilerplate
+  // Example: "Please enhance and structure the following task draft: """ website dr """ "
+  const promptDraftRegex = /(?:task draft|draft):\s*["'“”«»]*(.+?)["'“”«»]*\s*$/i;
+  const draftMatch = cleanTitle.match(promptDraftRegex);
+  if (draftMatch && draftMatch[1]) {
+    const extracted = draftMatch[1].replace(/["'“”«»]/g, "").trim();
+    if (extracted.length > 0) {
+      cleanTitle = extracted.charAt(0).toUpperCase() + extracted.slice(1);
+    }
+  }
+
+  // 3. Process description
+  if (cleanDescription) {
+    // Check if description has acceptance criteria
+    const criteriaMatch = cleanDescription.match(/acceptance criteria:?\s*([\s\S]*)/i);
+    if (criteriaMatch && criteriaMatch[1]) {
+      const bullets = criteriaMatch[1].match(/[-*•]\s+([^\n\r]+)/g);
+      if (bullets) {
+        acceptanceCriteriaCount = bullets.length;
+      }
+    }
+
+    // Extract objective
+    const objMatch = cleanDescription.match(/\*\*Objective:\*\*\s*([^\*]+?)(?=\*\*|$)/i);
+    if (objMatch && objMatch[1]) {
+      const rawObj = objMatch[1].trim();
+      const objDraftMatch = rawObj.match(promptDraftRegex);
+      if (objDraftMatch && objDraftMatch[1]) {
+        cleanObjective = objDraftMatch[1].replace(/["'“”«»]/g, "").trim();
+      } else {
+        cleanObjective = rawObj.replace(/["'“”«»]/g, "").trim();
+      }
+    }
+
+    // Clean description of raw markdown symbols for preview
+    cleanDescription = cleanDescription
+      .replace(/\*\*Objective:\*\*/gi, "")
+      .replace(/\*\*Acceptance Criteria:\*\*/gi, "")
+      .replace(/\*\*/g, "")
+      .replace(/["'“”«»]{2,}/g, "")
+      .replace(/#+\s/g, "")
+      .replace(/-\s+/g, " • ")
+      .trim();
+
+    // If description is just repeating the prompt boilerplate, summarize it cleanly
+    if (cleanDescription.toLowerCase().includes("please enhance and structure the following task draft")) {
+      cleanDescription = cleanObjective
+        ? `Objective: ${cleanObjective}`
+        : "Structured task with verified acceptance criteria";
+    }
+  }
+
+  return {
+    title: cleanTitle,
+    isAiEnhanced,
+    objective: cleanObjective,
+    acceptanceCriteriaCount,
+    cleanDescription,
+  };
+}
+
 // ─── Relative Date Formatter ────────────────────────────────────────
 function formatDueDate(dateString: string | null | undefined): {
   label: string;
@@ -178,12 +253,14 @@ interface TaskRowProps {
 function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
   const p = PRIORITY_THEME[task.priority] || PRIORITY_THEME.medium;
   const s = STATUS_THEME[task.status] || STATUS_THEME.pending;
-  const StatusIcon = s.icon;
   const isCompleted = task.status === "completed";
   const rawDate = task.dueDate || task.due_date;
   const dateInfo = formatDueDate(rawDate);
   const subtasks = task.subtasks || [];
   const doneSubtasks = subtasks.filter((st: any) => st.completed).length;
+
+  const { title, isAiEnhanced, cleanDescription, acceptanceCriteriaCount } =
+    formatTaskDisplay(task.title, task.description);
 
   // Blocked status check
   const isBlocked = Boolean(
@@ -195,19 +272,19 @@ function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
   return (
     <div
       onClick={onOpen}
-      className={`group relative flex cursor-pointer flex-col justify-between gap-3 rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:flex-row sm:items-center ${
+      className={`group relative flex cursor-pointer flex-col justify-between gap-3.5 rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:shadow-md sm:flex-row sm:items-center ${
         isCompleted
-          ? "border-slate-200/70 bg-slate-50/80 opacity-75 hover:opacity-100 dark:border-slate-800/60 dark:bg-slate-900/40"
-          : "border-slate-200 bg-white hover:border-primary/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-primary/50"
+          ? "border-slate-200/80 bg-slate-50/70 opacity-80 hover:opacity-100 dark:border-slate-800/60 dark:bg-slate-900/40"
+          : "border-slate-200 bg-white hover:border-indigo-500/50 hover:shadow-indigo-500/5 dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-indigo-500/40"
       }`}
     >
-      {/* Priority subtle left indicator stripe */}
+      {/* Priority Left Indicator Bar */}
       <div
-        className={`absolute bottom-3 left-0 top-3 w-1 rounded-r-full ${p.dot}`}
+        className={`absolute bottom-3.5 left-0 top-3.5 w-1.5 rounded-r-full ${p.dot}`}
       />
 
-      {/* Left side: Checkbox + Title + Metadata */}
-      <div className="flex min-w-0 flex-1 items-start gap-3.5 pl-1.5 sm:items-center">
+      {/* Left Column: Instant Toggle Checkbox + Title + Clean Metadata */}
+      <div className="flex min-w-0 flex-1 items-start gap-3.5 pl-2 sm:items-center">
         {/* Quick Checkbox Toggle Button */}
         <button
           type="button"
@@ -215,21 +292,24 @@ function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
             e.stopPropagation();
             onStatusChange(isCompleted ? "in_progress" : "completed");
           }}
-          className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg border-2 transition-all sm:mt-0 ${
+          className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg border-2 transition-all duration-150 sm:mt-0 ${
             isCompleted
-              ? "border-emerald-500 bg-emerald-500 text-white shadow-sm"
-              : "border-slate-300 text-transparent hover:border-emerald-500 hover:bg-emerald-500/10 dark:border-slate-600"
+              ? "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-500/25"
+              : "border-slate-300 text-transparent hover:border-emerald-500 hover:bg-emerald-500/10 dark:border-slate-600 dark:hover:border-emerald-400"
           }`}
           title={isCompleted ? "Mark as in progress" : "Mark as completed"}
         >
           <Check
-            className={`h-3.5 w-3.5 stroke-[3] ${isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`}
+            className={`h-3.5 w-3.5 stroke-[3] transition-opacity ${
+              isCompleted ? "opacity-100" : "opacity-0 group-hover:opacity-40"
+            }`}
           />
         </button>
 
         {/* Task Details Info */}
         <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Metadata Chips Bar */}
+          <div className="flex flex-wrap items-center gap-1.5">
             {/* Priority Badge */}
             <span
               className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-bold ${p.bg} ${p.text} ${p.border}`}
@@ -237,6 +317,14 @@ function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
               <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />
               {p.label}
             </span>
+
+            {/* AI Enhanced Tag */}
+            {isAiEnhanced && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-purple-500/25 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold text-purple-600 dark:border-purple-500/30 dark:bg-purple-500/15 dark:text-purple-300">
+                <Sparkles className="h-2.5 w-2.5 text-purple-500" />
+                AI Enhanced
+              </span>
+            )}
 
             {/* Blocked Pill */}
             {isBlocked && (
@@ -246,45 +334,53 @@ function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
               </span>
             )}
 
+            {/* Acceptance Criteria Badge */}
+            {acceptanceCriteriaCount > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-blue-500/20 bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-400">
+                <BadgeCheck className="h-2.5 w-2.5" />
+                {acceptanceCriteriaCount} criteria
+              </span>
+            )}
+
             {/* Tags */}
             {task.tags &&
               task.tags.length > 0 &&
               task.tags.slice(0, 3).map((tag: string) => (
                 <span
                   key={tag}
-                  className="rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                  className="rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400"
                 >
                   #{tag}
                 </span>
               ))}
           </div>
 
-          {/* Title */}
+          {/* Clean Title */}
           <h4
             className={`line-clamp-2 text-sm font-bold leading-snug transition-colors sm:text-base ${
               isCompleted
                 ? "text-slate-400 line-through dark:text-slate-500"
-                : "text-slate-900 group-hover:text-primary dark:text-white"
+                : "text-slate-900 group-hover:text-indigo-600 dark:text-white dark:group-hover:text-indigo-400"
             }`}
           >
-            {task.title}
+            {title}
           </h4>
 
-          {/* Description Preview (if present) */}
-          {task.description && (
+          {/* Clean Description Summary Preview */}
+          {cleanDescription && (
             <p className="line-clamp-1 text-xs text-slate-500 dark:text-slate-400">
-              {task.description}
+              {cleanDescription}
             </p>
           )}
 
-          {/* Micro Meta: Subtasks + Due Date */}
+          {/* Micro Meta: Subtasks + Due Date + Comments */}
           <div className="flex flex-wrap items-center gap-3 pt-0.5 text-xs text-slate-500 dark:text-slate-400">
             {/* Due Date Indicator */}
             {rawDate && (
               <div
                 className={`flex items-center gap-1.5 text-xs font-semibold ${
                   dateInfo.isOverdue && !isCompleted
-                    ? "text-rose-600 dark:text-rose-400"
+                    ? "font-bold text-rose-600 dark:text-rose-400"
                     : dateInfo.isToday && !isCompleted
                       ? "font-bold text-amber-600 dark:text-amber-400"
                       : "text-slate-500 dark:text-slate-400"
@@ -297,8 +393,8 @@ function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
 
             {/* Subtasks Progress */}
             {subtasks.length > 0 && (
-              <div className="flex items-center gap-1 text-[11px] text-slate-500">
-                <CheckSquare className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                <CheckSquare className="h-3.5 w-3.5 text-slate-400" />
                 <span>
                   {doneSubtasks}/{subtasks.length} subtasks
                 </span>
@@ -309,8 +405,8 @@ function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
             {(task.commentsCount ||
               (task.comments && task.comments.length) ||
               0) > 0 && (
-              <div className="flex items-center gap-1 text-[11px] text-slate-500">
-                <MessageSquare className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                <MessageSquare className="h-3.5 w-3.5 text-slate-400" />
                 <span>{task.commentsCount || task.comments?.length}</span>
               </div>
             )}
@@ -318,16 +414,16 @@ function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
         </div>
       </div>
 
-      {/* Right side: Interactive Status Control & Detail CTA */}
+      {/* Right Column: Inline Status Control & Open Drawer CTA */}
       <div
-        className="flex items-center justify-between gap-2.5 border-t border-slate-100 pl-9 pt-2 dark:border-slate-800 sm:justify-end sm:border-t-0 sm:pl-0 sm:pt-0"
+        className="flex items-center justify-between gap-2.5 border-t border-slate-100 pl-9 pt-2.5 dark:border-slate-800 sm:justify-end sm:border-t-0 sm:pl-0 sm:pt-0"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Status Dropdown */}
         <select
           value={task.status}
           onChange={(e) => onStatusChange(e.target.value as any)}
-          className={`cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary/40 ${s.bg} ${s.color} ${s.border}`}
+          className={`cursor-pointer rounded-xl border px-3 py-1.5 text-xs font-bold shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${s.bg} ${s.color} ${s.border}`}
         >
           <option value="pending">To Do</option>
           <option value="in_progress">In Progress</option>
@@ -339,7 +435,7 @@ function TaskLinearRow({ task, onOpen, onStatusChange }: TaskRowProps) {
         <button
           type="button"
           onClick={onOpen}
-          className="rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          className="rounded-xl border border-slate-200/80 p-2 text-slate-400 shadow-sm transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-200"
           title="Open Task Details"
         >
           <ChevronRight className="h-4 w-4" />
@@ -376,6 +472,8 @@ export default function EmployeeDashboardPage() {
     fullName: "Employee",
     email: "employee@workspace.com",
     role: "employee",
+    position: null as string | null,
+    phoneNumber: null as string | null,
     teamId: null as string | null,
     teamName: "General Squad",
     avatarUrl: null as string | null,
@@ -456,33 +554,75 @@ export default function EmployeeDashboardPage() {
     true
   );
 
-  // 2. Realtime Postgres connection
+  // 2. Realtime Postgres connection & Cross-Tab Activity Sync
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     if (!url || url.includes("your-project-ref")) {
       setIsConnected(true);
-      return;
+    } else {
+      let channel: any = null;
+      try {
+        const sb = createClient();
+        channel = sb
+          .channel(`rt:emp:${Math.random().toString(36).slice(2, 8)}`)
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "tasks" },
+            () => {
+              fetchMyTasks(true);
+            }
+          )
+          .subscribe((s: any) => setIsConnected(s === "SUBSCRIBED"));
+      } catch {
+        // silent
+      }
+      return () => {
+        if (channel) createClient().removeChannel(channel);
+      };
     }
-    let channel: any = null;
-    try {
-      const sb = createClient();
-      channel = sb
-        .channel(`rt:emp:${Math.random().toString(36).slice(2, 8)}`)
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "tasks" },
-          () => {
-            fetchMyTasks();
-          }
-        )
-        .subscribe((s: any) => setIsConnected(s === "SUBSCRIBED"));
-    } catch {
-      // silent
+  }, [fetchMyTasks]);
+
+  // Cross-tab broadcast receiver
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleWindowUpdate = () => {
+      fetchMyTasks(true);
+    };
+
+    window.addEventListener("tasq:activity_updated", handleWindowUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    if ("BroadcastChannel" in window) {
+      bc = new BroadcastChannel("tasq-activity-channel");
+      bc.onmessage = () => {
+        fetchMyTasks(true);
+      };
     }
+
     return () => {
-      if (channel) createClient().removeChannel(channel);
+      window.removeEventListener("tasq:activity_updated", handleWindowUpdate);
+      if (bc) bc.close();
     };
   }, [fetchMyTasks]);
+
+  const broadcastActivity = () => {
+    try {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+        if ("BroadcastChannel" in window) {
+          const bc = new BroadcastChannel("tasq-activity-channel");
+          bc.postMessage({
+            type: "TASQ_TASK_STATUS_CHANGED",
+            timestamp: Date.now(),
+          });
+          bc.close();
+        }
+      }
+    } catch {
+      // non-blocking
+    }
+  };
 
   // Combined flat list of all assigned tasks
   const allTasks = useMemo(() => {
@@ -505,7 +645,6 @@ export default function EmployeeDashboardPage() {
   const inProgressCount = allTasks.filter(
     (t) => t.status === "in_progress"
   ).length;
-  const inReviewCount = allTasks.filter((t) => t.status === "in_review").length;
   const activeCount = allTasks.filter((t) => t.status !== "completed").length;
 
   const overdueCount = useMemo(() => {
@@ -539,7 +678,7 @@ export default function EmployeeDashboardPage() {
       ? Math.round((completedTasksCount / totalTasksCount) * 100)
       : 0;
 
-  // 3. Status Change Handler
+  // 3. Status Change Handler with instant optimistic update & live DB sync
   const handleStatusChange = async (
     task: KanbanTaskItem,
     newStatus: "pending" | "in_progress" | "in_review" | "completed"
@@ -559,9 +698,10 @@ export default function EmployeeDashboardPage() {
       }
     }
 
+    const previousBuckets = { ...buckets };
     const updatedTask = { ...task, status: newStatus };
 
-    // Optimistically update local buckets
+    // Optimistically update local buckets immediately
     setBuckets((prev) => {
       const filterOut = (list: KanbanTaskItem[]) =>
         list.filter((t) => t.id !== task.id);
@@ -608,12 +748,17 @@ export default function EmployeeDashboardPage() {
       });
       const j = await r.json();
       if (!j.success) {
-        showToast(j.error || "Update failed.");
-        fetchMyTasks();
+        showToast(j.error || "Update failed. Reverting changes.");
+        setBuckets(previousBuckets);
+        fetchMyTasks(true);
+      } else {
+        // Broadcast change so manager, admin, and other tabs reflect it
+        broadcastActivity();
       }
     } catch {
       showToast("Network error: Status update failed.");
-      fetchMyTasks();
+      setBuckets(previousBuckets);
+      fetchMyTasks(true);
     }
   };
 
@@ -637,8 +782,17 @@ export default function EmployeeDashboardPage() {
         // Search Query
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
-          const matchTitle = task.title.toLowerCase().includes(q);
-          const matchDesc = (task.description || "").toLowerCase().includes(q);
+          const { title, cleanDescription, objective } = formatTaskDisplay(
+            task.title,
+            task.description
+          );
+          const matchTitle =
+            task.title.toLowerCase().includes(q) ||
+            title.toLowerCase().includes(q);
+          const matchDesc =
+            (task.description || "").toLowerCase().includes(q) ||
+            cleanDescription.toLowerCase().includes(q) ||
+            objective.toLowerCase().includes(q);
           const matchTag = task.tags?.some((t) => t.toLowerCase().includes(q));
           if (!matchTitle && !matchDesc && !matchTag) return false;
         }
@@ -669,6 +823,11 @@ export default function EmployeeDashboardPage() {
             low: 1,
           };
           return (rank[b.priority] || 0) - (rank[a.priority] || 0);
+        }
+        if (sortBy === "newest") {
+          const timeA = new Date(a.created_at || a.dueDate || 0).getTime();
+          const timeB = new Date(b.created_at || b.dueDate || 0).getTime();
+          return timeB - timeA;
         }
         return 0;
       });
@@ -706,30 +865,30 @@ export default function EmployeeDashboardPage() {
       )}
 
       {/* ── 🚀 Executive Employee Command Card ── */}
-      <div className="relative overflow-hidden rounded-3xl border border-indigo-800/40 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 text-white shadow-2xl sm:p-7">
-        {/* Glow Spheres */}
-        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 h-80 w-80 rounded-full bg-amber-500/10 blur-3xl" />
+      <div className="relative overflow-hidden rounded-3xl border border-slate-800/80 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 p-6 text-white shadow-2xl backdrop-blur-xl sm:p-7">
+        {/* Ambient Glow Accents */}
+        <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-indigo-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
 
         <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
           {/* Left Column: Profile Info */}
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            {/* Avatar with Live Indicator */}
+            {/* Avatar with Glowing Ring & Presence Indicator */}
             <div className="relative flex-shrink-0">
-              <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-teal-400 p-[2px] shadow-lg shadow-indigo-500/25 sm:h-20 sm:w-20">
-                <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-900 text-xl font-extrabold tracking-wider text-white sm:text-2xl">
+              <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-blue-500 via-indigo-500 to-teal-400 p-[2px] shadow-lg shadow-indigo-500/20 sm:h-20 sm:w-20">
+                <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-slate-950 text-xl font-extrabold tracking-wider text-white sm:text-2xl">
                   {initials}
                 </div>
               </div>
               <span
-                title="Realtime Active"
+                title="Live Sync Connected"
                 className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-slate-900 bg-emerald-500 shadow"
               >
                 <span className="h-2 w-2 animate-ping rounded-full bg-white" />
               </span>
             </div>
 
-            {/* Employee Meta */}
+            {/* Employee Meta Details */}
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 {/* Timezone Greeting */}
@@ -744,7 +903,7 @@ export default function EmployeeDashboardPage() {
                   Workspace Member
                 </span>
 
-                {/* Live Realtime Pill */}
+                {/* Live Realtime Sync Beacon */}
                 <span
                   className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold backdrop-blur-md transition-colors ${
                     isConnected
@@ -753,7 +912,9 @@ export default function EmployeeDashboardPage() {
                   }`}
                 >
                   <Radio
-                    className={`h-3 w-3 ${isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"}`}
+                    className={`h-3 w-3 ${
+                      isConnected ? "animate-pulse text-emerald-400" : "text-amber-400"
+                    }`}
                   />
                   <span>
                     {isConnected ? "Live Sync Active" : "Connecting..."}
@@ -761,12 +922,19 @@ export default function EmployeeDashboardPage() {
                 </span>
               </div>
 
-              {/* Full Name & Headline */}
+              {/* Full Name & Position */}
               <div>
-                <h1 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-                  {employeeProfile.fullName}
-                </h1>
-                <p className="mt-0.5 flex items-center gap-2 text-xs text-indigo-200/80 sm:text-sm">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                    {employeeProfile.fullName}
+                  </h1>
+                  {employeeProfile.position && (
+                    <span className="rounded-lg border border-indigo-400/30 bg-indigo-500/20 px-2.5 py-0.5 text-xs font-semibold text-indigo-200">
+                      {employeeProfile.position}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 flex items-center gap-2 text-xs text-indigo-200/80 sm:text-sm">
                   <span>My Assigned Tasks & Sprint Execution</span>
                   <span className="text-indigo-400">•</span>
                   <span>
@@ -808,15 +976,15 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
 
-          {/* Right Column: Refresh & Progress Bar */}
+          {/* Right Column: Auto-Refresh & Progress Bar */}
           <div className="flex flex-shrink-0 flex-col items-start justify-between gap-4 sm:flex-row lg:flex-col lg:items-end">
             <AutoRefreshBadge
               isRefreshing={isRefreshing || isLoading}
               triggerManual={triggerManual}
             />
 
-            {/* Quick Completion Progress Bar */}
-            <div className="w-full space-y-1.5 rounded-2xl border border-white/10 bg-white/5 p-3 sm:w-56">
+            {/* Sprint Completion Progress Bar */}
+            <div className="w-full space-y-1.5 rounded-2xl border border-white/10 bg-white/5 p-3 sm:w-60">
               <div className="flex items-center justify-between text-xs font-semibold text-indigo-200">
                 <span>Sprint Progress</span>
                 <span className="font-bold text-white">{completionRate}%</span>
@@ -832,68 +1000,114 @@ export default function EmployeeDashboardPage() {
         </div>
       </div>
 
-      {/* ── KPI Metric Cards ── */}
+      {/* ── KPI Interactive Metric Cards ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div className="space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* Card 1: Assigned Tasks */}
+        <div
+          onClick={() => setActiveTab("all")}
+          className="group cursor-pointer space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-500/50 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-blue-500/50"
+        >
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Assigned Tasks</span>
-            <Layers className="h-4 w-4 text-blue-500" />
+            <div className="rounded-lg bg-blue-500/10 p-1.5 text-blue-500 dark:bg-blue-500/20">
+              <Layers className="h-4 w-4" />
+            </div>
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white sm:text-3xl">
             {totalTasksCount}
           </div>
-          <div className="text-[11px] font-medium text-slate-500">
-            In your queue
+          <div className="text-[11px] font-medium text-slate-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400">
+            In your queue →
           </div>
         </div>
 
-        <div className="space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* Card 2: In Progress */}
+        <div
+          onClick={() => setActiveTab("active")}
+          className="group cursor-pointer space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-amber-500/50 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-amber-500/50"
+        >
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>In Progress</span>
-            <Play className="h-4 w-4 text-amber-500" />
+            <div className="rounded-lg bg-amber-500/10 p-1.5 text-amber-500 dark:bg-amber-500/20">
+              <Play className="h-4 w-4" />
+            </div>
           </div>
           <div className="text-2xl font-black text-amber-600 dark:text-amber-400 sm:text-3xl">
             {inProgressCount}
           </div>
-          <div className="text-[11px] font-medium text-slate-500">
-            Actively working
+          <div className="text-[11px] font-medium text-slate-500 group-hover:text-amber-600 dark:text-slate-400 dark:group-hover:text-amber-400">
+            Actively working →
           </div>
         </div>
 
-        <div className="space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* Card 3: Due Soon / Overdue */}
+        <div
+          onClick={() => setActiveTab("due_soon")}
+          className={`group cursor-pointer space-y-1 rounded-2xl border p-4 shadow-sm transition hover:shadow-md ${
+            overdueCount > 0
+              ? "border-rose-500/40 bg-rose-500/5 hover:border-rose-500 dark:border-rose-500/30 dark:bg-rose-500/10"
+              : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/90"
+          }`}
+        >
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Due Soon / Overdue</span>
-            <AlertTriangle
-              className={`h-4 w-4 ${overdueCount > 0 ? "animate-pulse text-rose-500" : "text-slate-400"}`}
-            />
+            <div
+              className={`rounded-lg p-1.5 ${
+                overdueCount > 0
+                  ? "bg-rose-500/15 text-rose-500"
+                  : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+              }`}
+            >
+              <AlertTriangle
+                className={`h-4 w-4 ${
+                  overdueCount > 0 ? "animate-pulse text-rose-500" : ""
+                }`}
+              />
+            </div>
           </div>
           <div
-            className={`text-2xl font-black sm:text-3xl ${overdueCount > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-white"}`}
+            className={`text-2xl font-black sm:text-3xl ${
+              overdueCount > 0
+                ? "text-rose-600 dark:text-rose-400"
+                : "text-slate-900 dark:text-white"
+            }`}
           >
             {overdueCount > 0 ? overdueCount : dueSoonCount}
           </div>
-          <div className="text-[11px] font-medium text-slate-500">
-            {overdueCount > 0 ? "Requires urgent attention" : "Next 72 hours"}
+          <div
+            className={`text-[11px] font-medium ${
+              overdueCount > 0
+                ? "font-bold text-rose-600 dark:text-rose-400"
+                : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400"
+            }`}
+          >
+            {overdueCount > 0 ? "Requires urgent attention →" : "Next 72 hours →"}
           </div>
         </div>
 
-        <div className="space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {/* Card 4: Completed */}
+        <div
+          onClick={() => setActiveTab("completed")}
+          className="group cursor-pointer space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-emerald-500/50 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-emerald-500/50"
+        >
           <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
             <span>Completed</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <div className="rounded-lg bg-emerald-500/10 p-1.5 text-emerald-500 dark:bg-emerald-500/20">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
           </div>
           <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 sm:text-3xl">
             {completedTasksCount}
           </div>
-          <div className="text-[11px] font-medium text-slate-500">
-            {completionRate}% completion
+          <div className="text-[11px] font-medium text-slate-500 group-hover:text-emerald-600 dark:text-slate-400 dark:group-hover:text-emerald-400">
+            {completionRate}% completion →
           </div>
         </div>
       </div>
 
       {/* ── Filter Toolbar & View Switcher ── */}
-      <div className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        {/* Top Row: Tabs + View Switcher */}
+      <div className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+        {/* Top Row: Segmented Tabs + View Switcher */}
         <div className="flex flex-col justify-between gap-3 border-b border-slate-100 pb-3 dark:border-slate-800 sm:flex-row sm:items-center">
           {/* Segmented Filter Tabs */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold sm:pb-0">
@@ -915,9 +1129,9 @@ export default function EmployeeDashboardPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex flex-shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 transition ${
+                className={`flex flex-shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 transition-all ${
                   activeTab === tab.id
-                    ? "bg-primary text-white shadow-sm shadow-primary/30"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
                 }`}
               >
@@ -964,18 +1178,27 @@ export default function EmployeeDashboardPage() {
           </div>
         </div>
 
-        {/* Bottom Row: Search + Priority Filter + Sort */}
+        {/* Bottom Row: Search Box + Priority Filter + Sort */}
         <div className="flex flex-col justify-between gap-3 text-xs md:flex-row md:items-center">
           {/* Search Box */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search your tasks by title, tag or description..."
+              placeholder="Search your tasks by title, tag, objective or criteria..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-900 placeholder-slate-400 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-8 text-xs text-slate-900 placeholder-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Filter Controls */}
@@ -1010,16 +1233,18 @@ export default function EmployeeDashboardPage() {
               >
                 <option value="due_date">Due Date</option>
                 <option value="priority">Priority</option>
+                <option value="newest">Newest</option>
               </select>
             </div>
 
             {/* Reset Filters if active */}
-            {(searchQuery || priorityFilter !== "all") && (
+            {(searchQuery || priorityFilter !== "all" || sortBy !== "due_date") && (
               <button
                 type="button"
                 onClick={() => {
                   setSearchQuery("");
                   setPriorityFilter("all");
+                  setSortBy("due_date");
                 }}
                 className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-rose-500 transition hover:bg-rose-50 dark:hover:bg-rose-950/40"
               >
@@ -1057,8 +1282,8 @@ export default function EmployeeDashboardPage() {
           ))}
 
           {filteredTasks.length === 0 && (
-            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white p-6 py-12 text-center dark:border-slate-800 dark:bg-slate-900">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white p-6 py-14 text-center dark:border-slate-800 dark:bg-slate-900/90">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
@@ -1126,12 +1351,16 @@ export default function EmployeeDashboardPage() {
                   </span>
                 </div>
 
-                {/* Task Cards */}
+                {/* Column Task Cards */}
                 <div className="flex-1 space-y-3 overflow-y-auto">
                   {colTasks.map((task) => {
                     const p =
                       PRIORITY_THEME[task.priority] || PRIORITY_THEME.medium;
                     const isDone = task.status === "completed";
+                    const { title, isAiEnhanced } = formatTaskDisplay(
+                      task.title,
+                      task.description
+                    );
 
                     return (
                       <div
@@ -1143,7 +1372,7 @@ export default function EmployeeDashboardPage() {
                         className={`cursor-pointer space-y-2.5 rounded-xl border p-3.5 shadow-sm transition-all hover:shadow-md ${
                           isDone
                             ? "border-slate-200 bg-slate-50 opacity-75 dark:border-slate-800 dark:bg-slate-900/40"
-                            : "dark:bg-slate-850 dark:border-slate-750 border-slate-200 bg-white hover:border-primary/50"
+                            : "border-slate-200 bg-white hover:border-indigo-500/50 dark:border-slate-800 dark:bg-slate-800/80 dark:hover:border-indigo-500/40"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-1.5">
@@ -1152,6 +1381,12 @@ export default function EmployeeDashboardPage() {
                           >
                             {p.label}
                           </span>
+                          {isAiEnhanced && (
+                            <span className="flex items-center gap-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                              <Sparkles className="h-2.5 w-2.5" />
+                              AI
+                            </span>
+                          )}
                           {task.dueDate && (
                             <span className="text-[10px] font-medium text-slate-500">
                               {new Date(task.dueDate).toLocaleDateString(
@@ -1163,9 +1398,13 @@ export default function EmployeeDashboardPage() {
                         </div>
 
                         <h4
-                          className={`line-clamp-2 text-xs font-bold leading-snug ${isDone ? "text-slate-400 line-through" : "text-slate-900 dark:text-white"}`}
+                          className={`line-clamp-2 text-xs font-bold leading-snug ${
+                            isDone
+                              ? "text-slate-400 line-through"
+                              : "text-slate-900 dark:text-white"
+                          }`}
                         >
-                          {task.title}
+                          {title}
                         </h4>
 
                         {/* Move Status Controls */}
@@ -1211,7 +1450,10 @@ export default function EmployeeDashboardPage() {
         }}
         task={selectedTask}
         allTasks={allTasks}
-        onTaskUpdated={() => fetchMyTasks()}
+        onTaskUpdated={() => {
+          fetchMyTasks();
+          broadcastActivity();
+        }}
       />
     </div>
   );

@@ -43,6 +43,8 @@ export interface KanbanTaskItem {
   }[];
   createdBy?: string | null;
   created_by?: string | null;
+  createdAt?: string | null;
+  created_at?: string | null;
   org_id?: string | null;
 }
 
