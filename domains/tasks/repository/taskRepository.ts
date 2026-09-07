@@ -7,6 +7,8 @@ import {
   CreateTaskDTO,
   UpdateTaskDTO,
   TaskFilterDTO,
+  TaskReassignment,
+  ReassignTaskDTO,
 } from "../entities/Task";
 import { ValidationError } from "@/shared/errors/domainErrors";
 
@@ -26,7 +28,17 @@ export interface ITaskRepository {
     orgId: string,
     updates: UpdateTaskDTO
   ): Promise<Task>;
-  deleteTask(taskId: string, orgId: string): Promise<boolean>;
+  deleteTask(taskId: string, orgId: string, actorId?: string): Promise<boolean>;
+  reassignTask(
+    taskId: string,
+    orgId: string,
+    actorId: string,
+    data: ReassignTaskDTO
+  ): Promise<{ task: Task; reassignment: TaskReassignment }>;
+  getReassignmentHistory(
+    taskId: string,
+    orgId: string
+  ): Promise<TaskReassignment[]>;
   getAssignedUserIds(taskId: string): Promise<string[]>;
   getDependencies(
     taskId: string
@@ -95,6 +107,7 @@ export class SupabaseTaskRepository implements ITaskRepository {
     if (filters.priority) query = query.eq("priority", filters.priority);
     if (filters.teamId) query = query.eq("team_id", filters.teamId);
     if (filters.search) query = query.ilike("title", `%${filters.search}%`);
+    if (!filters.includeDeleted) query = query.is("deleted_at", null);
 
     let { data, error } = await query;
 
@@ -123,6 +136,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
         fallbackQuery = fallbackQuery.eq("team_id", filters.teamId);
       if (filters.search)
         fallbackQuery = fallbackQuery.ilike("title", `%${filters.search}%`);
+      if (!filters.includeDeleted)
+        fallbackQuery = fallbackQuery.is("deleted_at", null);
 
       const { data: fallbackData, error: fallbackError } = await fallbackQuery;
       if (fallbackError) {
@@ -140,6 +155,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
         if (filters.teamId) rawQuery = rawQuery.eq("team_id", filters.teamId);
         if (filters.search)
           rawQuery = rawQuery.ilike("title", `%${filters.search}%`);
+        if (!filters.includeDeleted)
+          rawQuery = rawQuery.is("deleted_at", null);
         const { data: rawData, error: rawError } = await rawQuery;
         if (rawError) {
           console.warn("[listTasks raw fallback error]", rawError.message);
@@ -159,6 +176,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
                 adminQuery = adminQuery.eq("team_id", filters.teamId);
               if (filters.search)
                 adminQuery = adminQuery.ilike("title", `%${filters.search}%`);
+              if (!filters.includeDeleted)
+                adminQuery = adminQuery.is("deleted_at", null);
               const { data: adminTasks } = await adminQuery;
               if (adminTasks && adminTasks.length > 0) {
                 rawTasks = adminTasks;
@@ -283,6 +302,9 @@ export class SupabaseTaskRepository implements ITaskRepository {
     }
 
     let filtered = rawTasks || [];
+    if (!filters.includeDeleted) {
+      filtered = filtered.filter((t: any) => !t.deleted_at);
+    }
     if (filters.assigneeId) {
       filtered = filtered.filter((t: any) =>
         t.task_assignees?.some((a: any) => a.user_id === filters.assigneeId)
@@ -301,6 +323,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
       createdBy: t.created_by,
       createdAt: t.created_at,
       updatedAt: t.updated_at,
+      deletedAt: t.deleted_at || null,
+      deletedBy: t.deleted_by || null,
       assignees: (t.task_assignees || []).map((a: any) => ({
         id: a.profiles?.id || a.user_id,
         fullName: a.profiles?.full_name || "Assignee",
@@ -415,6 +439,8 @@ export class SupabaseTaskRepository implements ITaskRepository {
       createdBy: task.created_by,
       createdAt: task.created_at,
       updatedAt: task.updated_at,
+      deletedAt: task.deleted_at || null,
+      deletedBy: task.deleted_by || null,
       assignees: (task.task_assignees || []).map((a: any) => ({
         id: a.profiles?.id || a.user_id,
         fullName: a.profiles?.full_name || "Assignee",
@@ -621,20 +647,300 @@ export class SupabaseTaskRepository implements ITaskRepository {
     };
   }
 
-  async deleteTask(taskId: string, orgId: string): Promise<boolean> {
+  async deleteTask(
+    taskId: string,
+    orgId: string,
+    actorId?: string
+  ): Promise<boolean> {
     if (!this.hasSupabase()) return true;
 
     const adminClient = createAdminClient();
-    const { error } = await (adminClient as any)
+
+    // Check if task exists and check deleted status
+    const { data: existing, error: fetchError } = await (adminClient as any)
       .from("tasks")
-      .delete()
+      .select("id, deleted_at")
+      .eq("id", taskId)
+      .eq("org_id", orgId)
+      .single();
+
+    if (fetchError || !existing) {
+      throw new ValidationError("Task not found.");
+    }
+
+    if (existing.deleted_at) {
+      throw new ValidationError("Task is already deleted.");
+    }
+
+    // Soft delete task
+    const { error: updateError } = await (adminClient as any)
+      .from("tasks")
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: actorId || null,
+      })
       .eq("id", taskId)
       .eq("org_id", orgId);
 
-    if (error) {
-      throw new Error(error.message);
+    if (updateError) {
+      throw new Error(updateError.message);
     }
+
+    // Clean up dependencies where this task was a prerequisite, preventing blocking traps
+    await (adminClient as any)
+      .from("task_dependencies")
+      .delete()
+      .eq("depends_on_task_id", taskId);
+
     return true;
+  }
+
+  async reassignTask(
+    taskId: string,
+    orgId: string,
+    actorId: string,
+    data: ReassignTaskDTO
+  ): Promise<{ task: Task; reassignment: TaskReassignment }> {
+    if (!this.hasSupabase()) {
+      const now = new Date().toISOString();
+      return {
+        task: {
+          id: taskId,
+          orgId,
+          title: "Demo Reassigned Task",
+          status: "in_progress",
+          priority: "medium",
+          teamId: data.teamId || null,
+          assigneeIds: data.assigneeId ? [data.assigneeId] : [],
+          createdAt: now,
+          updatedAt: now,
+        },
+        reassignment: {
+          id: `reassign-${Date.now()}`,
+          taskId,
+          orgId,
+          reassignedBy: actorId,
+          fromUserId: null,
+          toUserId: data.assigneeId || null,
+          fromTeamId: null,
+          toTeamId: data.teamId || null,
+          reason: data.reason || null,
+          createdAt: now,
+        },
+      };
+    }
+
+    const adminClient = createAdminClient();
+
+    // Fetch existing task and assignees
+    const { data: existingTask, error: fetchErr } = await (adminClient as any)
+      .from("tasks")
+      .select("id, title, priority, org_id, team_id, deleted_at")
+      .eq("id", taskId)
+      .eq("org_id", orgId)
+      .single();
+
+    if (fetchErr || !existingTask) {
+      throw new ValidationError("Task not found.");
+    }
+
+    if (existingTask.deleted_at) {
+      throw new ValidationError("Cannot reassign a deleted task.");
+    }
+
+    const { data: currentAssignees } = await (adminClient as any)
+      .from("task_assignees")
+      .select("user_id")
+      .eq("task_id", taskId);
+
+    const fromUserId =
+      currentAssignees && currentAssignees.length > 0
+        ? currentAssignees[0].user_id
+        : null;
+    const fromTeamId = existingTask.team_id;
+
+    const toUserId =
+      data.assigneeId !== undefined ? data.assigneeId : fromUserId;
+    const toTeamId = data.teamId !== undefined ? data.teamId : fromTeamId;
+
+    // Update task team_id if provided
+    const updatePayload: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (data.teamId !== undefined) {
+      updatePayload.team_id = data.teamId;
+    }
+
+    const { data: updatedTask, error: updateErr } = await (adminClient as any)
+      .from("tasks")
+      .update(updatePayload)
+      .eq("id", taskId)
+      .eq("org_id", orgId)
+      .select()
+      .single();
+
+    if (updateErr || !updatedTask) {
+      throw new Error(
+        updateErr?.message || "Failed to update task during reassignment"
+      );
+    }
+
+    // Atomic update of assignees if assigneeId provided
+    if (data.assigneeId !== undefined) {
+      await (adminClient as any)
+        .from("task_assignees")
+        .delete()
+        .eq("task_id", taskId);
+
+      if (data.assigneeId) {
+        await (adminClient as any)
+          .from("task_assignees")
+          .insert({ task_id: taskId, user_id: data.assigneeId });
+
+        // Notify new assignee
+        await (adminClient as any).from("notifications").insert({
+          user_id: data.assigneeId,
+          type: "task.assigned",
+          payload: {
+            task_id: taskId,
+            task_title: updatedTask.title,
+            priority: updatedTask.priority || "medium",
+            actor_name: "Manager / Admin",
+            message: `Task "${updatedTask.title}" has been reassigned to you.`,
+            reason: data.reason || null,
+          },
+        });
+      }
+    }
+
+    // Insert task_reassignments audit record
+    const { data: reassignmentRecord, error: auditErr } = await (
+      adminClient as any
+    )
+      .from("task_reassignments")
+      .insert({
+        task_id: taskId,
+        org_id: orgId,
+        reassigned_by: actorId,
+        from_user_id: fromUserId,
+        to_user_id: toUserId,
+        from_team_id: fromTeamId,
+        to_team_id: toTeamId,
+        reason: data.reason || null,
+      })
+      .select()
+      .single();
+
+    if (auditErr) {
+      console.error("[reassignTask audit error]", auditErr);
+    }
+
+    return {
+      task: {
+        id: updatedTask.id,
+        orgId: updatedTask.org_id,
+        teamId: updatedTask.team_id,
+        title: updatedTask.title,
+        description: updatedTask.description,
+        status: updatedTask.status,
+        priority: updatedTask.priority,
+        dueDate: updatedTask.due_date,
+        createdBy: updatedTask.created_by,
+        createdAt: updatedTask.created_at,
+        updatedAt: updatedTask.updated_at,
+        assigneeIds: toUserId ? [toUserId] : [],
+      },
+      reassignment: {
+        id: reassignmentRecord?.id || `reassign-${Date.now()}`,
+        taskId,
+        orgId,
+        reassignedBy: actorId,
+        fromUserId,
+        toUserId,
+        fromTeamId,
+        toTeamId,
+        reason: data.reason || null,
+        createdAt: reassignmentRecord?.created_at || new Date().toISOString(),
+      },
+    };
+  }
+
+  async getReassignmentHistory(
+    taskId: string,
+    orgId: string
+  ): Promise<TaskReassignment[]> {
+    if (!this.hasSupabase()) {
+      return [];
+    }
+
+    const supabase = this.getClient();
+    const { data, error } = await (supabase as any)
+      .from("task_reassignments")
+      .select(
+        `
+        id,
+        task_id,
+        org_id,
+        reassigned_by,
+        reassigned_by_user:reassigned_by (full_name),
+        from_user_id,
+        from_user:from_user_id (full_name),
+        to_user_id,
+        to_user:to_user_id (full_name),
+        from_team_id,
+        from_team:from_team_id (name),
+        to_team_id,
+        to_team:to_team_id (name),
+        reason,
+        created_at
+      `
+      )
+      .eq("task_id", taskId)
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("[getReassignmentHistory fallback query]", error.message);
+      // Fallback query without joins if relationships aren't loaded in schema cache
+      const { data: rawData, error: rawError } = await (supabase as any)
+        .from("task_reassignments")
+        .select("*")
+        .eq("task_id", taskId)
+        .eq("org_id", orgId)
+        .order("created_at", { ascending: false });
+
+      if (rawError) return [];
+      return (rawData || []).map((r: any) => ({
+        id: r.id,
+        taskId: r.task_id,
+        orgId: r.org_id,
+        reassignedBy: r.reassigned_by,
+        fromUserId: r.from_user_id,
+        toUserId: r.to_user_id,
+        fromTeamId: r.from_team_id,
+        toTeamId: r.to_team_id,
+        reason: r.reason,
+        createdAt: r.created_at,
+      }));
+    }
+
+    return (data || []).map((r: any) => ({
+      id: r.id,
+      taskId: r.task_id,
+      orgId: r.org_id,
+      reassignedBy: r.reassigned_by,
+      reassignedByName: r.reassigned_by_user?.full_name || null,
+      fromUserId: r.from_user_id,
+      fromUserName: r.from_user?.full_name || null,
+      toUserId: r.to_user_id,
+      toUserName: r.to_user?.full_name || null,
+      fromTeamId: r.from_team_id,
+      fromTeamName: r.from_team?.name || null,
+      toTeamId: r.to_team_id,
+      toTeamName: r.to_team?.name || null,
+      reason: r.reason,
+      createdAt: r.created_at,
+    }));
   }
 
   async getAssignedUserIds(taskId: string): Promise<string[]> {

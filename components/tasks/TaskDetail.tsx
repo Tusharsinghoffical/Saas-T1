@@ -28,6 +28,11 @@ import {
   Lock,
   CheckCircle2,
   Sparkles,
+  UserCheck,
+  ArrowRight,
+  History,
+  Building2,
+  AlertTriangle,
 } from "lucide-react";
 
 export interface OrgMember {
@@ -85,7 +90,9 @@ export interface TaskDetailProps {
   task: KanbanTaskItem | null;
   orgMembers?: OrgMember[];
   allTasks?: KanbanTaskItem[];
+  userRole?: string;
   onTaskUpdated?: (updated: KanbanTaskItem) => void;
+  onTaskDeleted?: (taskId: string) => void;
 }
 
 // Helper to identify platform type & branding
@@ -181,12 +188,29 @@ export function TaskDetail({
     },
   ],
   allTasks = [],
+  userRole = "admin",
   onTaskUpdated,
+  onTaskDeleted,
 }: TaskDetailProps) {
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+  // Dynamic Reallocation State
+  const [targetAssigneeId, setTargetAssigneeId] = useState<string>("");
+  const [targetTeamId, setTargetTeamId] = useState<string>("");
+  const [reassignReason, setReassignReason] = useState<string>("");
+  const [isReassigning, setIsReassigning] = useState<boolean>(false);
+  const [reassignError, setReassignError] = useState<string | null>(null);
+  const [reassignSuccess, setReassignSuccess] = useState<string | null>(null);
+  const [reassignmentHistory, setReassignmentHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+
+  // Soft Deletion Modal State
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Link Attachment State
   const [linkTitle, setLinkTitle] = useState("");
@@ -236,14 +260,40 @@ export function TaskDetail({
     }
   }, [task]);
 
+  const fetchReassignmentHistory = useCallback(async () => {
+    if (!task) return;
+    setIsLoadingHistory(true);
+    try {
+      const sanitizedTaskId = encodeURIComponent(task.id);
+      const res = await fetch(`/api/v1/tasks/${sanitizedTaskId}/reassignments`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setReassignmentHistory(json.data);
+      }
+    } catch {
+      // Ignore
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, [task]);
+
   useEffect(() => {
     if (!task || !isOpen) return;
 
     setSubtasks(task.subtasks || []);
+    setTargetAssigneeId(
+      task.assignees?.[0]?.id || (task as any).assigneeIds?.[0] || ""
+    );
+    setTargetTeamId((task as any).team_id || (task as any).teamId || "");
+    setReassignError(null);
+    setReassignSuccess(null);
+    setReassignReason("");
+
     fetchComments();
     fetchAttachments();
+    fetchReassignmentHistory();
 
-    // Realtime channel for task comments & attachments
+    // Realtime channel for task comments, attachments & reassignments
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
     const hasSupabase =
       Boolean(supabaseUrl) && !supabaseUrl.includes("your-project-ref");
@@ -278,6 +328,18 @@ export function TaskDetail({
             fetchAttachments();
           }
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "task_reassignments",
+            filter: `task_id=eq.${task.id}`,
+          },
+          () => {
+            fetchReassignmentHistory();
+          }
+        )
         .subscribe();
     } catch (e) {
       console.warn("Realtime details channel error:", e);
@@ -291,7 +353,7 @@ export function TaskDetail({
         } catch {}
       }
     };
-  }, [task, isOpen, fetchComments, fetchAttachments]);
+  }, [task, isOpen, fetchComments, fetchAttachments, fetchReassignmentHistory]);
 
   if (!task || !isOpen) return null;
 
@@ -516,6 +578,119 @@ export function TaskDetail({
     }
   };
 
+  const isPrivileged = userRole === "admin" || userRole === "manager";
+
+  const DEPARTMENTS = [
+    { id: "", name: "Unassigned / General" },
+    { id: "dept-engineering", name: "Engineering & Tech" },
+    { id: "dept-product", name: "Product & Design" },
+    { id: "dept-qa", name: "QA & Testing" },
+    { id: "dept-marketing", name: "Marketing & Growth" },
+    { id: "dept-sales", name: "Sales & Enterprise Ops" },
+    { id: "dept-operations", name: "Operations & HR" },
+  ];
+
+  const handleReassign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!task) return;
+    setIsReassigning(true);
+    setReassignError(null);
+    setReassignSuccess(null);
+
+    try {
+      const sanitizedTaskId = encodeURIComponent(task.id);
+      const res = await fetch(`/api/v1/tasks/${sanitizedTaskId}/reassign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assigneeId: targetAssigneeId || null,
+          teamId: targetTeamId || null,
+          reason: reassignReason.trim() || undefined,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(
+          json.error?.message || json.message || "Failed to reassign task"
+        );
+      }
+
+      setReassignSuccess("Task reassigned successfully!");
+      setReassignReason("");
+
+      // Update parent state optimistically
+      const newMember = orgMembers.find((m) => m.id === targetAssigneeId);
+      const updatedAssignees = newMember
+        ? [
+            {
+              id: newMember.id,
+              fullName: newMember.fullName || newMember.full_name || "Assignee",
+              avatarUrl: newMember.avatarUrl || newMember.avatar_url,
+            },
+          ]
+        : [];
+
+      const updatedTask: KanbanTaskItem = {
+        ...task,
+        team_id: targetTeamId || undefined,
+        assignees: updatedAssignees,
+      };
+
+      if (onTaskUpdated) {
+        onTaskUpdated(updatedTask);
+      }
+
+      // Re-fetch reassignment history
+      fetchReassignmentHistory();
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("tasq:tasks_updated"));
+        window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+      }
+    } catch (err: any) {
+      setReassignError(err.message || "Reassignment failed");
+    } finally {
+      setIsReassigning(false);
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!task) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const sanitizedTaskId = encodeURIComponent(task.id);
+      const res = await fetch(`/api/v1/tasks/${sanitizedTaskId}`, {
+        method: "DELETE",
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(
+          json.error?.message || json.message || "Failed to delete task"
+        );
+      }
+
+      setIsDeleteDialogOpen(false);
+      onClose();
+
+      if (onTaskDeleted) {
+        onTaskDeleted(task.id);
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("tasq:tasks_updated"));
+        window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+      }
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete task");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredMembers =
     mentionQuery !== null
       ? orgMembers.filter((m) => {
@@ -535,7 +710,8 @@ export function TaskDetail({
   const formatted = formatTaskDisplay(task.title, task.description);
 
   return (
-    <Modal
+    <>
+      <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={formatted.title}
@@ -583,20 +759,35 @@ export function TaskDetail({
             )}
           </div>
 
-          {/* Quick Share Task URL Button */}
-          <button
-            type="button"
-            onClick={copyTaskShareLink}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:text-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-            title="Copy Direct Task URL Link"
-          >
-            {copiedTaskShare ? (
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <Share2 className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2">
+            {/* Quick Share Task URL Button */}
+            <button
+              type="button"
+              onClick={copyTaskShareLink}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:text-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              title="Copy Direct Task URL Link"
+            >
+              {copiedTaskShare ? (
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Share2 className="h-3.5 w-3.5" />
+              )}
+              <span>{copiedTaskShare ? "Task Link Copied!" : "Share Task"}</span>
+            </button>
+
+            {/* Delete Task Button (Admin / Manager Only) */}
+            {isPrivileged && (
+              <button
+                type="button"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50/70 px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-400 dark:hover:bg-rose-950/60"
+                title="Delete this task from workspace"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete</span>
+              </button>
             )}
-            <span>{copiedTaskShare ? "Task Link Copied!" : "Share Task"}</span>
-          </button>
+          </div>
         </div>
 
         {/* Task Objective & Description */}
@@ -749,6 +940,179 @@ export function TaskDetail({
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── 🔄 Dynamic Task Reallocation & Ownership (Admin / Manager Only) ── */}
+        {isPrivileged && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                    Task Reallocation & Ownership
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Reassign task to another team member or transfer to another department
+                  </p>
+                </div>
+              </div>
+              <Badge variant="default" className="text-[10px] font-bold">
+                Admin / Manager
+              </Badge>
+            </div>
+
+            {/* Reassign Form */}
+            <form onSubmit={handleReassign} className="mt-3 space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {/* Employee Select */}
+                <div>
+                  <label className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <UserCheck className="h-3 w-3" />
+                    <span>Assignee</span>
+                  </label>
+                  <select
+                    value={targetAssigneeId}
+                    onChange={(e) => setTargetAssigneeId(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white p-2 text-xs text-slate-900 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  >
+                    <option value="">Unassigned</option>
+                    {orgMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.fullName || member.full_name} ({member.role || "member"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Department Select */}
+                <div>
+                  <label className="mb-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <Building2 className="h-3 w-3" />
+                    <span>Department / Team</span>
+                  </label>
+                  <select
+                    value={targetTeamId}
+                    onChange={(e) => setTargetTeamId(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white p-2 text-xs text-slate-900 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  >
+                    {DEPARTMENTS.map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Reassignment Reason */}
+              <div>
+                <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Reassignment Reason / Context (Recorded in Audit Trail)
+                </label>
+                <input
+                  type="text"
+                  value={reassignReason}
+                  onChange={(e) => setReassignReason(e.target.value)}
+                  placeholder="e.g. Workload balancing, specialized skill set required, sprint pivot..."
+                  maxLength={500}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 transition placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
+              </div>
+
+              {/* Status Messages */}
+              {reassignError && (
+                <div className="flex items-center gap-1.5 text-xs text-rose-500 font-medium">
+                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{reassignError}</span>
+                </div>
+              )}
+              {reassignSuccess && (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                  <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{reassignSuccess}</span>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isReassigning}
+                  className="gap-1.5 font-bold"
+                >
+                  {isReassigning ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <UserCheck className="h-3.5 w-3.5" />
+                  )}
+                  <span>{isReassigning ? "Reassigning..." : "Apply Reassignment"}</span>
+                </Button>
+              </div>
+            </form>
+
+            {/* Reassignment History Timeline */}
+            <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-800">
+              <div className="mb-2 flex items-center justify-between">
+                <h5 className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <History className="h-3.5 w-3.5 text-primary" />
+                  <span>Reassignment Audit Stream ({reassignmentHistory.length})</span>
+                </h5>
+                {isLoadingHistory && (
+                  <Loader2 className="h-3 w-3 animate-spin text-slate-400" />
+                )}
+              </div>
+
+              <div className="max-h-40 space-y-2 overflow-y-auto pr-1">
+                {reassignmentHistory.map((item) => {
+                  const actorName = item.reassignedByName || "Admin / Manager";
+                  const toName = item.toUserName || "Unassigned";
+                  const fromName = item.fromUserName || "Unassigned";
+                  const dateStr = new Date(item.createdAt).toLocaleString();
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-2.5 text-xs transition dark:border-slate-800 dark:bg-slate-800/40"
+                    >
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          Reassigned by <strong className="text-primary">{actorName}</strong>
+                        </span>
+                        <span>{dateStr}</span>
+                      </div>
+
+                      <div className="mt-1 flex items-center gap-2 font-medium text-slate-800 dark:text-slate-200">
+                        <span className="truncate">{fromName}</span>
+                        <ArrowRight className="h-3 w-3 flex-shrink-0 text-slate-400" />
+                        <span className="truncate font-bold text-primary">{toName}</span>
+
+                        {(item.fromTeamName || item.toTeamName) && (
+                          <span className="ml-auto rounded bg-slate-200/60 px-1.5 py-0.5 text-[10px] text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                            Dept: {item.toTeamName || item.fromTeamName}
+                          </span>
+                        )}
+                      </div>
+
+                      {item.reason && (
+                        <p className="mt-1 text-[11px] italic text-slate-500 dark:text-slate-400">
+                          &ldquo;{item.reason}&rdquo;
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {reassignmentHistory.length === 0 && !isLoadingHistory && (
+                  <p className="py-2 text-center text-[11px] text-slate-400">
+                    No reallocation history recorded for this task.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -1006,5 +1370,65 @@ export function TaskDetail({
         </div>
       </div>
     </Modal>
+
+    {/* ── ⚠️ Delete Task Confirmation Dialog Modal ── */}
+    {isDeleteDialogOpen && (
+      <Modal
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        title="Confirm Task Deletion"
+        description="Permanent workspace safety check"
+        maxWidth="md"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3.5 text-xs text-rose-700 dark:text-rose-300">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-500" />
+            <div>
+              <p className="font-bold text-rose-900 dark:text-rose-200">
+                Are you sure you want to delete this task?
+              </p>
+              <p className="mt-1 leading-relaxed text-rose-700 dark:text-rose-300">
+                <strong>&quot;{formatted.title}&quot;</strong> will be safely soft-deleted from the workspace. Any dependent tasks blocked by this task will have their prerequisite blocker constraints automatically cleared so workflows don&apos;t get stuck.
+              </p>
+            </div>
+          </div>
+
+          {deleteError && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-500">
+              <AlertCircle className="h-4 w-4" />
+              <span>{deleteError}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteTask}
+              disabled={isDeleting}
+              className="gap-1.5 font-bold"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              <span>{isDeleting ? "Deleting..." : "Confirm Delete"}</span>
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    )}
+  </>
   );
 }

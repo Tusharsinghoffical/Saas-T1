@@ -36,8 +36,34 @@ export interface Task {
   dependencyTaskIds?: string[];
   tags?: string[];
   subtasks?: { id: string; title: string; completed: boolean }[];
+  deletedAt?: string | null;
+  deletedBy?: string | null;
   comments?: any[];
   attachments?: any[];
+}
+
+export interface TaskReassignment {
+  id: string;
+  taskId: string;
+  orgId: string;
+  reassignedBy: string | null;
+  reassignedByName?: string | null;
+  fromUserId: string | null;
+  fromUserName?: string | null;
+  toUserId: string | null;
+  toUserName?: string | null;
+  fromTeamId?: string | null;
+  fromTeamName?: string | null;
+  toTeamId?: string | null;
+  toTeamName?: string | null;
+  reason?: string | null;
+  createdAt: string;
+}
+
+export interface ReassignTaskDTO {
+  assigneeId?: string | null;
+  teamId?: string | null;
+  reason?: string | null;
 }
 
 export interface CreateTaskDTO {
@@ -68,8 +94,25 @@ export interface TaskFilterDTO {
   assigneeId?: string;
   teamId?: string;
   search?: string;
+  includeDeleted?: boolean;
   limit: number;
   offset: number;
+}
+
+/**
+ * Pure Business Rule:
+ * Only Admins and Managers are authorized to reassign tasks.
+ */
+export function canUserReassignTask(role: string): boolean {
+  return role === "admin" || role === "manager";
+}
+
+/**
+ * Pure Business Rule:
+ * Only Admins and Managers are authorized to delete tasks.
+ */
+export function canUserDeleteTask(role: string): boolean {
+  return role === "admin" || role === "manager";
 }
 
 /**
@@ -114,3 +157,4 @@ export function validateDependencyPrerequisites(
 
   return { allowed: true, blockingDependencies: [] };
 }
+

@@ -73,16 +73,20 @@ export function useRealtimeTasks(
             }
 
             if (eventType === "INSERT" || eventType === "UPDATE") {
-              const taskItem: KanbanTaskItem = {
-                id: (newRow as any).id,
-                title: (newRow as any).title,
-                description: (newRow as any).description,
-                status: (newRow as any).status,
-                priority: (newRow as any).priority,
-                dueDate: (newRow as any).due_date,
-                due_date: (newRow as any).due_date,
-              };
-              upsertTask(taskItem);
+              if ((newRow as any)?.deleted_at) {
+                removeTask((newRow as any).id);
+              } else {
+                const taskItem: KanbanTaskItem = {
+                  id: (newRow as any).id,
+                  title: (newRow as any).title,
+                  description: (newRow as any).description,
+                  status: (newRow as any).status,
+                  priority: (newRow as any).priority,
+                  dueDate: (newRow as any).due_date,
+                  due_date: (newRow as any).due_date,
+                };
+                upsertTask(taskItem);
+              }
             } else if (eventType === "DELETE") {
               if ((oldRow as any)?.id) {
                 removeTask((oldRow as any).id);

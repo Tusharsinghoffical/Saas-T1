@@ -1377,6 +1377,7 @@ export default function EmployeeDashboardPage() {
         }}
         task={selectedTask}
         allTasks={allTasks}
+        userRole="employee"
         onTaskUpdated={() => {
           fetchMyTasks();
           broadcastActivity();

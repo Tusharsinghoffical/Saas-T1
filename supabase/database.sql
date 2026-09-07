@@ -181,6 +181,26 @@ alter table public.tasks add column if not exists priority text default 'medium'
 alter table public.tasks add column if not exists due_date timestamptz;
 alter table public.tasks add column if not exists created_by uuid references public.profiles(id) on delete set null;
 alter table public.tasks add column if not exists updated_at timestamptz default now();
+alter table public.tasks add column if not exists deleted_at timestamptz;
+alter table public.tasks add column if not exists deleted_by uuid references public.profiles(id) on delete set null;
+
+-- 2.5.1 Task Reassignments (Audit Trail of reallocation across employees and departments)
+create table if not exists public.task_reassignments (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid references public.tasks(id) on delete cascade,
+  org_id uuid references public.organizations(id) on delete cascade,
+  reassigned_by uuid references public.profiles(id) on delete set null,
+  from_user_id uuid references public.profiles(id) on delete set null,
+  to_user_id uuid references public.profiles(id) on delete set null,
+  from_team_id uuid references public.teams(id) on delete set null,
+  to_team_id uuid references public.teams(id) on delete set null,
+  reason text,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_tasks_deleted_at on public.tasks(deleted_at) where deleted_at is null;
+create index if not exists idx_task_reassignments_task_id on public.task_reassignments(task_id);
+create index if not exists idx_task_reassignments_org_id on public.task_reassignments(org_id);
 
 -- 2.6 Task Assignees (Many-to-Many)
 create table if not exists public.task_assignees (

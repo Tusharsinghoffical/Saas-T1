@@ -81,6 +81,7 @@ export function KanbanBoard({
     tasks,
     setTasks,
     upsertTask,
+    removeTask,
     updateTaskStatusOptimistic,
     isConnected,
   } = useTaskStore();
@@ -372,6 +373,21 @@ export function KanbanBoard({
     }
   };
 
+  const handleTaskDeleted = (deletedTaskId: string) => {
+    removeTask(deletedTaskId);
+    broadcastTaskChange(orgId, "REMOVE_TASK", { id: deletedTaskId });
+    setIsDetailModalOpen(false);
+    setSelectedDetailTask(null);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+      if ("BroadcastChannel" in window) {
+        const bc = new BroadcastChannel("tasq-activity-channel");
+        bc.postMessage({ type: "ACTIVITY_UPDATED" });
+        bc.close();
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Toast Error Alert */}
@@ -618,7 +634,9 @@ export function KanbanBoard({
         task={selectedDetailTask}
         orgMembers={membersList}
         allTasks={tasks}
+        userRole="admin"
         onTaskUpdated={handleTaskSaved}
+        onTaskDeleted={handleTaskDeleted}
       />
 
       {/* Create / Edit Task Modal */}

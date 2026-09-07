@@ -86,6 +86,11 @@ describe("Domain-Driven Structure: Task Business Rules & Invariant Tests", () =>
         updatedAt: new Date().toISOString(),
       }),
       deleteTask: async () => true,
+      reassignTask: async () => ({
+        task: {} as any,
+        reassignment: {} as any,
+      }),
+      getReassignmentHistory: async () => [],
       getAssignedUserIds: async () => ["emp-owner"],
       getDependencies: async () => [],
       getActiveTaskCountByUser: async () => ({}),
@@ -158,6 +163,11 @@ describe("Domain-Driven Structure: Task Business Rules & Invariant Tests", () =>
         updatedAt: new Date().toISOString(),
       }),
       deleteTask: async () => true,
+      reassignTask: async () => ({
+        task: {} as any,
+        reassignment: {} as any,
+      }),
+      getReassignmentHistory: async () => [],
       getAssignedUserIds: async () => ["admin-1"],
       getDependencies: async () => [
         { id: "prereq-1", title: "Database Migration", status: "in_progress" },

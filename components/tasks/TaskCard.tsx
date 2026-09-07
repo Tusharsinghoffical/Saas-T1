@@ -48,6 +48,8 @@ export interface KanbanTaskItem {
   createdAt?: string | null;
   created_at?: string | null;
   org_id?: string | null;
+  team_id?: string | null;
+  teamId?: string | null;
 }
 
 export interface TaskCardProps {

@@ -2,6 +2,7 @@ import { requireAuth, requireRole } from "@/shared/middleware/rbacGuard";
 import {
   createTaskSchema,
   updateTaskSchema,
+  reassignTaskSchema,
   employeeStatusUpdateSchema,
   taskFilterSchema,
 } from "@/lib/validators/task";
@@ -10,6 +11,8 @@ import { createTaskUseCase } from "../usecases/createTask";
 import { getTaskByIdUseCase } from "../usecases/getTaskById";
 import { updateTaskUseCase } from "../usecases/updateTask";
 import { deleteTaskUseCase } from "../usecases/deleteTask";
+import { reassignTaskUseCase } from "../usecases/reassignTask";
+import { getReassignmentHistoryUseCase } from "../usecases/getReassignmentHistory";
 import { ValidationError } from "@/shared/errors/domainErrors";
 
 export class TaskController {
@@ -79,6 +82,22 @@ export class TaskController {
     }
 
     return await updateTaskUseCase(auth, taskId, validatedData);
+  }
+
+  async reassignTask(taskId: string, body: unknown) {
+    const auth = await requireRole(["admin", "manager"]);
+    const parsed = reassignTaskSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new ValidationError(
+        parsed.error.issues[0]?.message || "Invalid reassignment parameters."
+      );
+    }
+    return await reassignTaskUseCase(auth, taskId, parsed.data);
+  }
+
+  async getReassignments(taskId: string) {
+    const auth = await requireAuth();
+    return await getReassignmentHistoryUseCase(auth, taskId);
   }
 
   async deleteTask(taskId: string) {

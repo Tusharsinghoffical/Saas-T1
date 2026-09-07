@@ -10,6 +10,8 @@ export * from "./usecases/createTask";
 export * from "./usecases/getTaskById";
 export * from "./usecases/updateTask";
 export * from "./usecases/deleteTask";
+export * from "./usecases/reassignTask";
+export * from "./usecases/getReassignmentHistory";
 export * from "./usecases/listComments";
 export * from "./usecases/addComment";
 export * from "./usecases/listAttachments";

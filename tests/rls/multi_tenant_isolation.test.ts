@@ -201,6 +201,8 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
       createTask: vi.fn(),
       updateTask: vi.fn(),
       deleteTask: vi.fn(),
+      reassignTask: vi.fn(),
+      getReassignmentHistory: vi.fn().mockResolvedValue([]),
       listTasks: vi.fn(),
       getAssignedUserIds: vi.fn().mockResolvedValue([]),
       getDependencies: vi.fn().mockResolvedValue([]),

@@ -50,9 +50,21 @@ export const taskFilterSchema = z.object({
   offset: z.coerce.number().min(0).default(0),
 });
 
+export const reassignTaskSchema = z.object({
+  assigneeId: z.string().nullable().optional(),
+  teamId: z.string().nullable().optional(),
+  reason: z
+    .string()
+    .max(500, "Reason must not exceed 500 characters")
+    .optional()
+    .nullable(),
+});
+
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+export type ReassignTaskInput = z.infer<typeof reassignTaskSchema>;
 export type EmployeeStatusUpdateInput = z.infer<
   typeof employeeStatusUpdateSchema
 >;
 export type TaskFilterInput = z.infer<typeof taskFilterSchema>;
+
