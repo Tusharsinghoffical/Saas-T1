@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   User,
   Mail,
@@ -79,11 +79,7 @@ export function ProfileSettingsView({ role }: { role: "admin" | "manager" | "emp
     setTimeout(() => setToast(null), 5000);
   };
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetch("/api/v1/user/profile");
@@ -102,7 +98,11 @@ export function ProfileSettingsView({ role }: { role: "admin" | "manager" | "emp
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

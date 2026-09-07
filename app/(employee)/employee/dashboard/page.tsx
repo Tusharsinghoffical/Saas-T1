@@ -125,7 +125,7 @@ const STATUS_THEME: Record<
 };
 
 // ─── Smart Task Content & Title Parser ──────────────────────────────
-export function formatTaskDisplay(title: string, description?: string | null) {
+function formatTaskDisplay(title: string, description?: string | null) {
   let cleanTitle = title ? title.trim() : "Untitled Task";
   let isAiEnhanced = false;
   let cleanObjective = "";
