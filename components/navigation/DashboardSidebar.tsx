@@ -149,23 +149,29 @@ export function DashboardSidebar({
         <div className="flex flex-col">
           {/* Brand Header */}
           <div
-            className={`flex h-[72px] items-center border-b border-slate-200/70 dark:border-slate-800/80 ${
+            className={`flex h-[76px] items-center border-b border-slate-200/70 dark:border-slate-800/80 ${
               isCollapsed
                 ? "justify-center px-2"
                 : "justify-between px-4 sm:px-5"
             }`}
           >
+            {/* Brand Logo (prominently displays official TASQ-ONE brand in both expanded and collapsed states) */}
             {isCollapsed ? (
-              <Link
-                href={homeHref}
-                className="group flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-black text-white shadow-md shadow-indigo-500/20 transition-transform hover:scale-105"
-                title="TASQ-ONE Workspace"
-              >
-                T1
-              </Link>
+              <div className="flex items-center justify-center py-1">
+                <Logo
+                  collapsed
+                  size="md"
+                  href={homeHref}
+                  className="transition-transform duration-200 hover:scale-110"
+                />
+              </div>
             ) : (
               <div className="flex min-w-0 flex-1 items-center py-1">
-                <Logo size="md" href={homeHref} className="max-w-[195px]" />
+                <Logo
+                  size="md"
+                  href={homeHref}
+                  className="max-w-[220px] transition-transform duration-200 hover:scale-[1.02]"
+                />
               </div>
             )}
 
