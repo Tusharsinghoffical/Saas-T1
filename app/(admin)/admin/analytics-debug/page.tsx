@@ -84,6 +84,20 @@ const EVENT_THEMES: Record<
     border: "border-amber-500/30",
     icon: ShieldCheck,
   },
+  task_attachment_added: {
+    label: "Link / Attachment Added",
+    bg: "bg-teal-500/10 dark:bg-teal-500/15",
+    text: "text-teal-600 dark:text-teal-400",
+    border: "border-teal-500/30",
+    icon: ExternalLink,
+  },
+  task_comment_added: {
+    label: "Comment Added",
+    bg: "bg-sky-500/10 dark:bg-sky-500/15",
+    text: "text-sky-600 dark:text-sky-400",
+    border: "border-sky-500/30",
+    icon: Send,
+  },
 };
 
 export default function AnalyticsDebugPage() {

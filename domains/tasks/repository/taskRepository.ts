@@ -96,6 +96,11 @@ export class SupabaseTaskRepository implements ITaskRepository {
         ),
         task_dependencies!task_id (
           depends_on_task_id
+        ),
+        task_attachments (
+          id,
+          file_name,
+          file_url
         )
       `
       )
@@ -326,6 +331,12 @@ export class SupabaseTaskRepository implements ITaskRepository {
       dependencyTaskIds: (t.task_dependencies || []).map(
         (d: any) => d.depends_on_task_id
       ),
+      attachments: (t.task_attachments || []).map((a: any) => ({
+        id: a.id,
+        fileName: a.file_name || "Resource Link",
+        fileUrl: a.file_url,
+      })),
+      attachmentsCount: (t.task_attachments || []).length,
     }));
 
     return { tasks: mappedTasks, total: mappedTasks.length };

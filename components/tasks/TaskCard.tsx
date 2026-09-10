@@ -12,6 +12,7 @@ import {
   Link2,
   Lock,
   Sparkles,
+  Paperclip,
 } from "lucide-react";
 import { formatTaskDisplay } from "@/lib/utils/taskFormatter";
 
@@ -23,8 +24,12 @@ export interface KanbanTaskItem {
   priority: "low" | "medium" | "high" | "urgent";
   dueDate?: string | null;
   due_date?: string | null;
+  updatedAt?: string;
+  updated_at?: string;
   commentsCount?: number;
   comments?: any[];
+  attachments?: any[];
+  attachmentsCount?: number;
   assignees?: {
     id: string;
     fullName?: string;
@@ -246,6 +251,17 @@ export function TaskCard({
             <span className="inline-flex items-center gap-1">
               <MessageSquare className="h-3 w-3" />
               {task.commentsCount || task.comments?.length}
+            </span>
+          )}
+
+          {((task.attachmentsCount && task.attachmentsCount > 0) ||
+            (task.attachments && task.attachments.length > 0)) && (
+            <span
+              title={`${task.attachmentsCount || task.attachments?.length} attached resource link(s)`}
+              className="inline-flex items-center gap-1 font-semibold text-teal-600 dark:text-teal-400"
+            >
+              <Paperclip className="h-3 w-3" />
+              {task.attachmentsCount || task.attachments?.length}
             </span>
           )}
         </div>

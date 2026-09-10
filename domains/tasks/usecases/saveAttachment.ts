@@ -46,7 +46,18 @@ export async function saveAttachmentUseCase(
 
   const attachment = await repo.saveAttachment(taskId, context.userId, data);
 
-  // Record Activity Log
+  // Update task's updated_at timestamp so tasks table realtime subscribers refresh!
+  try {
+    const { createAdminClient } = await import(
+      "@/infrastructure/supabase/supabaseServer"
+    );
+    const adminClient = createAdminClient();
+    await (adminClient.from("tasks") as any)
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", taskId);
+  } catch {}
+
+  // Record Activity Log with rich details
   await recordActivityLogUseCase({
     orgId: context.orgId,
     actorId: context.userId,
@@ -55,8 +66,11 @@ export async function saveAttachmentUseCase(
     entityId: attachment.id,
     diff: {
       task_id: taskId,
+      task_title: task.title,
       file_name: data.fileName,
-      file_size: data.fileSize,
+      file_url: data.fileUrl,
+      file_size: data.fileSize || 0,
+      file_type: data.fileType || "link",
     },
   });
 

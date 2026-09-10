@@ -104,6 +104,27 @@ export function useRealtimeTasks(
             }
           }
         )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "task_attachments",
+          },
+          () => {
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("tasq:activity_updated"));
+              if ("BroadcastChannel" in window) {
+                const bc = new BroadcastChannel("tasq-activity-channel");
+                bc.postMessage({ type: "ACTIVITY_UPDATED" });
+                bc.close();
+              }
+              const syncBc = new BroadcastChannel("tasq-one-sync");
+              syncBc.postMessage({ type: "TASK_UPDATED" });
+              syncBc.close();
+            }
+          }
+        )
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
             setConnectionStatus(true);

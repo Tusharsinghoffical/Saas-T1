@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { type KanbanTaskItem } from "@/components/tasks/TaskCard";
 import { formatTaskDisplay } from "@/lib/utils/taskFormatter";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
+import { captureEvent } from "@/lib/analytics/posthog";
 import {
   Clock,
   Send,
@@ -442,9 +443,47 @@ export function TaskDetail({
       });
       const json = await res.json();
       if (json.success && json.data) {
-        setComments((prev) => [...prev, json.data]);
+        const newCommentItem = json.data;
+        setComments((prev) => [...prev, newCommentItem]);
         setNewComment("");
         fetchComments();
+
+        // 1. Notify parent Kanban / Task list so the card updates immediately
+        if (onTaskUpdated) {
+          onTaskUpdated({
+            ...task,
+            commentsCount: (task.commentsCount || comments.length) + 1,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+
+        // 2. Broadcast via BroadcastChannel & window DOM events for cross-tab live updates
+        try {
+          if (typeof window !== "undefined") {
+            const bc = new BroadcastChannel("tasq-activity-channel");
+            bc.postMessage({ type: "ACTIVITY_UPDATED", action: "comment.created", taskId: task.id });
+            bc.close();
+
+            const syncBc = new BroadcastChannel("tasq-one-sync");
+            syncBc.postMessage({ type: "TASK_UPDATED", taskId: task.id });
+            syncBc.close();
+
+            window.dispatchEvent(new CustomEvent("tasq:activity_updated", {
+              detail: { action: "comment.created", taskId: task.id }
+            }));
+            window.dispatchEvent(new CustomEvent("tasq:analytics_event", {
+              detail: { event: "task_comment_added", taskId: task.id }
+            }));
+          }
+        } catch {
+          // ignore in environments without BroadcastChannel
+        }
+
+        // 3. Track live analytics
+        captureEvent("task_comment_added", {
+          task_id: task.id,
+          task_title: task.title,
+        });
       } else {
         alert(
           json.error ||
@@ -525,7 +564,56 @@ export function TaskDetail({
       if (json.success && json.data) {
         setLinkTitle("");
         setLinkUrl("");
+        const newAttachment = json.data;
+        const updatedList = [...attachments, newAttachment];
+        setAttachments(updatedList);
         await fetchAttachments();
+
+        // 1. Immediately update parent task card badge
+        if (onTaskUpdated) {
+          onTaskUpdated({
+            ...task,
+            attachments: updatedList,
+            attachmentsCount: updatedList.length,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+
+        // 2. Broadcast via BroadcastChannel & window DOM events for cross-tab live updates
+        try {
+          if (typeof window !== "undefined") {
+            const bc = new BroadcastChannel("tasq-activity-channel");
+            bc.postMessage({
+              type: "ACTIVITY_UPDATED",
+              action: "attachment.uploaded",
+              taskId: task.id,
+              fileName: title,
+              fileUrl: cleanUrl,
+            });
+            bc.close();
+
+            const syncBc = new BroadcastChannel("tasq-one-sync");
+            syncBc.postMessage({ type: "TASK_UPDATED", taskId: task.id });
+            syncBc.close();
+
+            window.dispatchEvent(new CustomEvent("tasq:activity_updated", {
+              detail: { action: "attachment.uploaded", taskId: task.id, fileName: title, fileUrl: cleanUrl }
+            }));
+            window.dispatchEvent(new CustomEvent("tasq:analytics_event", {
+              detail: { event: "task_attachment_added", taskId: task.id, fileName: title, fileUrl: cleanUrl }
+            }));
+          }
+        } catch {
+          // ignore
+        }
+
+        // 3. Track live analytics event
+        captureEvent("task_attachment_added", {
+          task_id: task.id,
+          task_title: task.title,
+          file_name: title,
+          file_url: cleanUrl,
+        });
       } else {
         const errorMsg =
           typeof json.error === "string"
@@ -542,7 +630,17 @@ export function TaskDetail({
 
   // Remove Attachment Link
   const handleDeleteLink = async (attId: string) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== attId));
+    const updatedList = attachments.filter((a) => a.id !== attId);
+    setAttachments(updatedList);
+    if (onTaskUpdated) {
+      onTaskUpdated({
+        ...task,
+        attachments: updatedList,
+        attachmentsCount: updatedList.length,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
     try {
       const sanitizedTaskId = encodeURIComponent(task.id);
       await fetch(`/api/v1/tasks/${sanitizedTaskId}/attachments`, {
@@ -554,6 +652,15 @@ export function TaskDetail({
         }),
       });
       fetchAttachments();
+
+      if (typeof window !== "undefined") {
+        const bc = new BroadcastChannel("tasq-activity-channel");
+        bc.postMessage({ type: "ACTIVITY_UPDATED", action: "attachment.deleted", taskId: task.id });
+        bc.close();
+        window.dispatchEvent(new CustomEvent("tasq:activity_updated", {
+          detail: { action: "attachment.deleted", taskId: task.id }
+        }));
+      }
     } catch {
       // silent
     }

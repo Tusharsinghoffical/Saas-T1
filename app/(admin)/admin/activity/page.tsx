@@ -192,6 +192,17 @@ export default function ActivityLogPage() {
               fetchLogs(1, true);
             }
           )
+          .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "task_attachments",
+            },
+            () => {
+              fetchLogs(1, true);
+            }
+          )
           .subscribe((status) => {
             setIsConnected(status === "SUBSCRIBED");
           });
@@ -551,21 +562,40 @@ export default function ActivityLogPage() {
       );
     }
 
-    // 4. Attachments
+    // 4. Attachments & Resource Links
     if (
       log.action.startsWith("attachment.") ||
       log.entity === "task_attachments"
     ) {
+      const fileName = diff.file_name || diff.fileName || "Resource Link / Attachment";
+      const fileUrl = diff.file_url || diff.fileUrl || diff.url;
+      const taskTitle = diff.task_title || diff.taskTitle;
       return (
-        <div className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300">
-          <Paperclip className="h-3 w-3 text-teal-500" />
-          <span className="font-semibold">
-            {diff.file_name || diff.fileName || "File Attachment"}
+        <div className="flex max-w-lg flex-wrap items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300">
+          <Paperclip className="h-3.5 w-3.5 flex-shrink-0 text-teal-500" />
+          <span className="max-w-[200px] truncate font-semibold text-slate-900 dark:text-white" title={fileName}>
+            {fileName}
           </span>
-          {diff.file_size && (
+          {taskTitle && (
+            <span className="max-w-[160px] truncate text-[10px] text-slate-500 dark:text-slate-400" title={`on task: ${taskTitle}`}>
+              on &ldquo;{taskTitle}&rdquo;
+            </span>
+          )}
+          {diff.file_size ? (
             <span className="text-[10px] text-slate-400">
               ({Math.round(diff.file_size / 1024)} KB)
             </span>
+          ) : null}
+          {fileUrl && (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded bg-teal-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-teal-600 hover:bg-teal-500/20 dark:text-teal-400"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Open URL ↗
+            </a>
           )}
         </div>
       );

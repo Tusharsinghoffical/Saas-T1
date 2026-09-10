@@ -40,6 +40,7 @@ export interface Task {
   deletedBy?: string | null;
   comments?: any[];
   attachments?: any[];
+  attachmentsCount?: number;
 }
 
 export interface TaskReassignment {
