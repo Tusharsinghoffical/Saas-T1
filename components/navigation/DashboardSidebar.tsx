@@ -14,8 +14,6 @@ import {
   Copy,
   Check,
   X,
-  Radio,
-  Zap,
 } from "lucide-react";
 import { Logo } from "@/components/ui/Logo";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
@@ -117,8 +115,8 @@ export function DashboardSidebar({
         "bg-gradient-to-r from-amber-500/15 to-violet-600/15 text-violet-700 dark:text-violet-300 border-violet-500/20",
       icon: Crown,
       iconColor: "text-amber-500",
-      glowBg: "from-primary/10 via-violet-500/5 to-transparent",
-      avatarBg: "from-primary to-violet-600",
+      glowBg: "from-indigo-500/10 via-violet-500/5 to-transparent",
+      avatarBg: "from-indigo-600 to-violet-600",
     },
     manager: {
       label: "Manager",
@@ -146,12 +144,12 @@ export function DashboardSidebar({
     const isCollapsed = !isMobile && collapsed;
 
     return (
-      <div className="flex h-full flex-col justify-between overflow-hidden">
+      <div className="flex h-full flex-col justify-between">
         {/* Top Section */}
-        <div className="flex flex-col overflow-hidden">
+        <div className="flex flex-col">
           {/* Brand Header */}
           <div
-            className={`flex h-[76px] items-center border-b border-slate-200/70 dark:border-slate-800/80 ${
+            className={`flex h-[72px] items-center border-b border-slate-200/70 dark:border-slate-800/80 ${
               isCollapsed
                 ? "justify-center px-2"
                 : "justify-between px-4 sm:px-5"
@@ -160,7 +158,7 @@ export function DashboardSidebar({
             {isCollapsed ? (
               <Link
                 href={homeHref}
-                className="group flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-600 text-base font-black text-white shadow-md shadow-primary/25 transition-transform hover:scale-105"
+                className="group flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-sm font-black text-white shadow-md shadow-indigo-500/20 transition-transform hover:scale-105"
                 title="TASQ-ONE Workspace"
               >
                 T1
@@ -171,24 +169,7 @@ export function DashboardSidebar({
               </div>
             )}
 
-            {/* Desktop Collapse Toggle */}
-            {!isMobile && (
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                className="hidden h-7 w-7 items-center justify-center rounded-lg border border-slate-200/80 bg-slate-50 text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white md:flex"
-                title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              >
-                {isCollapsed ? (
-                  <ChevronRight className="h-4 w-4" />
-                ) : (
-                  <ChevronLeft className="h-4 w-4" />
-                )}
-              </button>
-            )}
-
-            {/* Mobile Close Button */}
+            {/* Mobile Close Button (only inside mobile slide-over) */}
             {isMobile && (
               <button
                 type="button"
@@ -202,7 +183,7 @@ export function DashboardSidebar({
           </div>
 
           {/* Workspace Scope Banner */}
-          {!isCollapsed && (
+          {!isCollapsed ? (
             <div className="px-3.5 pt-3.5 pb-1">
               <div
                 className={`relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br ${roleConfig.glowBg} p-3 shadow-xs dark:border-slate-800`}
@@ -210,7 +191,7 @@ export function DashboardSidebar({
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-white/90 shadow-xs dark:bg-slate-800">
-                      <Building2 className="h-3.5 w-3.5 text-primary" />
+                      <Building2 className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[12px] font-bold text-slate-900 dark:text-white">
@@ -244,7 +225,7 @@ export function DashboardSidebar({
                     <button
                       type="button"
                       onClick={() => handleCopyCode(user.employeeCode!)}
-                      className="inline-flex items-center gap-1 text-[10px] text-slate-500 transition hover:text-primary dark:text-slate-400"
+                      className="inline-flex items-center gap-1 text-[10px] text-slate-500 transition hover:text-indigo-600 dark:text-slate-400"
                       title="Copy Employee ID"
                     >
                       {copiedCode ? (
@@ -258,16 +239,36 @@ export function DashboardSidebar({
                 )}
               </div>
             </div>
+          ) : (
+            /* Collapsed mini workspace badge */
+            <div className="flex justify-center py-2.5 border-b border-slate-100 dark:border-slate-800/60">
+              <div
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50 text-slate-600 shadow-xs dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-300"
+                title={`${user?.orgName || user?.teamName || "Workspace"} (${roleConfig.label})`}
+              >
+                <Building2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+            </div>
           )}
 
           {/* Navigation Links List */}
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+          <div
+            className={`flex-1 overflow-y-auto ${
+              isCollapsed ? "px-2.5 py-3 space-y-1.5" : "px-3 py-3 space-y-4"
+            }`}
+          >
             {navGroups.map((group, groupIdx) => (
-              <div key={group.title || groupIdx} className="space-y-1">
-                {group.title && !isCollapsed && (
-                  <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {group.title}
-                  </div>
+              <div key={group.title || groupIdx} className="space-y-0.5">
+                {group.title && (
+                  isCollapsed ? (
+                    groupIdx > 0 ? (
+                      <div className="mx-auto my-2 w-8 border-t border-slate-200/60 dark:border-slate-800/60" />
+                    ) : null
+                  ) : (
+                    <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {group.title}
+                    </div>
+                  )
                 )}
 
                 <div className="space-y-0.5">
@@ -285,18 +286,21 @@ export function DashboardSidebar({
                         onClick={isMobile ? onMobileClose : undefined}
                         className={`group relative flex items-center rounded-xl text-[13px] font-medium transition-all duration-200 ${
                           isCollapsed
-                            ? "h-11 w-11 justify-center mx-auto"
+                            ? "h-10 w-10 justify-center mx-auto"
                             : "gap-3 px-3 py-2.5"
                         } ${
                           isActive
-                            ? "bg-primary/10 font-semibold text-primary shadow-xs dark:bg-primary/15 dark:text-primary-300"
+                            ? "bg-indigo-500/15 font-bold text-indigo-600 shadow-xs ring-1 ring-indigo-500/25 dark:bg-indigo-500/20 dark:text-indigo-400"
                             : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-white"
                         }`}
                         title={isCollapsed ? item.name : undefined}
                       >
                         {/* Active Left Indicator Bar */}
                         {isActive && !isCollapsed && (
-                          <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary" />
+                          <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-indigo-600 dark:bg-indigo-400" />
+                        )}
+                        {isActive && isCollapsed && (
+                          <span className="absolute -left-1 top-2 bottom-2 w-1 rounded-r-full bg-indigo-600 dark:bg-indigo-400" />
                         )}
 
                         <Icon
@@ -304,7 +308,7 @@ export function DashboardSidebar({
                             isCollapsed ? "h-5 w-5" : "h-4 w-4"
                           } ${
                             isActive
-                              ? "text-primary dark:text-primary-300"
+                              ? "text-indigo-600 dark:text-indigo-400"
                               : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-200"
                           }`}
                         />
@@ -326,18 +330,6 @@ export function DashboardSidebar({
                                 </span>
                               )}
                           </>
-                        )}
-
-                        {/* Collapsed Tooltip Flyout */}
-                        {isCollapsed && (
-                          <div className="pointer-events-none absolute left-full ml-3 hidden whitespace-nowrap rounded-lg border border-slate-200 bg-slate-900 px-2.5 py-1 text-xs font-semibold text-white shadow-xl group-hover:block dark:border-slate-800 z-50">
-                            {item.name}
-                            {item.badge && (
-                              <span className="ml-1.5 rounded bg-primary px-1 py-0.2 text-[9px]">
-                                {item.badge}
-                              </span>
-                            )}
-                          </div>
                         )}
                       </Link>
                     );
@@ -363,15 +355,15 @@ export function DashboardSidebar({
                 <div className="flex flex-col items-center gap-2">
                   <Link
                     href={profileHref}
-                    className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-600 text-xs font-bold text-white shadow-xs transition hover:scale-105"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-xs font-bold text-white shadow-xs transition hover:scale-105"
                     title={`${user?.fullName || "User"} (${user?.position || role}) - Click to edit profile`}
                   >
                     {initials}
                     <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-900" />
                   </Link>
 
-                  <Link
-                    href="/"
+                  <button
+                    type="button"
                     onClick={handleSignOut}
                     className={`flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 ${
                       isLoggingOut ? "pointer-events-none opacity-50" : ""
@@ -379,7 +371,7 @@ export function DashboardSidebar({
                     title={isLoggingOut ? "Signing out…" : "Sign Out"}
                   >
                     <LogOut className={`h-4 w-4 ${isLoggingOut ? "animate-spin" : ""}`} />
-                  </Link>
+                  </button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
@@ -398,7 +390,7 @@ export function DashboardSidebar({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-bold text-slate-900 transition-colors group-hover/profile:text-primary dark:text-white dark:group-hover/profile:text-primary-400">
+                      <div className="truncate text-xs font-bold text-slate-900 transition-colors group-hover/profile:text-indigo-600 dark:text-white dark:group-hover/profile:text-indigo-400">
                         {isLoadingUser
                           ? "Loading…"
                           : user?.fullName || "Active User"}
@@ -411,8 +403,8 @@ export function DashboardSidebar({
                     </div>
                   </Link>
 
-                  <Link
-                    href="/"
+                  <button
+                    type="button"
                     onClick={handleSignOut}
                     className={`group flex-shrink-0 rounded-lg p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 ${
                       isLoggingOut ? "pointer-events-none opacity-50" : ""
@@ -420,7 +412,7 @@ export function DashboardSidebar({
                     title={isLoggingOut ? "Signing out…" : "Sign Out"}
                   >
                     <LogOut className={`h-4 w-4 transition-transform group-hover:translate-x-0.5 ${isLoggingOut ? "animate-spin" : ""}`} />
-                  </Link>
+                  </button>
                 </div>
               )}
             </div>
@@ -434,10 +426,25 @@ export function DashboardSidebar({
     <>
       {/* ── Desktop Collapsible Sidebar ── */}
       <aside
-        className={`sticky top-0 z-30 hidden h-screen flex-shrink-0 flex-col border-r border-slate-200/80 bg-white/90 backdrop-blur-xl transition-all duration-300 ease-in-out dark:border-slate-800/80 dark:bg-slate-900/90 md:flex ${
+        className={`relative sticky top-0 z-30 hidden h-screen flex-shrink-0 flex-col border-r border-slate-200/80 bg-white/90 backdrop-blur-xl transition-all duration-300 ease-in-out dark:border-slate-800/80 dark:bg-slate-900/90 md:flex ${
           collapsed ? "w-[76px]" : "w-[264px]"
         }`}
       >
+        {/* Floating Border Edge Collapse/Expand Toggle Button */}
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="absolute -right-3.5 top-5 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-md transition-all duration-200 hover:scale-110 hover:border-indigo-500/40 hover:bg-slate-50 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:border-indigo-500/40 dark:hover:bg-slate-700 dark:hover:text-white"
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-3.5 w-3.5 stroke-[2.5]" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5 stroke-[2.5]" />
+          )}
+        </button>
+
         {sidebarContent(false)}
       </aside>
 
