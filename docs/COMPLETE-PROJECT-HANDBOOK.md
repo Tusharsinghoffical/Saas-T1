@@ -6,7 +6,8 @@
 > **Repository:** [https://github.com/Tusharsinghoffical/Saas-T1](https://github.com/Tusharsinghoffical/Saas-T1)  
 > **Official Support:** [tasqoneworkos@gmail.com](mailto:tasqoneworkos@gmail.com)  
 > **Headquarters:** Delhi / Pune, India  
-> **Release Version:** v1.0.0-MVP (Enterprise Multi-Tenant Edition)
+> **Release Version:** v2.8.0-Production (Enterprise Multi-Tenant Edition)  
+> **Last Updated:** September 2026
 
 ---
 
@@ -206,7 +207,9 @@ TASQ-ONE enterprise security standard follow karta hai jisme har role strictly i
 | **Email Gateway**    | **Resend**                      |    REST     | Transactional invite emails and weekly executive digests     |
 | **Containerization** | **Docker**                      | Multi-Stage | Production `node:22-alpine` optimized container              |
 | **Cloud Hosting**    | **Render Web Service**          |  Free/Pro   | Live Docker deployment with automated CI/CD                  |
-| **Testing**          | **Vitest**                      |  `4.1.11`   | Automated test runner (30/30 passing security & unit tests)  |
+| **Testing**          | **Vitest**                      |  `4.1.11`   | Automated test runner (75/75 passing security & unit tests)  |
+| **Observability**    | **Health & Telemetry**          | Native Next.js | System status dashboard, latency ping, and service maps   |
+| **Loading UX**       | **Next.js 15 Suspense Skeletons**| Tailwind CSS | Route-level shimmer placeholders for dashboards & lists   |
 
 ---
 
@@ -239,7 +242,7 @@ erDiagram
 8. **`task_attachments`**: Cloudflare R2 object keys and file metadata.
 9. **`task_comments`**: Discussion threads on specific deliverables.
 10. **`activity_logs`**: Immutable audit logs of every status transition and update with actor ID.
-11. **`notifications`**: User in-app notifications.
+11. **`notifications`**: User in-app notifications (Solid opaque UI with mobile blur backdrop).
 
 ---
 
@@ -287,13 +290,14 @@ _Example for an 8-person team:_
 | **`/solutions`**     | `app/solutions/page.tsx`     | Dedicated Tailored Solutions for Founders, Tech & Operations  |
 | **`/pricing`**       | `app/pricing/page.tsx`       | Plans Breakdown, ₹0 Pilot Details & Pricing FAQ               |
 | **`/features`**      | `app/features/page.tsx`      | Interactive Feature Showcase & Live Sandboxes                 |
+| **`/health`**        | `app/health/page.tsx`        | Dedicated System Health & Telemetry Page (Ping & Uptime Strip)|
 | **`/signup`**        | `app/signup/page.tsx`        | "Register Your Company" (Founding Admin Workspace Creation)   |
 | **`/login`**         | `app/login/page.tsx`         | Smart Unified Sign-In with Database Role Detection            |
 | **`/accept-invite`** | `app/accept-invite/page.tsx` | Single-use secure token invite acceptance for staff           |
 | **`/admin/*`**       | `app/admin/dashboard/`       | Organization Analytics, Staff Management & Workspace Settings |
 | **`/manager/*`**     | `app/manager/dashboard/`     | Sprint Deliverable Boards, Task Assignment & Invites          |
 | **`/employee/*`**    | `app/employee/dashboard/`    | "Due Today" Focus View & Personal Checklist                   |
-| **`/api/v1/health`** | `app/api/v1/health/route.ts` | Live JSON Health Check (`{"status":"ok"}`)                    |
+| **`/api/v1/health`** | `app/api/v1/health/route.ts` | Real-time Dynamic Services Breakdown & Uptime Telemetry       |
 
 ---
 
