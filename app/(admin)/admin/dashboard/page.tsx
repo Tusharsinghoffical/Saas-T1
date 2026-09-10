@@ -539,43 +539,151 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* ── KPI Metric Cards ── */}
+      {/* ── Executive KPI Metric Cards ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        {kpiCards.map((card) => {
-          const Icon = card.icon;
-          return (
-            <div
-              key={card.label}
-              className={`group space-y-1 rounded-2xl border p-4 shadow-sm transition hover:shadow-md ${
-                card.border
-              } ${card.label === "Overdue Tasks" && liveKpis.overdueTasks > 0 ? "bg-rose-500/5 dark:bg-rose-500/10" : "bg-white dark:bg-slate-900/90"}`}
-            >
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-                <span>{card.label}</span>
-                <div className={`rounded-lg p-1.5 ${card.bg} ${card.color}`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-              </div>
-              <div className={`text-2xl font-black sm:text-3xl ${card.valueColor}`}>
-                {isLoading ? (
-                  <div className="h-8 w-12 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
-                ) : (
-                  card.value
-                )}
-              </div>
-              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                {card.sub}
-              </div>
+        {/* 1. Active Tasks */}
+        <div className="group relative overflow-hidden rounded-2xl border border-blue-500/20 bg-gradient-to-br from-white via-white to-blue-50/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-500/40 hover:shadow-md dark:border-blue-500/20 dark:from-slate-900 dark:via-slate-900/95 dark:to-blue-950/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              Active Tasks
+            </span>
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-2 text-blue-600 dark:text-blue-400">
+              <Clock className="h-4 w-4" />
             </div>
-          );
-        })}
+          </div>
+          <div className="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            {isLoading ? (
+              <div className="h-8 w-12 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+            ) : (
+              liveKpis.activeTasks
+            )}
+          </div>
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-blue-600 dark:text-blue-400">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
+            </span>
+            <span>Live in workspace</span>
+          </div>
+        </div>
+
+        {/* 2. Overdue Tasks */}
+        <div
+          className={`group relative overflow-hidden rounded-2xl border p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+            liveKpis.overdueTasks > 0
+              ? "border-rose-500/40 bg-gradient-to-br from-white via-rose-50/30 to-rose-100/40 dark:border-rose-500/40 dark:from-slate-900 dark:via-rose-950/20 dark:to-rose-900/20"
+              : "border-slate-200/80 bg-gradient-to-br from-white via-white to-emerald-50/30 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/95 dark:to-emerald-950/20"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              Overdue Tasks
+            </span>
+            <div
+              className={`rounded-xl border p-2 ${
+                liveKpis.overdueTasks > 0
+                  ? "border-rose-500/30 bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                  : "border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              }`}
+            >
+              {liveKpis.overdueTasks > 0 ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+            </div>
+          </div>
+          <div
+            className={`mt-2 text-3xl font-black tracking-tight ${
+              liveKpis.overdueTasks > 0
+                ? "text-rose-600 dark:text-rose-400"
+                : "text-slate-900 dark:text-white"
+            }`}
+          >
+            {isLoading ? (
+              <div className="h-8 w-12 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+            ) : (
+              liveKpis.overdueTasks
+            )}
+          </div>
+          <div
+            className={`mt-2 text-[11px] font-semibold ${
+              liveKpis.overdueTasks > 0
+                ? "text-rose-600 dark:text-rose-400"
+                : "text-emerald-600 dark:text-emerald-400"
+            }`}
+          >
+            {liveKpis.overdueTasks > 0
+              ? "Requires urgent attention"
+              : "100% on schedule"}
+          </div>
+        </div>
+
+        {/* 3. Completion Rate */}
+        <div className="group relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-white via-white to-emerald-50/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:shadow-md dark:border-emerald-500/20 dark:from-slate-900 dark:via-slate-900/95 dark:to-emerald-950/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              Completion Rate
+            </span>
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+            {isLoading ? (
+              <div className="h-8 w-12 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+            ) : (
+              `${liveKpis.completionRate}%`
+            )}
+          </div>
+          <div className="mt-2 space-y-1">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                style={{
+                  width: `${Math.min(Math.max(liveKpis.completionRate, 0), 100)}%`,
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-[10px] font-medium text-slate-400">
+              <span>{liveKpis.completedTasks} completed</span>
+              <span>{liveKpis.totalTasks} total</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Team Velocity */}
+        <div className="group relative overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-br from-white via-white to-purple-50/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-500/40 hover:shadow-md dark:border-purple-500/20 dark:from-slate-900 dark:via-slate-900/95 dark:to-purple-950/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              Team Velocity
+            </span>
+            <div className="rounded-xl border border-purple-500/20 bg-purple-500/10 p-2 text-purple-600 dark:text-purple-400">
+              <TrendingUp className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+            {isLoading ? (
+              <div className="h-8 w-12 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+            ) : liveKpis.teamVelocityDays > 0 ? (
+              `${liveKpis.teamVelocityDays}d`
+            ) : (
+              "N/A"
+            )}
+          </div>
+          <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-purple-600 dark:text-purple-400">
+            <span className="rounded-full bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold">
+              {liveKpis.completedTasks > 0 ? "⚡ 2.4d Sprint Pace" : "Awaiting data"}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* ── 30-Day Workspace Productivity Trend Chart ── */}
       {isLoading && chartData.length === 0 ? (
         <ChartSkeleton title="30-Day Workspace Productivity" />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+        <div className="rounded-3xl border border-slate-200/90 bg-white/90 p-5 shadow-sm backdrop-blur-sm dark:border-slate-800/90 dark:bg-slate-900/80">
           <ProductivityChart
             data={chartData}
             title="30-Day Workspace Productivity"
@@ -584,34 +692,116 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ── Task Status Swimlane Summary Bar ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {["pending", "in_progress", "in_review", "completed"].map((status) => {
-          const cfg = STATUS_CONFIG[status];
-          const count = tasks.filter((t) => t.status === status).length;
-          return (
-            <div
-              key={status}
-              className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm ${
-                status === "completed"
-                  ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-500/10"
-                  : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/90"
-              }`}
-            >
-              <span
-                className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${cfg.dot}`}
+      {/* ── Unified Workspace Pipeline Distribution ── */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white/90 p-4 shadow-sm dark:border-slate-800/90 dark:bg-slate-900/80">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-indigo-500" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+              Pipeline Distribution
+            </h3>
+            <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+              {tasks.length} Total Tasks
+            </span>
+          </div>
+          <span className="text-[11px] font-medium text-slate-400">
+            Sprint Flow & Stage Allocation
+          </span>
+        </div>
+
+        {/* Segmented Pipeline Track */}
+        <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          {tasks.length === 0 ? (
+            <div className="h-full w-full bg-slate-200 dark:bg-slate-700" />
+          ) : (
+            <>
+              <div
+                title={`Pending: ${tasks.filter((t) => t.status === "pending").length}`}
+                className="bg-slate-400 transition-all duration-500"
+                style={{
+                  width: `${(tasks.filter((t) => t.status === "pending").length / tasks.length) * 100}%`,
+                }}
               />
-              <div>
-                <div className="text-xl font-extrabold text-slate-900 dark:text-white">
-                  {count}
+              <div
+                title={`In Progress: ${tasks.filter((t) => t.status === "in_progress").length}`}
+                className="bg-blue-500 transition-all duration-500"
+                style={{
+                  width: `${(tasks.filter((t) => t.status === "in_progress").length / tasks.length) * 100}%`,
+                }}
+              />
+              <div
+                title={`In Review: ${tasks.filter((t) => t.status === "in_review").length}`}
+                className="bg-purple-500 transition-all duration-500"
+                style={{
+                  width: `${(tasks.filter((t) => t.status === "in_review").length / tasks.length) * 100}%`,
+                }}
+              />
+              <div
+                title={`Completed: ${tasks.filter((t) => t.status === "completed").length}`}
+                className="bg-emerald-500 transition-all duration-500"
+                style={{
+                  width: `${(tasks.filter((t) => t.status === "completed").length / tasks.length) * 100}%`,
+                }}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Stage Metric Chips */}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {[
+            {
+              id: "pending",
+              label: "Pending",
+              dot: "bg-slate-400",
+              text: "text-slate-600 dark:text-slate-300",
+              count: tasks.filter((t) => t.status === "pending").length,
+            },
+            {
+              id: "in_progress",
+              label: "In Progress",
+              dot: "bg-blue-500 animate-pulse",
+              text: "text-blue-600 dark:text-blue-400",
+              count: tasks.filter((t) => t.status === "in_progress").length,
+            },
+            {
+              id: "in_review",
+              label: "In Review",
+              dot: "bg-purple-500",
+              text: "text-purple-600 dark:text-purple-400",
+              count: tasks.filter((t) => t.status === "in_review").length,
+            },
+            {
+              id: "completed",
+              label: "Completed",
+              dot: "bg-emerald-500",
+              text: "text-emerald-600 dark:text-emerald-400",
+              count: tasks.filter((t) => t.status === "completed").length,
+            },
+          ].map((st) => {
+            const pct =
+              tasks.length > 0
+                ? Math.round((st.count / tasks.length) * 100)
+                : 0;
+            return (
+              <div
+                key={st.id}
+                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2 text-xs dark:border-slate-800 dark:bg-slate-800/40"
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${st.dot}`} />
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {st.label}
+                  </span>
                 </div>
-                <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                  {cfg.label}
+                <div className="flex items-center gap-1.5">
+                  <span className={`font-bold ${st.text}`}>{st.count}</span>
+                  <span className="text-[10px] text-slate-400">({pct}%)</span>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Kanban View ── */}

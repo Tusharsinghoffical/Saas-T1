@@ -114,22 +114,29 @@ export function TaskCard({
     task.description
   );
 
+  const priorityBorder = {
+    urgent: "before:bg-rose-500",
+    high: "before:bg-amber-500",
+    medium: "before:bg-blue-500",
+    low: "before:bg-slate-300 dark:before:bg-slate-600",
+  }[task.priority] || "before:bg-slate-300";
+
   return (
     <div
       draggable
       onDragStart={(e) => onDragStart && onDragStart(e, task.id)}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className={`dark:bg-slate-850 group relative cursor-pointer touch-manipulation select-none rounded-xl border bg-white p-4 transition-all duration-150 active:scale-[0.98] ${
+      className={`group relative cursor-pointer touch-manipulation select-none rounded-xl border bg-white p-3.5 pl-4 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] overflow-hidden before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:rounded-l-xl ${priorityBorder} dark:bg-slate-900/90 ${
         isDragging
-          ? "scale-95 border-dashed border-primary opacity-40 shadow-inner"
+          ? "scale-95 border-dashed border-indigo-500 opacity-40 shadow-inner"
           : isBlocked
-            ? "border-amber-400/60 shadow-sm dark:border-amber-600/40"
-            : "border-slate-200 shadow-sm hover:border-primary/50 hover:shadow-md dark:border-slate-800"
+            ? "border-amber-400/60 shadow-sm hover:border-amber-500/80 hover:shadow-md dark:border-amber-600/40"
+            : "border-slate-200/90 shadow-sm hover:border-indigo-500/40 hover:shadow-md dark:border-slate-800/80 dark:hover:border-indigo-500/40"
       }`}
     >
       {/* Top Header: Priority Badge + Blocked Pill + Drag Handle */}
-      <div className="mb-2.5 flex items-center justify-between gap-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant={priorityVariants[task.priority] || "default"}>
             {task.priority}
@@ -178,9 +185,36 @@ export function TaskCard({
       </div>
 
       {/* Task Title */}
-      <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-slate-900 transition-colors group-hover:text-primary dark:text-slate-100">
+      <h4 className="line-clamp-2 text-[13px] font-bold leading-snug text-slate-900 transition-colors group-hover:text-indigo-600 dark:text-slate-100 dark:group-hover:text-indigo-400">
         {cleanTitle}
       </h4>
+
+      {/* Subtasks Progress Bar (if task has subtasks) */}
+      {totalSubtasks > 0 && (
+        <div className="mt-2.5 space-y-1">
+          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1 font-medium">
+              <CheckSquare className="h-2.5 w-2.5 text-indigo-500" />
+              Subtasks
+            </span>
+            <span className="font-bold">
+              {completedSubtasks}/{totalSubtasks}
+            </span>
+          </div>
+          <div className="h-1 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${
+                completedSubtasks === totalSubtasks
+                  ? "bg-emerald-500"
+                  : "bg-indigo-500"
+              }`}
+              style={{
+                width: `${Math.round((completedSubtasks / totalSubtasks) * 100)}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Task Tags */}
       {task.tags && task.tags.length > 0 && (
@@ -188,7 +222,7 @@ export function TaskCard({
           {task.tags.map((t) => (
             <span
               key={t}
-              className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+              className="rounded-md border border-slate-200/60 bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400"
             >
               #{t}
             </span>
@@ -196,20 +230,20 @@ export function TaskCard({
         </div>
       )}
 
-      {/* Card Footer: Due Date, Checklist progress, Comments, Dependencies */}
-      <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs dark:border-slate-800">
+      {/* Card Footer: Due Date, Checklist progress, Comments, Attachments */}
+      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2 text-xs dark:border-slate-800/80">
         {rawDueDate ? (
           <span
-            className={`inline-flex items-center gap-1 text-[11px] font-medium ${
+            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
               isOverdue
-                ? "font-bold text-urgent"
+                ? "border border-rose-500/20 bg-rose-500/10 font-bold text-rose-600 dark:text-rose-400"
                 : "text-slate-500 dark:text-slate-400"
             }`}
           >
             {isOverdue ? (
-              <AlertTriangle className="h-3 w-3 text-urgent" />
+              <AlertTriangle className="h-2.5 w-2.5 text-rose-500" />
             ) : (
-              <Clock className="h-3 w-3" />
+              <Clock className="h-2.5 w-2.5" />
             )}
             {new Date(rawDueDate).toLocaleDateString(undefined, {
               month: "short",
@@ -220,36 +254,26 @@ export function TaskCard({
           <span />
         )}
 
-        <div className="flex items-center gap-2.5 text-[11px] text-slate-400">
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
           {((task.dependencies && task.dependencies.length > 0) ||
             (task.dependencyTaskIds && task.dependencyTaskIds.length > 0)) && (
             <span
               title="Has task dependencies"
-              className="inline-flex items-center gap-1 text-slate-500"
+              className="inline-flex items-center gap-0.5 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600 dark:bg-slate-800 dark:text-slate-400"
             >
-              <Link2 className="h-3 w-3" />
+              <Link2 className="h-2.5 w-2.5" />
               {task.dependencies?.length || task.dependencyTaskIds?.length}
-            </span>
-          )}
-
-          {totalSubtasks > 0 && (
-            <span
-              className={`inline-flex items-center gap-1 ${
-                completedSubtasks === totalSubtasks
-                  ? "font-medium text-success"
-                  : ""
-              }`}
-            >
-              <CheckSquare className="h-3 w-3" />
-              {completedSubtasks}/{totalSubtasks}
             </span>
           )}
 
           {(task.commentsCount ||
             (task.comments && task.comments.length) ||
             0) > 0 && (
-            <span className="inline-flex items-center gap-1">
-              <MessageSquare className="h-3 w-3" />
+            <span
+              title={`${task.commentsCount || task.comments?.length} comment(s)`}
+              className="inline-flex items-center gap-1 rounded-md border border-sky-500/20 bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-bold text-sky-600 dark:text-sky-400"
+            >
+              <MessageSquare className="h-2.5 w-2.5" />
               {task.commentsCount || task.comments?.length}
             </span>
           )}
@@ -258,9 +282,9 @@ export function TaskCard({
             (task.attachments && task.attachments.length > 0)) && (
             <span
               title={`${task.attachmentsCount || task.attachments?.length} attached resource link(s)`}
-              className="inline-flex items-center gap-1 font-semibold text-teal-600 dark:text-teal-400"
+              className="inline-flex items-center gap-1 rounded-md border border-teal-500/20 bg-teal-500/10 px-1.5 py-0.5 text-[10px] font-bold text-teal-600 dark:text-teal-400"
             >
-              <Paperclip className="h-3 w-3" />
+              <Paperclip className="h-2.5 w-2.5" />
               {task.attachmentsCount || task.attachments?.length}
             </span>
           )}
