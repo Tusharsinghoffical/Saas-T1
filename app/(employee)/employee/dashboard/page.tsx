@@ -43,6 +43,7 @@ import {
   AutoRefreshBadge,
 } from "@/components/ui/AutoRefreshControl";
 import { formatTaskDisplay } from "@/lib/utils/taskFormatter";
+import { Skeleton, TaskCardSkeleton } from "@/components/ui/skeleton";
 
 
 // ─── Priority Config ────────────────────────────────────────────────
@@ -939,7 +940,11 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white sm:text-3xl">
-            {totalTasksCount}
+            {isLoading && totalTasksCount === 0 ? (
+              <Skeleton className="h-8 w-14 rounded-md" />
+            ) : (
+              totalTasksCount
+            )}
           </div>
           <div className="text-[11px] font-medium text-slate-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400">
             In your queue →
@@ -958,7 +963,11 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
           <div className="text-2xl font-black text-amber-600 dark:text-amber-400 sm:text-3xl">
-            {inProgressCount}
+            {isLoading && totalTasksCount === 0 ? (
+              <Skeleton className="h-8 w-14 rounded-md" />
+            ) : (
+              inProgressCount
+            )}
           </div>
           <div className="text-[11px] font-medium text-slate-500 group-hover:text-amber-600 dark:text-slate-400 dark:group-hover:text-amber-400">
             Actively working →
@@ -997,7 +1006,13 @@ export default function EmployeeDashboardPage() {
                 : "text-slate-900 dark:text-white"
             }`}
           >
-            {overdueCount > 0 ? overdueCount : dueSoonCount}
+            {isLoading && totalTasksCount === 0 ? (
+              <Skeleton className="h-8 w-14 rounded-md" />
+            ) : overdueCount > 0 ? (
+              overdueCount
+            ) : (
+              dueSoonCount
+            )}
           </div>
           <div
             className={`text-[11px] font-medium ${
@@ -1022,12 +1037,17 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
           <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 sm:text-3xl">
-            {completedTasksCount}
+            {isLoading && totalTasksCount === 0 ? (
+              <Skeleton className="h-8 w-14 rounded-md" />
+            ) : (
+              completedTasksCount
+            )}
           </div>
           <div className="text-[11px] font-medium text-slate-500 group-hover:text-emerald-600 dark:text-slate-400 dark:group-hover:text-emerald-400">
             {completionRate}% completion →
           </div>
         </div>
+
       </div>
 
       {/* ── Filter Toolbar & View Switcher ── */}
@@ -1183,12 +1203,9 @@ export default function EmployeeDashboardPage() {
 
       {/* ── Main Task View Content ── */}
       {isLoading ? (
-        <div className="animate-pulse space-y-3">
-          {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="h-20 rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
-            />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <TaskCardSkeleton key={i} />
           ))}
         </div>
       ) : viewMode === "list" ? (

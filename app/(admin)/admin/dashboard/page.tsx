@@ -46,6 +46,11 @@ import {
   AutoRefreshBadge,
 } from "@/components/ui/AutoRefreshControl";
 import { formatTaskDisplay } from "@/lib/utils/taskFormatter";
+import {
+  KanbanBoardSkeleton,
+  ChartSkeleton,
+  TableSkeleton,
+} from "@/components/ui/skeleton";
 
 const STATUS_CONFIG: Record<
   string,
@@ -567,13 +572,17 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ── 30-Day Workspace Productivity Trend Chart ── */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
-        <ProductivityChart
-          data={chartData}
-          title="30-Day Workspace Productivity"
-          subtitle="Daily task creation & completion velocity trend"
-        />
-      </div>
+      {isLoading && chartData.length === 0 ? (
+        <ChartSkeleton title="30-Day Workspace Productivity" />
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+          <ProductivityChart
+            data={chartData}
+            title="30-Day Workspace Productivity"
+            subtitle="Daily task creation & completion velocity trend"
+          />
+        </div>
+      )}
 
       {/* ── Task Status Swimlane Summary Bar ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -606,17 +615,23 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ── Kanban View ── */}
-      {viewMode === "kanban" && (
-        <KanbanBoard
-          initialTasks={tasks}
-          orgMembers={orgMembers}
-          orgId={orgId}
-        />
-      )}
+      {viewMode === "kanban" &&
+        (isLoading && tasks.length === 0 ? (
+          <KanbanBoardSkeleton />
+        ) : (
+          <KanbanBoard
+            initialTasks={tasks}
+            orgMembers={orgMembers}
+            orgId={orgId}
+          />
+        ))}
 
       {/* ── Enhanced Linear List View ── */}
-      {viewMode === "list" && (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
+      {viewMode === "list" &&
+        (isLoading && tasks.length === 0 ? (
+          <TableSkeleton rows={6} />
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/90">
           {/* List Header */}
           <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800/30">
             <div className="flex items-center gap-2.5">
@@ -771,7 +786,7 @@ export default function AdminDashboardPage() {
             </div>
           )}
         </div>
-      )}
+      ))}
 
       {/* ── Advanced Analytics View ── */}
       {viewMode === "analytics" && (

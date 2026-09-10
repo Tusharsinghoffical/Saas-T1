@@ -41,6 +41,11 @@ import {
   useAutoRefresh,
   AutoRefreshBadge,
 } from "@/components/ui/AutoRefreshControl";
+import {
+  Skeleton,
+  KanbanBoardSkeleton,
+  ChartSkeleton,
+} from "@/components/ui/skeleton";
 
 export default function ManagerDashboardPage() {
   const [viewMode, setViewMode] = useState<"kanban" | "analytics">("kanban");
@@ -454,11 +459,25 @@ export default function ManagerDashboardPage() {
             );
           })}
 
-          {orgMembers.length === 0 && (
-            <div className="py-2 text-xs text-slate-400">
-              Loading team squad members...
-            </div>
-          )}
+          {orgMembers.length === 0 &&
+            (isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-shrink-0 items-center gap-2.5 rounded-xl border border-slate-200/60 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-900/60"
+                >
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-3.5 w-20 rounded" />
+                    <Skeleton className="h-2.5 w-12 rounded" />
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-2 text-xs text-slate-400">
+                No team members found.
+              </div>
+            ))}
         </div>
       </div>
 
@@ -470,7 +489,11 @@ export default function ManagerDashboardPage() {
             <Clock className="h-4 w-4 text-blue-500" />
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white">
-            {liveKpis.activeTasks}
+            {isLoading && tasks.length === 0 ? (
+              <Skeleton className="h-8 w-14 rounded-md" />
+            ) : (
+              liveKpis.activeTasks
+            )}
           </div>
           <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
             In sprint execution
@@ -487,7 +510,11 @@ export default function ManagerDashboardPage() {
           <div
             className={`text-2xl font-black ${liveKpis.overdueTasks > 0 ? "text-rose-600 dark:text-rose-400" : "text-slate-900 dark:text-white"}`}
           >
-            {liveKpis.overdueTasks}
+            {isLoading && tasks.length === 0 ? (
+              <Skeleton className="h-8 w-14 rounded-md" />
+            ) : (
+              liveKpis.overdueTasks
+            )}
           </div>
           <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
             Require manager review
@@ -500,7 +527,11 @@ export default function ManagerDashboardPage() {
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </div>
           <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-            {liveKpis.completionRate}%
+            {isLoading && tasks.length === 0 ? (
+              <Skeleton className="h-8 w-16 rounded-md" />
+            ) : (
+              `${liveKpis.completionRate}%`
+            )}
           </div>
           <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
             {liveKpis.completedTasks} of {liveKpis.totalTasks} tasks done
@@ -513,9 +544,13 @@ export default function ManagerDashboardPage() {
             <TrendingUp className="h-4 w-4 text-indigo-500" />
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white">
-            {liveKpis.teamVelocityDays > 0
-              ? `${liveKpis.teamVelocityDays}d`
-              : "N/A"}
+            {isLoading && tasks.length === 0 ? (
+              <Skeleton className="h-8 w-16 rounded-md" />
+            ) : liveKpis.teamVelocityDays > 0 ? (
+              `${liveKpis.teamVelocityDays}d`
+            ) : (
+              "N/A"
+            )}
           </div>
           <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
             Avg cycle time
@@ -524,15 +559,21 @@ export default function ManagerDashboardPage() {
       </div>
 
       {/* Main View Area */}
-      {viewMode === "kanban" && (
-        <KanbanBoard orgMembers={orgMembers} orgId={orgId} />
-      )}
+      {viewMode === "kanban" &&
+        (isLoading && tasks.length === 0 ? (
+          <KanbanBoardSkeleton />
+        ) : (
+          <KanbanBoard orgMembers={orgMembers} orgId={orgId} />
+        ))}
 
-      {viewMode === "analytics" && (
-        <div className="space-y-6">
-          <ProductivityChart data={chartData} />
-        </div>
-      )}
+      {viewMode === "analytics" &&
+        (isLoading && chartData.length === 0 ? (
+          <ChartSkeleton title="Sprint Velocity & Task Trend" />
+        ) : (
+          <div className="space-y-6">
+            <ProductivityChart data={chartData} />
+          </div>
+        ))}
 
       {/* Task Creation Modal with Live Real Members */}
       {isTaskModalOpen && (

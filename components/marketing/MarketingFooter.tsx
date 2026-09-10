@@ -59,7 +59,7 @@ export function MarketingFooter() {
                   />
                 </div>
                 <span className="rounded-full border border-indigo-500/30 bg-indigo-500/20 px-2.5 py-0.5 font-mono text-[10px] font-bold text-indigo-300">
-                  Work OS v1.0
+                  Work OS v2.8
                 </span>
               </div>
               <p className="max-w-xl text-xs text-slate-400">
@@ -70,10 +70,13 @@ export function MarketingFooter() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3.5">
-              <div className="shadow-xs inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/60 px-3 py-1.5 font-mono text-[11px] font-bold text-emerald-400">
+              <Link
+                href="/health"
+                className="shadow-xs inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/60 px-3 py-1.5 font-mono text-[11px] font-bold text-emerald-400 transition-colors hover:border-emerald-400 hover:bg-emerald-900/60"
+              >
                 <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
                 <span>All Systems Operational • Asia-South (Mumbai)</span>
-              </div>
+              </Link>
               <Link
                 href="/signup"
                 className="rounded-xl bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white shadow-md transition-colors hover:bg-indigo-500"
@@ -297,6 +300,15 @@ export function MarketingFooter() {
                   </Link>
                 </li>
                 <li>
+                  <Link
+                    href="/health"
+                    className="flex items-center gap-1.5 text-emerald-400 font-semibold transition-colors hover:text-emerald-300"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    System Status &amp; Live Health
+                  </Link>
+                </li>
+                <li>
                   <button
                     type="button"
                     onClick={() => setLegalModal("cookies")}
@@ -387,6 +399,13 @@ export function MarketingFooter() {
               <span className="rounded-md border border-slate-700 bg-slate-800/80 px-2.5 py-1 font-mono text-[10px] font-bold text-slate-300">
                 English (India)
               </span>
+              <Link
+                href="/health"
+                className="flex items-center gap-1.5 font-medium text-emerald-400 hover:text-emerald-300 hover:underline"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Status
+              </Link>
               <Link
                 href="/privacy"
                 className="hover:text-white hover:underline"

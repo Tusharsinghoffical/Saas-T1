@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
 import { captureEvent } from "@/lib/analytics/posthog";
+import { NotificationSkeleton } from "@/components/ui/skeleton";
 
 export interface NotificationItem {
   id: string;
@@ -112,6 +113,7 @@ export function NotificationBell({ userId: propUserId }: { userId?: string }) {
     propUserId
   );
   const [filterTab, setFilterTab] = useState<"all" | "unread">("all");
+  const [isLoading, setIsLoading] = useState(true);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const seenNotifIdsRef = useRef<Set<string>>(new Set());
@@ -197,6 +199,8 @@ export function NotificationBell({ userId: propUserId }: { userId?: string }) {
       }
     } catch {
       // Ignore network errors gracefully
+    } finally {
+      setIsLoading(false);
     }
   }, [triggerAlertFeedback]);
 
@@ -449,16 +453,16 @@ export function NotificationBell({ userId: propUserId }: { userId?: string }) {
       {/* ── Mobile Backdrop to prevent overlapping clicks ── */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[65] bg-slate-950/20 backdrop-blur-xs sm:hidden"
+          className="fixed inset-0 z-[65] bg-slate-950/50 backdrop-blur-sm sm:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* ── Dropdown Panel with High Z-Index and Non-Overlapping Layout ── */}
+      {/* ── Dropdown Panel with High Z-Index and Solid Opaque Background ── */}
       {isOpen && (
-        <div className="animate-fade-in fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full z-[70] mt-2 sm:w-[420px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-slate-200/90 bg-white/98 shadow-2xl backdrop-blur-2xl dark:border-slate-800/90 dark:bg-slate-900/98 flex flex-col max-h-[min(560px,calc(100vh-5rem))]">
+        <div className="animate-fade-in fixed inset-x-2 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full z-[70] mt-2 sm:w-[420px] max-w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900 flex flex-col max-h-[min(560px,calc(100vh-5rem))]">
           {/* Header Bar */}
-          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3 dark:border-slate-800/80 dark:bg-slate-850/80 flex-shrink-0">
+          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800 flex-shrink-0">
             <div className="flex items-center gap-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">
                 Notifications
@@ -544,137 +548,144 @@ export function NotificationBell({ userId: propUserId }: { userId?: string }) {
           </div>
 
           {/* Notifications Scroll List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100/80 dark:divide-slate-800/60">
-            {displayedNotifications.map((notif) => {
-              const isUnread = !notif.read_at && !notif.readAt;
-              const createdDate = notif.createdAt || notif.created_at;
-              const actor =
-                notif.payload?.actor_name || notif.payload?.actorName;
-              const taskTitle =
-                notif.payload?.task_title || notif.payload?.taskTitle;
-              const reason = notif.payload?.reason;
-              const message =
-                notif.payload?.message || "You have a new update.";
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
+            {isLoading && notifications.length === 0 ? (
+              <NotificationSkeleton count={4} />
+            ) : (
+              <>
+                {displayedNotifications.map((notif) => {
+                  const isUnread = !notif.read_at && !notif.readAt;
+                  const createdDate = notif.createdAt || notif.created_at;
+                  const actor =
+                    notif.payload?.actor_name || notif.payload?.actorName;
+                  const taskTitle =
+                    notif.payload?.task_title || notif.payload?.taskTitle;
+                  const reason = notif.payload?.reason;
+                  const message =
+                    notif.payload?.message || "You have a new update.";
 
-              return (
-                <div
-                  key={notif.id}
-                  onClick={() => {
-                    captureEvent("notification_clicked", {
-                      notificationId: notif.id,
-                      type: notif.type,
-                      taskId: notif.payload?.task_id || notif.payload?.taskId,
-                    });
-                    if (isUnread) handleMarkAsRead(notif.id);
-                  }}
-                  className={`group relative flex cursor-pointer items-start gap-3 p-3.5 transition-all duration-150 ${
-                    isUnread
-                      ? "bg-primary/[0.035] hover:bg-primary/[0.07] dark:bg-primary/[0.07] dark:hover:bg-primary/[0.12]"
-                      : "bg-transparent hover:bg-slate-50/90 dark:hover:bg-slate-800/50"
-                  }`}
-                >
-                  {/* Left Column: Icon Pill */}
-                  <div
-                    className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border shadow-2xs ${getNotificationBg(
-                      notif.type,
-                      message
-                    )}`}
-                  >
-                    {getNotificationIcon(notif.type, message)}
-                  </div>
-
-                  {/* Middle Column: Text & Content */}
-                  <div className="min-w-0 flex-1 space-y-1">
-                    {/* Top row: Type Tag + Relative Time */}
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                          isUnread
-                            ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-300"
-                            : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                        }`}
-                      >
-                        {getNotificationTypeLabel(notif)}
-                      </span>
-                      <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                        {formatRelativeTime(createdDate)}
-                      </span>
-                    </div>
-
-                    {/* Main Message */}
-                    <p
-                      className={`text-xs leading-relaxed ${
+                  return (
+                    <div
+                      key={notif.id}
+                      onClick={() => {
+                        captureEvent("notification_clicked", {
+                          notificationId: notif.id,
+                          type: notif.type,
+                          taskId: notif.payload?.task_id || notif.payload?.taskId,
+                        });
+                        if (isUnread) handleMarkAsRead(notif.id);
+                      }}
+                      className={`group relative flex cursor-pointer items-start gap-3 p-3.5 transition-all duration-150 ${
                         isUnread
-                          ? "font-semibold text-slate-900 dark:text-white"
-                          : "text-slate-600 dark:text-slate-300"
+                          ? "bg-indigo-50/80 hover:bg-indigo-100/80 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50"
+                          : "bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
                       }`}
                     >
-                      {message}
-                    </p>
-
-                    {/* Optional Task Title Pill */}
-                    {taskTitle && (
-                      <div className="flex items-center gap-1 pt-0.5 text-[11px]">
-                        <span className="truncate rounded-md bg-slate-100/90 px-1.5 py-0.5 font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300 max-w-full">
-                          📌 {taskTitle}
-                        </span>
+                      {/* Left Column: Icon Pill */}
+                      <div
+                        className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border shadow-2xs ${getNotificationBg(
+                          notif.type,
+                          message
+                        )}`}
+                      >
+                        {getNotificationIcon(notif.type, message)}
                       </div>
-                    )}
 
-                    {/* Optional Reason Quote */}
-                    {reason && (
-                      <div className="text-[11px] italic text-slate-500 dark:text-slate-400 border-l-2 border-primary/40 pl-2">
-                        &ldquo;{reason}&rdquo;
-                      </div>
-                    )}
+                      {/* Middle Column: Text & Content */}
+                      <div className="min-w-0 flex-1 space-y-1">
+                        {/* Top row: Type Tag + Relative Time */}
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                              isUnread
+                                ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-300"
+                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                            }`}
+                          >
+                            {getNotificationTypeLabel(notif)}
+                          </span>
+                          <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                            {formatRelativeTime(createdDate)}
+                          </span>
+                        </div>
 
-                    {/* Footer: Actor Info & Quick Mark as Read */}
-                    <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400 dark:text-slate-500">
-                      <span>{actor ? `by ${actor}` : "System event"}</span>
-
-                      {isUnread && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkAsRead(notif.id);
-                          }}
-                          className="flex items-center gap-0.5 text-primary opacity-0 transition-opacity hover:underline group-hover:opacity-100"
-                          title="Mark as read"
+                        {/* Title / Description */}
+                        <p
+                          className={`text-xs leading-snug ${
+                            isUnread
+                              ? "font-bold text-slate-900 dark:text-white"
+                              : "font-normal text-slate-600 dark:text-slate-300"
+                          }`}
                         >
-                          <Check className="h-2.5 w-2.5" />
-                          <span>Mark read</span>
-                        </button>
+                          {taskTitle ? (
+                            <span>
+                              <span className="font-semibold text-slate-900 dark:text-white">
+                                {taskTitle}
+                              </span>
+                              {" — "}
+                              {message}
+                            </span>
+                          ) : (
+                            message
+                          )}
+                        </p>
+
+                        {/* Optional Reason Quote */}
+                        {reason && (
+                          <div className="rounded-lg border-l-2 border-primary/50 bg-slate-50 px-2 py-1 text-[11px] italic text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                            &ldquo;{reason}&rdquo;
+                          </div>
+                        )}
+
+                        {/* Footer: Actor Info & Quick Mark as Read */}
+                        <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                          <span>{actor ? `by ${actor}` : "System event"}</span>
+
+                          {isUnread && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleMarkAsRead(notif.id);
+                              }}
+                              className="flex items-center gap-0.5 text-primary opacity-0 transition-opacity hover:underline group-hover:opacity-100"
+                              title="Mark as read"
+                            >
+                              <Check className="h-2.5 w-2.5" />
+                              <span>Mark read</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Right: Unread Pulse Dot */}
+                      {isUnread && (
+                        <span className="mt-2 flex h-2 w-2 flex-shrink-0 relative">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                        </span>
                       )}
                     </div>
+                  );
+                })}
+
+                {/* Empty State */}
+                {displayedNotifications.length === 0 && (
+                  <div className="bg-white p-8 text-center text-xs text-slate-400 dark:bg-slate-900">
+                    <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-500/70" />
+                    <p className="font-semibold text-slate-800 dark:text-slate-200">
+                      {filterTab === "unread"
+                        ? "All caught up!"
+                        : "No notifications right now"}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      {filterTab === "unread"
+                        ? "You have no unread notifications."
+                        : "When tasks are assigned or updated, you'll see them here."}
+                    </p>
                   </div>
-
-                  {/* Right: Unread Pulse Dot */}
-                  {isUnread && (
-                    <span className="mt-2 flex h-2 w-2 flex-shrink-0 relative">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Empty State */}
-            {displayedNotifications.length === 0 && (
-              <div className="p-8 text-center text-xs text-slate-400">
-                <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-500/70" />
-                <p className="font-semibold text-slate-800 dark:text-slate-200">
-                  {filterTab === "unread"
-                    ? "All caught up!"
-                    : "No notifications right now"}
-                </p>
-                <p className="mt-1 text-[11px] text-slate-400">
-                  {filterTab === "unread"
-                    ? "You have no unread notifications."
-                    : "When tasks are assigned or updated, you'll see them here."}
-                </p>
-              </div>
+                )}
+              </>
             )}
           </div>
         </div>
