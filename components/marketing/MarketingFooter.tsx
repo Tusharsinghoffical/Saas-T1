@@ -151,6 +151,14 @@ export function MarketingFooter() {
                     Pricing Plans (₹0 Free)
                   </button>
                 </li>
+                <li>
+                  <Link
+                    href="/download"
+                    className="font-bold text-indigo-400 transition-colors hover:text-white"
+                  >
+                    Download App (Desktop &amp; Mobile)
+                  </Link>
+                </li>
               </ul>
             </div>
 

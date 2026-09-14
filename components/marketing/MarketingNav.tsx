@@ -284,6 +284,19 @@ export function MarketingNav() {
             >
               Contact
             </Link>
+
+            {/* Download Route Link */}
+            <Link
+              href="/download"
+              className={`flex items-center gap-1.5 py-2 transition-colors ${
+                pathname === "/download"
+                  ? "font-extrabold text-indigo-600"
+                  : "hover:text-indigo-600"
+              }`}
+            >
+              <Download className="h-3.5 w-3.5 text-indigo-600" />
+              <span>Download</span>
+            </Link>
           </nav>
 
           {/* Action CTAs */}
@@ -359,6 +372,14 @@ export function MarketingNav() {
                 className="block rounded-lg p-2 text-sm font-bold text-slate-800 hover:bg-slate-50"
               >
                 Contact Desk &amp; Queries
+              </Link>
+              <Link
+                href="/download"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 rounded-lg bg-indigo-50 p-2 text-sm font-extrabold text-indigo-700 hover:bg-indigo-100"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download App (Step-by-Step)</span>
               </Link>
             </div>
 
@@ -444,13 +465,22 @@ export function MarketingNav() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsSideWidgetOpen(false)}
-            className="w-full cursor-pointer rounded-xl bg-indigo-600 py-1.5 text-center text-xs font-bold text-white shadow-md transition-colors hover:bg-indigo-700"
-          >
-            Got It
-          </button>
+          <div className="flex flex-col gap-2 pt-1">
+            <Link
+              href="/download"
+              onClick={() => setIsSideWidgetOpen(false)}
+              className="w-full rounded-xl bg-indigo-600 py-2 text-center text-xs font-bold text-white shadow-md transition-colors hover:bg-indigo-700"
+            >
+              Direct Download Page &rarr;
+            </Link>
+            <button
+              type="button"
+              onClick={() => setIsSideWidgetOpen(false)}
+              className="w-full cursor-pointer rounded-xl border border-slate-700 py-1.5 text-center text-[11px] font-semibold text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
     </>
