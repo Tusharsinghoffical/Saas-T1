@@ -51,7 +51,7 @@ export function MarketingNav() {
         ref={headerRef}
         className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md transition-all duration-200"
       >
-        <div className="sm:h-22 mx-auto flex h-20 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 sm:h-18 max-w-7xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
           {/* Brand Logo */}
           <Link
             href="/"
@@ -61,10 +61,10 @@ export function MarketingNav() {
               <Image
                 src="/ONE_Header.png"
                 alt="TASQ-ONE Logo"
-                width={280}
-                height={80}
+                width={220}
+                height={60}
                 priority
-                className="h-14 w-auto object-contain transition-transform duration-200 group-hover:scale-105 sm:h-16 md:h-20"
+                className="h-10 w-auto object-contain transition-transform duration-200 group-hover:scale-105 sm:h-11 md:h-12"
               />
             </div>
           </Link>

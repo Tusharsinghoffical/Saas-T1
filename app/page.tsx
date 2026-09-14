@@ -368,6 +368,33 @@ export default function HomePage() {
     }, 650);
   };
 
+  // Safe Task Reassignment Simulator
+  const handleSimulateReassign = (taskId: string) => {
+    const candidateRoster = [
+      { name: "Aarav Sharma", dept: "Sales" },
+      { name: "Priya Patel", dept: "Marketing" },
+      { name: "Rohan Verma", dept: "Engineering" },
+      { name: "Ananya Roy", dept: "Design" },
+    ];
+    setDemoTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === taskId) {
+          const currentIndex = candidateRoster.findIndex(
+            (c) => c.name === t.assignee
+          );
+          const nextMember =
+            candidateRoster[(currentIndex + 1) % candidateRoster.length];
+          setRefreshToast(
+            `✓ Reassigned "${t.title.slice(0, 28)}…" to ${nextMember.name} (Audit Trail: Team handover logged)`
+          );
+          setTimeout(() => setRefreshToast(null), 4000);
+          return { ...t, assignee: nextMember.name, tag: nextMember.dept };
+        }
+        return t;
+      })
+    );
+  };
+
   // Task transition with strict DAG dependency check simulation
   const moveTask = (
     taskId: string,
@@ -421,6 +448,14 @@ export default function HomePage() {
       a: "In traditional platforms, aggressive auto-refresh timers (e.g. every 10–20 seconds) constantly re-fetch data in the background. This silently re-renders forms, clears half-filled descriptions, wipes subtask checklists, and can even trigger premature submissions. In TASQ-ONE v2.8, background timers are disabled. Your working state is 100% sacred, and re-fetching happens on-demand when you click 'Refresh'. Realtime updates still arrive instantly through event-driven WebSockets without disrupting your typing.",
     },
     {
+      q: "How does Task Reassignment and 30-Day Safe Deletion work?",
+      a: "Deliverables can be reassigned between team members with mandatory transfer reasons logged to the immutable workspace audit trail. When a task is deleted, it enters an audit-safe soft-deleted state with a 30-day recovery grace period. File attachments in Cloudflare R2 are preserved during this period to prevent catastrophic data loss, and automatically pruned after 30 days via scheduled cron sweepers.",
+    },
+    {
+      q: "How does TASQ-ONE prevent duplicate submissions and network glitches?",
+      a: "All state-changing actions (task creations, updates, and reassignments) are guarded by distributed Redis idempotency token locks. If an engineer double-clicks on a fluctuating mobile network, the duplicate request is safely deduplicated without creating duplicate tickets or triggering redundant webhook events.",
+    },
+    {
       q: "How does the Elevated Notification Center (z-[70]) work?",
       a: "The redesigned Notification Bell uses an elevated z-[70] layer and smart mobile coordinate anchors so it never gets obscured or overlapped by dashboard headers, sticky sidebars, or modals. It features dual All/Unread segmented tabs, an interactive sound alert toggle, and reliable human-readable timestamps (Just now, 12m ago, 2d ago), permanently eliminating timestamp bugs like 'NaNd ago'.",
     },
@@ -469,7 +504,7 @@ export default function HomePage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600" />
             </span>
-            <span>v2.8 Release: Zero Form Interruptions • On-Demand Sync • Elevated Notification Center • DAG Blocking</span>
+            <span>v2.8 Release: Audit-Ready Task Reassignment • 30-Day Safe Deletion • Team-Scoped RBAC • On-Demand Sync</span>
           </div>
 
           {/* Core Problem-Solving Headline */}
@@ -542,33 +577,33 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md transition hover:border-purple-300">
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md transition hover:border-blue-300">
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                <Sparkles className="h-3.5 w-3.5 text-purple-600" />
-                <span>Sub-Second AI</span>
+                <UserCheck className="h-3.5 w-3.5 text-blue-600" />
+                <span>Audit Reassignment</span>
               </div>
               <p className="mt-1 text-[11px] leading-tight text-slate-500">
-                Groq Llama 3.3 70B DoD & Acceptance Criteria in &lt;800ms
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md transition hover:border-amber-300">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
-                <Bell className="h-3.5 w-3.5 text-amber-600" />
-                <span>High-Z Notifications</span>
-              </div>
-              <p className="mt-1 text-[11px] leading-tight text-slate-500">
-                z-[70] non-overlapping panel with audio alerts & filters
+                Team-scoped handoffs with logged reasons & history
               </p>
             </div>
 
             <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md transition hover:border-emerald-300">
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Postgres RLS Security</span>
+                <span>30-Day Safe Deletion</span>
               </div>
               <p className="mt-1 text-[11px] leading-tight text-slate-500">
-                Kernel-level tenant isolation & Turnstile bot shield
+                Accidental delete defense & automated R2 cleanup
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-2xs backdrop-blur-md transition hover:border-purple-300">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                <Sparkles className="h-3.5 w-3.5 text-purple-600" />
+                <span>Sub-Second AI</span>
+              </div>
+              <p className="mt-1 text-[11px] leading-tight text-slate-500">
+                Groq Llama 3.3 70B DoD &amp; Criteria in &lt;800ms
               </p>
             </div>
           </div>
@@ -816,13 +851,23 @@ export default function HomePage() {
                                   {task.assignee}
                                 </span>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => moveTask(task.id, "in_progress")}
-                                className="cursor-pointer rounded-lg bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 transition-colors hover:bg-indigo-100 active:scale-95"
-                              >
-                                Start →
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSimulateReassign(task.id)}
+                                  className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 active:scale-95"
+                                  title="Test Audit-Logged Task Reassignment"
+                                >
+                                  Reassign ⇄
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveTask(task.id, "in_progress")}
+                                  className="cursor-pointer rounded-lg bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 transition-colors hover:bg-indigo-100 active:scale-95"
+                                >
+                                  Start →
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -886,13 +931,23 @@ export default function HomePage() {
                                   {task.assignee}
                                 </span>
                               </div>
-                              <button
-                                type="button"
-                                onClick={() => moveTask(task.id, "completed")}
-                                className="shadow-xs cursor-pointer rounded-lg bg-emerald-600 px-3 py-1 text-[10px] font-bold text-white transition-colors hover:bg-emerald-700 active:scale-95"
-                              >
-                                Mark Done ✓
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSimulateReassign(task.id)}
+                                  className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-semibold text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 active:scale-95"
+                                  title="Test Audit-Logged Task Reassignment"
+                                >
+                                  Reassign ⇄
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveTask(task.id, "completed")}
+                                  className="shadow-xs cursor-pointer rounded-lg bg-emerald-600 px-3 py-1 text-[10px] font-bold text-white transition-colors hover:bg-emerald-700 active:scale-95"
+                                >
+                                  Mark Done ✓
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1339,118 +1394,156 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {/* Card 1: On-Demand Manual Sync */}
-            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-7 shadow-sm transition hover:border-indigo-400 hover:bg-white hover:shadow-md">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600">
+            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition hover:border-indigo-400 hover:bg-white hover:shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600">
                 <RefreshCw className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <div className="font-mono text-xs font-bold uppercase text-indigo-600">
+                <div className="font-mono text-[11px] font-bold uppercase text-indigo-600">
                   Zero Form Resets
                 </div>
-                <h3 className="text-base font-extrabold text-slate-900">
+                <h3 className="text-sm font-extrabold text-slate-900">
                   On-Demand Manual Sync
                 </h3>
               </div>
-              <p className="text-xs leading-relaxed text-slate-600 sm:text-sm">
+              <p className="text-xs leading-relaxed text-slate-600">
                 Background intervals that used to randomly refresh pages and wipe half-filled
                 ticket descriptions are gone. Data updates on your exact command with instant UI feedback.
               </p>
             </div>
 
-            {/* Card 2: High-Z Notification Center */}
-            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-7 shadow-sm transition hover:border-purple-400 hover:bg-white hover:shadow-md">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-purple-100 bg-purple-50 text-purple-600">
-                <Bell className="h-5 w-5" />
+            {/* Card 2: Audit-Ready Task Reallocation */}
+            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition hover:border-blue-400 hover:bg-white hover:shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600">
+                <UserCheck className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <div className="font-mono text-xs font-bold uppercase text-purple-600">
-                  Non-Overlapping UI
+                <div className="font-mono text-[11px] font-bold uppercase text-blue-600">
+                  Frictionless Handoffs
                 </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Elevated Notification Hub (z-[70])
+                <h3 className="text-sm font-extrabold text-slate-900">
+                  Audit Task Reallocation
                 </h3>
               </div>
-              <p className="text-xs leading-relaxed text-slate-600 sm:text-sm">
-                Modal-safe floating center featuring All vs Unread tabs, 1-click audio alerts,
-                and mathematically accurate relative time diffs without timestamp parsing glitches.
+              <p className="text-xs leading-relaxed text-slate-600">
+                Transfer deliverables between squad members with mandatory audit trail reasons.
+                Managers operate strictly within departmental boundaries with complete handover logs.
               </p>
             </div>
 
-            {/* Card 3: Strict DAG Dependency Blocking */}
-            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-7 shadow-sm transition hover:border-amber-400 hover:bg-white hover:shadow-md">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-100 bg-amber-50 text-amber-600">
+            {/* Card 3: 30-Day Safe Deletion & R2 Lifecycle */}
+            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition hover:border-emerald-400 hover:bg-white hover:shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+                <RotateCcw className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="font-mono text-[11px] font-bold uppercase text-emerald-600">
+                  Accidental Loss Defense
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-900">
+                  30-Day Safe Deletion
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-600">
+                Deleted tasks enter an audit-safe soft state with 30-day recovery grace period.
+                Cloudflare R2 attachments remain intact during this period with automated background pruning.
+              </p>
+            </div>
+
+            {/* Card 4: Strict DAG Dependency Blocking */}
+            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition hover:border-amber-400 hover:bg-white hover:shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-100 bg-amber-50 text-amber-600">
                 <Lock className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <div className="font-mono text-xs font-bold uppercase text-amber-600">
+                <div className="font-mono text-[11px] font-bold uppercase text-amber-600">
                   Workflow Guardrails
                 </div>
-                <h3 className="text-base font-extrabold text-slate-900">
+                <h3 className="text-sm font-extrabold text-slate-900">
                   Strict DAG Dependency Engine
                 </h3>
               </div>
-              <p className="text-xs leading-relaxed text-slate-600 sm:text-sm">
+              <p className="text-xs leading-relaxed text-slate-600">
                 Prevent premature merges and downstream bottlenecks. Downstream deliverables
                 remain locked until their prerequisite parent tasks are verified Completed.
               </p>
             </div>
 
-            {/* Card 4: Sub-Second Groq AI */}
-            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-7 shadow-sm transition hover:border-emerald-400 hover:bg-white hover:shadow-md">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+            {/* Card 5: Sub-Second Groq AI */}
+            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition hover:border-purple-400 hover:bg-white hover:shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-purple-100 bg-purple-50 text-purple-600">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <div className="font-mono text-xs font-bold uppercase text-emerald-600">
+                <div className="font-mono text-[11px] font-bold uppercase text-purple-600">
                   Llama 3.3 70B &lt;800ms
                 </div>
-                <h3 className="text-base font-extrabold text-slate-900">
+                <h3 className="text-sm font-extrabold text-slate-900">
                   AI Task Ticket Decomposer
                 </h3>
               </div>
-              <p className="text-xs leading-relaxed text-slate-600 sm:text-sm">
+              <p className="text-xs leading-relaxed text-slate-600">
                 Turn vague, messy thoughts into 4-point Acceptance Criteria, DoD checklists,
-                and workload-balanced assignee suggestions at lightning speeds.
+                and workload-balanced assignee suggestions at lightning speeds under 800ms.
               </p>
             </div>
 
-            {/* Card 5: Role-Based Portals */}
-            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-7 shadow-sm transition hover:border-blue-400 hover:bg-white hover:shadow-md">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600">
-                <Users className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <div className="font-mono text-xs font-bold uppercase text-blue-600">
-                  Strict RBAC Isolation
-                </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Founder, Manager & Employee Views
-                </h3>
-              </div>
-              <p className="text-xs leading-relaxed text-slate-600 sm:text-sm">
-                Tailored interfaces for every role: Founders get 30-day velocity metrics, managers
-                orchestrate team capacity, and employees execute clean morning daily checklists.
-              </p>
-            </div>
-
-            {/* Card 6: Zero-IDOR Security & Turnstile */}
-            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-7 shadow-sm transition hover:border-rose-400 hover:bg-white hover:shadow-md">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-100 bg-rose-50 text-rose-600">
+            {/* Card 6: Zero-IDOR RBAC & Idempotency */}
+            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition hover:border-rose-400 hover:bg-white hover:shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose-100 bg-rose-50 text-rose-600">
                 <ShieldCheck className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <div className="font-mono text-xs font-bold uppercase text-rose-600">
+                <div className="font-mono text-[11px] font-bold uppercase text-rose-600">
                   Enterprise Hardened
                 </div>
-                <h3 className="text-base font-extrabold text-slate-900">
-                  Postgres RLS & Turnstile Defense
+                <h3 className="text-sm font-extrabold text-slate-900">
+                  Team RBAC &amp; Idempotency
                 </h3>
               </div>
-              <p className="text-xs leading-relaxed text-slate-600 sm:text-sm">
-                Cryptographic tenant isolation enforced directly in PostgreSQL kernel policies.
-                Bot protection via Cloudflare Turnstile with generous 100/hr signup thresholds.
+              <p className="text-xs leading-relaxed text-slate-600">
+                Kernel-level PostgreSQL RLS with manager team-boundary IDOR enforcement.
+                Distributed Redis idempotency token locks shield against duplicate submissions.
+              </p>
+            </div>
+
+            {/* Card 7: High-Z Notification Center */}
+            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition hover:border-indigo-400 hover:bg-white hover:shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 text-indigo-600">
+                <Bell className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="font-mono text-[11px] font-bold uppercase text-indigo-600">
+                  Non-Overlapping UI
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-900">
+                  Elevated Hub (z-[70])
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-600">
+                Modal-safe floating center featuring All vs Unread tabs, 1-click audio alerts,
+                and mathematically accurate relative time diffs without timestamp parsing glitches.
+              </p>
+            </div>
+
+            {/* Card 8: Live Telemetry & 24/7 Watchdog */}
+            <div className="space-y-3.5 rounded-3xl border border-slate-200 bg-slate-50/50 p-6 shadow-sm transition hover:border-emerald-400 hover:bg-white hover:shadow-md">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600">
+                <Activity className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <div className="font-mono text-[11px] font-bold uppercase text-emerald-600">
+                  Continuous Liveness
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-900">
+                  Live Telemetry Watchdog
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-600">
+                Transparent /health status probe monitoring, sub-second latency telemetry,
+                Sentry APM integration, and automated daily cron triggers for continuous reliability.
               </p>
             </div>
           </div>
@@ -1519,6 +1612,22 @@ export default function HomePage() {
                     Engineers start tasks out of sequence because prerequisites weren&apos;t enforced.
                   </span>
                 </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-[-2px] shrink-0 text-base font-black text-rose-600">
+                    ✕
+                  </span>
+                  <span>
+                    Untracked task handoffs cause confusion when team members switch projects with zero audit trails.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-[-2px] shrink-0 text-base font-black text-rose-600">
+                    ✕
+                  </span>
+                  <span>
+                    Accidental deletions instantly destroy tasks and attachments with zero recovery safety net.
+                  </span>
+                </li>
               </ul>
             </div>
 
@@ -1563,6 +1672,22 @@ export default function HomePage() {
                   </span>
                   <span>
                     Automated Slack & Email reminders ensure nothing ever slips through the cracks.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-[-2px] shrink-0 text-base font-black text-emerald-600">
+                    ✓
+                  </span>
+                  <span>
+                    Audit-ready task reassignments: instant handoffs with immutable activity logs and team alert dispatch.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-[-2px] shrink-0 text-base font-black text-emerald-600">
+                    ✓
+                  </span>
+                  <span>
+                    30-day soft-delete grace period with 1-click restore and automated Cloudflare R2 orphan pruning.
                   </span>
                 </li>
               </ul>
