@@ -161,14 +161,31 @@ export class SupabaseAuthRepository implements IAuthRepository {
 
       // Attempt 1: Direct Table Insert with correct FK order
       try {
-        const { data: orgData, error: orgErr } = await (executorClient as any)
+        const orgPayload: Record<string, any> = {
+          name: credentials.orgName,
+          timezone: credentials.timezone || "Asia/Kolkata",
+        };
+        if (credentials.companySize) orgPayload.size = credentials.companySize;
+        if (credentials.services) orgPayload.services = credentials.services;
+
+        let { data: orgData, error: orgErr } = await (executorClient as any)
           .from("organizations")
-          .insert({
-            name: credentials.orgName,
-            timezone: credentials.timezone || "Asia/Kolkata",
-          })
+          .insert(orgPayload)
           .select("id")
           .maybeSingle();
+
+        // If error occurred due to missing size/services column in older DB schema, retry without them
+        if (orgErr && (orgErr.message?.includes("column") || orgErr.code === "42703")) {
+          const fallback = await (executorClient as any)
+            .from("organizations")
+            .insert({
+              name: credentials.orgName,
+              timezone: credentials.timezone || "Asia/Kolkata",
+            })
+            .select("id")
+            .maybeSingle();
+          orgData = fallback.data;
+        }
 
         if (orgData?.id) {
           orgId = orgData.id;

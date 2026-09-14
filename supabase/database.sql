@@ -124,6 +124,8 @@ alter table public.profiles add column if not exists department text;
 alter table public.profiles add column if not exists notification_preferences jsonb default '{"email": true, "in_app": true}'::jsonb;
 alter table public.organizations add column if not exists slack_webhook_url text;
 alter table public.organizations add column if not exists slack_notifications_enabled boolean default true;
+alter table public.organizations add column if not exists size text;
+alter table public.organizations add column if not exists services text;
 
 -- Safe foreign key from organizations.created_by to profiles.id
 do $$

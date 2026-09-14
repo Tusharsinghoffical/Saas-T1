@@ -22,11 +22,13 @@ import {
   ChevronDown,
   Sparkles,
   Radio,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
+import { BulkAddMembersModal } from "@/components/team/BulkAddMembersModal";
 import { createClient } from "@/infrastructure/supabase/supabaseClient";
 import {
   useAutoRefresh,
@@ -58,6 +60,7 @@ export default function AdminTeamPage() {
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -449,6 +452,15 @@ export default function AdminTeamPage() {
             isRefreshing={isRefreshing || isLoading}
             triggerManual={triggerManual}
           />
+
+          <Button
+            onClick={() => setIsBulkModalOpen(true)}
+            variant="outline"
+            className="inline-flex items-center gap-2 rounded-lg border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 px-4 py-2 text-xs font-semibold"
+          >
+            <Upload className="h-4 w-4" />
+            Bulk Add (CSV / TXT)
+          </Button>
 
           <Button
             onClick={() => {
@@ -1064,6 +1076,16 @@ export default function AdminTeamPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal: Bulk Add Members from CSV / TXT / Paste */}
+      <BulkAddMembersModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        onSuccess={() => {
+          fetchMembers();
+          showToast("Team members processed successfully!");
+        }}
+      />
     </div>
   );
 }

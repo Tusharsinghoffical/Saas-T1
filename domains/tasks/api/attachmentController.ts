@@ -22,7 +22,8 @@ export class AttachmentController {
       body?.action || (body?.fileUrl ? "save_attachment" : "get_presigned_url");
 
     if (action === "get_presigned_url") {
-      const validation = presignedUrlRequestSchema.safeParse(body);
+      const { action: _action, ...payload } = body || {};
+      const validation = presignedUrlRequestSchema.safeParse(payload);
       if (!validation.success) {
         throw new ValidationError(
           "Validation failed",
@@ -37,7 +38,8 @@ export class AttachmentController {
       action === "add_link" ||
       action === "save_link"
     ) {
-      const validation = createAttachmentSchema.safeParse(body);
+      const { action: _action, ...payload } = body || {};
+      const validation = createAttachmentSchema.safeParse(payload);
       if (!validation.success) {
         throw new ValidationError(
           "Validation failed",

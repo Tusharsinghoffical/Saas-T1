@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -72,6 +72,56 @@ export function DashboardSidebar({
   const pathname = usePathname();
   const [copiedCode, setCopiedCode] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserProfileInfo | null>(user);
+
+  useEffect(() => {
+    setCurrentUser(user);
+  }, [user]);
+
+  useEffect(() => {
+    const handleProfileUpdate = (e: any) => {
+      const updated = e.detail || e.data?.profile;
+      if (updated) {
+        setCurrentUser((prev) =>
+          prev
+            ? {
+                ...prev,
+                fullName: updated.fullName || prev.fullName,
+                position:
+                  updated.position !== undefined
+                    ? updated.position
+                    : prev.position,
+                phoneNumber:
+                  updated.phoneNumber !== undefined
+                    ? updated.phoneNumber
+                    : prev.phoneNumber,
+                avatarUrl:
+                  updated.avatarUrl !== undefined
+                    ? updated.avatarUrl
+                    : prev.avatarUrl,
+              }
+            : null
+        );
+      }
+    };
+
+    window.addEventListener("tasq:profile_updated", handleProfileUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("tasq-profile-channel");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "PROFILE_UPDATED" && event.data.profile) {
+          handleProfileUpdate({ detail: event.data.profile });
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener("tasq:profile_updated", handleProfileUpdate);
+      if (bc) bc.close();
+    };
+  }, []);
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -94,8 +144,8 @@ export function DashboardSidebar({
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const initials = user?.fullName
-    ? user.fullName
+  const initials = currentUser?.fullName
+    ? currentUser.fullName
         .split(" ")
         .map((n) => n[0])
         .join("")
@@ -399,12 +449,12 @@ export function DashboardSidebar({
                       <div className="truncate text-xs font-bold text-slate-900 transition-colors group-hover/profile:text-indigo-600 dark:text-white dark:group-hover/profile:text-indigo-400">
                         {isLoadingUser
                           ? "Loading…"
-                          : user?.fullName || "Active User"}
+                          : currentUser?.fullName || "Active User"}
                       </div>
                       <div className="truncate text-[10px] font-medium text-slate-500 dark:text-slate-400">
                         {isLoadingUser
                           ? ""
-                          : user?.position || user?.email || "workspace user"}
+                          : currentUser?.position || currentUser?.email || "workspace user"}
                       </div>
                     </div>
                   </Link>

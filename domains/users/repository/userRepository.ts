@@ -427,6 +427,33 @@ export class SupabaseUserRepository implements IUserRepository {
         .single();
 
       if (!error && updated) {
+        // Synchronize auth user metadata in background so JWT and token claims stay updated
+        if (adminClient?.auth?.admin) {
+          try {
+            const metaUpdates: Record<string, any> = {};
+            if (updates.fullName !== undefined) metaUpdates.full_name = updates.fullName.trim();
+            if (updates.avatarUrl !== undefined) metaUpdates.avatar_url = updates.avatarUrl;
+            if (updates.position !== undefined) metaUpdates.position = updates.position;
+            if (updates.department !== undefined) metaUpdates.department = updates.department;
+
+            if (Object.keys(metaUpdates).length > 0) {
+              await adminClient.auth.admin.updateUserById(userId, {
+                user_metadata: metaUpdates,
+              });
+            }
+          } catch {
+            // Non-blocking metadata sync
+          }
+        }
+
+        // Invalidate server-side authContextCache so subsequent requests read fresh profile immediately
+        try {
+          const { invalidateAuthCache } = await import("@/shared/middleware/rbacGuard");
+          invalidateAuthCache(userId);
+        } catch {
+          // Non-blocking
+        }
+
         return {
           id: updated.id,
           orgId: updated.org_id,
@@ -458,6 +485,13 @@ export class SupabaseUserRepository implements IUserRepository {
       .eq("id", userId)
       .select()
       .single();
+
+    try {
+      const { invalidateAuthCache } = await import("@/shared/middleware/rbacGuard");
+      invalidateAuthCache(userId);
+    } catch {
+      // Non-blocking
+    }
 
     return {
       id: userId,

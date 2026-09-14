@@ -133,10 +133,19 @@ export class SupabaseAttachmentRepository implements IAttachmentRepository {
           "[saveAttachment error with explicit select, retrying with select *]:",
           error.message
         );
-        const retry = await (client.from("task_attachments") as any)
+        let retry = await (client.from("task_attachments") as any)
           .insert(insertPayload)
           .select()
           .single();
+
+        if (retry.error || !retry.data) {
+          console.warn("[saveAttachment retrying with adminClient]:", retry.error?.message);
+          const adminClient = createAdminClient();
+          retry = await (adminClient.from("task_attachments") as any)
+            .insert(insertPayload)
+            .select()
+            .single();
+        }
 
         if (retry.error || !retry.data) {
           console.error("[saveAttachment Retry Failed]", retry.error?.message);

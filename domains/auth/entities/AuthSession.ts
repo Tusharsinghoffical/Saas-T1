@@ -15,6 +15,8 @@ export interface SignupCredentials {
   fullName: string;
   email: string;
   password?: string;
+  companySize?: string;
+  services?: string;
   timezone?: string;
 }
 

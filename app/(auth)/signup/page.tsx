@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   ArrowRight,
   Sparkles,
+  Briefcase,
+  Users,
 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Turnstile } from "@/components/auth/Turnstile";
@@ -32,6 +34,8 @@ export default function SignupPage() {
     fullName: "",
     email: "",
     password: "",
+    companySize: "1-10",
+    services: "IT & Software Development",
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -79,7 +83,9 @@ export default function SignupPage() {
 
   const passwordStrength = getPasswordStrength(formData.password);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     // Clear inline error on change
@@ -115,6 +121,8 @@ export default function SignupPage() {
       fullName: formData.fullName.trim(),
       email: formData.email.trim().toLowerCase(),
       password: formData.password,
+      companySize: formData.companySize?.trim() || "1-10",
+      services: formData.services?.trim() || "IT & Software Development",
       turnstileToken: activeToken,
     };
 
@@ -143,11 +151,8 @@ export default function SignupPage() {
         return;
       }
 
-      const orgId = response.data?.orgId || "";
-      const orgName = encodeURIComponent(
-        response.data?.orgName || sanitizedData.orgName
-      );
-      router.push(`/onboarding?org_id=${orgId}&org_name=${orgName}`);
+      // Seamless direct entry into admin workspace
+      router.push("/admin/dashboard?welcome=true");
     } catch (err: any) {
       if (
         err?.message?.includes("Server Action") ||
@@ -226,6 +231,68 @@ export default function SignupPage() {
               {errors.orgName}
             </p>
           )}
+        </div>
+
+        {/* Company Size & Services/Industry */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="signup-companySize"
+              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200"
+            >
+              Company Size
+            </label>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <Users className="h-4 w-4" />
+              </div>
+              <select
+                id="signup-companySize"
+                name="companySize"
+                disabled={isLoading}
+                value={formData.companySize || "1-10"}
+                onChange={handleChange}
+                className="w-full appearance-none rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-900 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:text-sm"
+              >
+                <option value="1-10">1 – 10 Employees</option>
+                <option value="11-50">11 – 50 Employees</option>
+                <option value="51-200">51 – 200 Employees</option>
+                <option value="201-500">201 – 500 Employees</option>
+                <option value="500+">500+ Enterprise</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="signup-services"
+              className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200"
+            >
+              Industry / Services
+            </label>
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <Briefcase className="h-4 w-4" />
+              </div>
+              <select
+                id="signup-services"
+                name="services"
+                disabled={isLoading}
+                value={formData.services || "IT & Software Development"}
+                onChange={handleChange}
+                className="w-full appearance-none rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-9 pr-8 text-xs font-medium text-slate-900 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:text-sm"
+              >
+                <option value="IT & Software Development">IT &amp; Software Dev</option>
+                <option value="Digital Marketing & Agency">Marketing &amp; Agency</option>
+                <option value="Financial Services & Fintech">Fintech &amp; Finance</option>
+                <option value="E-commerce & Retail">E-commerce &amp; Retail</option>
+                <option value="Consulting & Operations">Consulting &amp; Ops</option>
+                <option value="Education & Training">Education &amp; EdTech</option>
+                <option value="Healthcare & Wellness">Healthcare</option>
+                <option value="Other">Other Services</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Admin Full Name */}

@@ -615,10 +615,17 @@ export function TaskDetail({
           file_url: cleanUrl,
         });
       } else {
-        const errorMsg =
+        let errorMsg =
           typeof json.error === "string"
             ? json.error
             : json.message || "Failed to save link to workspace database.";
+        if (json.details && typeof json.details === "object") {
+          const firstFieldKey = Object.keys(json.details)[0];
+          const firstDetail = json.details[firstFieldKey];
+          if (Array.isArray(firstDetail) && firstDetail.length > 0) {
+            errorMsg = `${firstDetail[0]}`;
+          }
+        }
         setLinkError(errorMsg);
       }
     } catch {

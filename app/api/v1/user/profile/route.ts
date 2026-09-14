@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { userController } from "@/domains/users/api/userController";
 import { handleAuthError } from "@/shared/middleware/rbacGuard";
 import { z } from "zod";
@@ -58,6 +59,14 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updated = await userController.updatePersonalProfile(parsed.data);
+
+    // Revalidate Next.js cache so layouts and server components immediately reflect new profile
+    try {
+      revalidatePath("/", "layout");
+    } catch {
+      // Non-blocking
+    }
+
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     return handleAuthError(error);

@@ -21,6 +21,43 @@ export function DashboardHeader({
   userInitials,
   userId,
 }: DashboardHeaderProps) {
+  const [currentInitials, setCurrentInitials] = React.useState(userInitials);
+
+  React.useEffect(() => {
+    setCurrentInitials(userInitials);
+  }, [userInitials]);
+
+  React.useEffect(() => {
+    const handleProfileUpdate = (e: any) => {
+      const updated = e.detail || e.data?.profile;
+      if (updated?.fullName) {
+        const parts = updated.fullName.trim().split(" ");
+        const inits =
+          parts.length > 1
+            ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+            : parts[0].slice(0, 2).toUpperCase();
+        setCurrentInitials(inits);
+      }
+    };
+
+    window.addEventListener("tasq:profile_updated", handleProfileUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      bc = new BroadcastChannel("tasq-profile-channel");
+      bc.onmessage = (event) => {
+        if (event.data?.type === "PROFILE_UPDATED" && event.data.profile) {
+          handleProfileUpdate({ detail: event.data.profile });
+        }
+      };
+    }
+
+    return () => {
+      window.removeEventListener("tasq:profile_updated", handleProfileUpdate);
+      if (bc) bc.close();
+    };
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-4 backdrop-blur-xl transition-colors duration-200 dark:border-slate-800/80 dark:bg-slate-900/80 sm:px-6">
       {/* Left side: Hamburger (mobile) + Breadcrumbs */}
@@ -87,10 +124,10 @@ export function DashboardHeader({
         <NotificationBell userId={userId} />
 
         {/* Mobile User Avatar Pill */}
-        {userInitials && (
+        {currentInitials && (
           <div className="flex md:hidden">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-600 text-xs font-bold text-white shadow-xs">
-              {userInitials}
+              {currentInitials}
             </div>
           </div>
         )}
