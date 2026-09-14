@@ -53,12 +53,13 @@ if exist ".next" (
 echo.
 echo ======================================================================
 echo [*] Starting Next.js Development Server...
-echo [*] App URL: https://tasq-one.onrender.com
+echo [*] Local Dev URL: http://localhost:3000
+echo [*] Production URL: https://tasq-one.onrender.com
 echo ======================================================================
 echo.
 
-:: 5. Open default browser
-start "" "https://tasq-one.onrender.com"
+:: 5. Open default browser to local dev server
+start "" "http://localhost:3000"
 
 :: 6. Launch dev server using CALL to keep window open
 call npm run dev

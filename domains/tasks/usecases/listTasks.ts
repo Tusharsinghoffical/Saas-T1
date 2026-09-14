@@ -2,9 +2,9 @@ import { RequestContext } from "@/shared/types/context";
 import { Task, TaskFilterDTO } from "../entities/Task";
 import { ITaskRepository, taskRepository } from "../repository/taskRepository";
 import {
-  userRepository,
   IUserRepository,
-} from "@/domains/users/repository/userRepository";
+  userRepository,
+} from "@/domains/users";
 
 export async function listTasksUseCase(
   context: RequestContext,

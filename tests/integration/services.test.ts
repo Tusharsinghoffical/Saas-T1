@@ -169,4 +169,46 @@ describe("P2.5: Organization Settings Ownership Check (Cross-Org IDOR)", () => {
     });
     expect(res2.success).toBe(true);
   });
+
+  it("P0: groqChatCompletion provides robust intelligent fallback for mock keys without throwing", async () => {
+    process.env.GROQ_API_KEY = "gsk_mock_groq_api_key_for_dev";
+    const result = await groqChatCompletion({
+      systemPrompt: "Agile Technical Product Manager",
+      userPrompt: "Enhance task: Write auth documentation",
+      responseFormat: "json_object",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.model).toContain("demo-mode");
+    const parsed = JSON.parse(result.content);
+    expect(parsed.title).toContain("Enhanced:");
+    expect(parsed.checklist).toBeDefined();
+  });
+
+  it("P0: groqChatCompletion gracefully handles 401 unauthorized errors with fallback mode", async () => {
+    // Mock global fetch to simulate Groq 401 response for bad production key
+    const originalFetch = global.fetch;
+    try {
+      process.env.GROQ_API_KEY = "gsk_invalid_real_looking_key_1234567890";
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { message: "Invalid API Key" } }),
+      } as any);
+
+      const result = await groqChatCompletion({
+        systemPrompt: "Agile Technical Product Manager",
+        userPrompt: "Enhance task: Setup Postgres database",
+        responseFormat: "json_object",
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.model).toContain("smart-fallback");
+      const parsed = JSON.parse(result.content);
+      expect(parsed.title).toContain("Enhanced:");
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });
+

@@ -16,7 +16,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const comments = await commentController.listComments(id);
-    return NextResponse.json({ success: true, data: comments });
+    return NextResponse.json(
+      { success: true, data: comments },
+      {
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     return handleAuthError(error);
   }

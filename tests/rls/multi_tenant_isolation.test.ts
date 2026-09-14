@@ -214,6 +214,10 @@ describe("Multi-Tenant RLS & IDOR Cross-Org Isolation Suite", () => {
         topBlockers: [],
         adminEmails: [],
       }),
+      getProfilesForValidation: vi.fn().mockResolvedValue([]),
+      getProfileTeamId: vi.fn().mockResolvedValue(null),
+      ensureDefaultTeam: vi.fn().mockResolvedValue("default-team-id"),
+      assignUserToTeam: vi.fn().mockResolvedValue(undefined),
     };
 
     const mockCommentRepo: ICommentRepository = {

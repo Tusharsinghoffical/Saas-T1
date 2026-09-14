@@ -17,7 +17,7 @@ export const createTaskSchema = z.object({
   teamId: z.string().optional().nullable(),
   assigneeIds: z.array(z.string()).optional().default([]),
   dependencyTaskIds: z.array(z.string()).optional().default([]),
-});
+}).strict();
 
 export const updateTaskSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -28,11 +28,11 @@ export const updateTaskSchema = z.object({
   teamId: z.string().optional().nullable(),
   assigneeIds: z.array(z.string()).optional(),
   dependencyTaskIds: z.array(z.string()).optional(),
-});
+}).strict();
 
 export const employeeStatusUpdateSchema = z.object({
   status: taskStatusEnum,
-});
+}).strict();
 
 export const taskFilterSchema = z.object({
   status: taskStatusEnum.optional(),
@@ -48,7 +48,7 @@ export const taskFilterSchema = z.object({
   search: z.string().optional(),
   limit: z.coerce.number().min(1).max(1000).default(50),
   offset: z.coerce.number().min(0).default(0),
-});
+}).strict();
 
 export const reassignTaskSchema = z.object({
   assigneeId: z.string().nullable().optional(),
@@ -58,7 +58,7 @@ export const reassignTaskSchema = z.object({
     .max(500, "Reason must not exceed 500 characters")
     .optional()
     .nullable(),
-});
+}).strict();
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;

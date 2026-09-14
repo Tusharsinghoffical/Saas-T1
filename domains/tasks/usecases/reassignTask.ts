@@ -12,6 +12,7 @@ import {
 import { ForbiddenError, ValidationError } from "@/shared/errors/domainErrors";
 import { invalidateOrgDashboardCache } from "@/infrastructure/redis/redisClient";
 import { recordActivityLogUseCase } from "@/domains/activity";
+import { createAdminClient } from "@/infrastructure/supabase/supabaseServer";
 
 export async function reassignTaskUseCase(
   context: RequestContext,
@@ -33,6 +34,34 @@ export async function reassignTaskUseCase(
 
   if (!taskId) {
     throw new ValidationError("Task ID is required.");
+  }
+
+  // Fetch the task first to enforce Manager team isolation
+  const task = await repo.getTaskById(taskId, context.orgId);
+  if (!task) {
+    throw new ValidationError("Task not found.");
+  }
+
+  // Prevent IDOR: Managers can only act on tasks within their own team
+  if (context.role === "manager") {
+    if (!task.teamId) {
+      throw new ForbiddenError("Managers cannot reassign organization-level tasks.");
+    }
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    if (Boolean(url) && !url.includes("your-project-ref")) {
+      const adminClient = createAdminClient();
+      const { data: team } = await (adminClient as any)
+        .from("teams")
+        .select("manager_id")
+        .eq("id", task.teamId)
+        .single();
+  
+      if (!team || team.manager_id !== context.userId) {
+        throw new ForbiddenError(
+          "You do not have permission to reassign this task. Managers can only reassign tasks belonging to their assigned team."
+        );
+      }
+    }
   }
 
   // Must provide at least one reallocation parameter

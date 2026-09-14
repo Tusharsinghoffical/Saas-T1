@@ -4,7 +4,7 @@ import {
   IDashboardRepository,
   dashboardRepository,
 } from "../repository/dashboardRepository";
-import { userRepository } from "@/domains/users/repository/userRepository";
+import { userRepository } from "@/domains/users";
 
 export async function getAdminDashboardUseCase(
   context: RequestContext,

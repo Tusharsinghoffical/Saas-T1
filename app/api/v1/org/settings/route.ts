@@ -10,7 +10,16 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   try {
     const org = await orgController.getSettings();
-    return NextResponse.json({ success: true, data: org });
+    return NextResponse.json(
+      { success: true, data: org },
+      {
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     return handleAuthError(error);
   }

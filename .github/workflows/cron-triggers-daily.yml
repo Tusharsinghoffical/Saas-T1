@@ -1,0 +1,19 @@
+name: Scheduled Cron Triggers (Daily)
+on:
+  schedule:
+    - cron: '0 3 * * *'   # daily 3am UTC — r2-cleanup, quota-alert, email-retry
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    env:
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: R2 Cleanup
+        run: |
+          curl -X POST https://tasq-one.onrender.com/api/v1/cron/r2-cleanup -H "Authorization: Bearer $CRON_SECRET"
+      - name: Quota Alert
+        run: |
+          curl -X POST https://tasq-one.onrender.com/api/v1/cron/quota-alert -H "Authorization: Bearer $CRON_SECRET"
+      - name: Email Retry
+        run: |
+          curl -X POST https://tasq-one.onrender.com/api/v1/cron/email-retry -H "Authorization: Bearer $CRON_SECRET"

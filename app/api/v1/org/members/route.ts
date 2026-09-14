@@ -12,7 +12,16 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     const members = await userController.getMembers();
-    return NextResponse.json({ success: true, data: members });
+    return NextResponse.json(
+      { success: true, data: members },
+      {
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     return handleAuthError(error);
   }

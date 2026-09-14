@@ -994,3 +994,5 @@ begin
   end loop;
 end;
 $$;
+CREATE TABLE IF NOT EXISTS public.email_dlq (id uuid primary key default gen_random_uuid(), org_id uuid references public.organizations(id) on delete cascade, recipient_email text not null, subject text not null, html text not null, retry_count integer default 0, last_error text, status text default 'pending', created_at timestamp with time zone default now(), updated_at timestamp with time zone default now());
+CREATE OR REPLACE FUNCTION get_db_size() RETURNS bigint AS $$$ BEGIN RETURN pg_database_size(current_database()); END; $$$ LANGUAGE plpgsql SECURITY DEFINER;

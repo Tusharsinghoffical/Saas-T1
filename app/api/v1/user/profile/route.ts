@@ -22,7 +22,16 @@ const updateProfileSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const profile = await userController.getPersonalProfile();
-    return NextResponse.json({ success: true, data: profile });
+    return NextResponse.json(
+      { success: true, data: profile },
+      {
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     return handleAuthError(error);
   }

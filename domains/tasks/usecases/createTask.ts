@@ -1,10 +1,6 @@
 import { RequestContext } from "@/shared/types/context";
 import { Task, CreateTaskDTO } from "../entities/Task";
 import { ITaskRepository, taskRepository } from "../repository/taskRepository";
-import {
-  IUserRepository,
-  userRepository,
-} from "@/domains/users/repository/userRepository";
 import { invalidateOrgDashboardCache } from "@/infrastructure/redis/redisClient";
 import { recordActivityLogUseCase } from "@/domains/activity";
 
@@ -13,18 +9,13 @@ import { ValidationError } from "@/shared/errors/domainErrors";
 export async function createTaskUseCase(
   context: RequestContext,
   data: CreateTaskDTO,
-  repo: ITaskRepository = taskRepository,
-  userRepo: IUserRepository = userRepository
+  repo: ITaskRepository = taskRepository
 ): Promise<Task> {
   // Validate that no assignee is a soft-deleted/deactivated employee
   if (data.assigneeIds && data.assigneeIds.length > 0) {
-    const profiles = await Promise.all(
-      data.assigneeIds.map((id) =>
-        userRepo.getProfileById(id).catch(() => null)
-      )
-    );
+    const profiles = await repo.getProfilesForValidation(data.assigneeIds);
     for (const p of profiles) {
-      if (p?.deletedAt) {
+      if (p.deletedAt) {
         throw new ValidationError(
           `Cannot assign task to deactivated user: ${p.fullName || p.id}`
         );
@@ -32,20 +23,20 @@ export async function createTaskUseCase(
     }
   }
 
-  // If teamId not explicitly provided, resolve creator's team or default workspace team
-  let resolvedTeamId = data.teamId;
-  if (!resolvedTeamId) {
-    try {
-      const profile = await userRepo.getProfileById(context.userId);
-      if (profile?.teamId) {
-        resolvedTeamId = profile.teamId;
-      } else {
-        resolvedTeamId = await userRepo.ensureDefaultTeam(context.orgId);
+  // If teamId not explicitly provided, resolve creator's team or default
+    let resolvedTeamId = data.teamId;
+    if (!resolvedTeamId) {
+      try {
+        const teamId = await repo.getProfileTeamId(context.userId);
+        if (teamId) {
+          resolvedTeamId = teamId;
+        } else {
+          resolvedTeamId = await repo.ensureDefaultTeam(context.orgId);
+        }
+      } catch {
+        // Non-blocking fallback
       }
-    } catch {
-      // Non-blocking fallback
     }
-  }
 
   const taskPayload: CreateTaskDTO = {
     ...data,
@@ -58,20 +49,21 @@ export async function createTaskUseCase(
     taskPayload
   );
 
-  // If assignees were specified, ensure they are also assigned to the squad
-  if (data.assigneeIds && data.assigneeIds.length > 0 && resolvedTeamId) {
-    for (const assigneeId of data.assigneeIds) {
-      try {
-        await userRepo.assignUserToTeam(
-          assigneeId,
-          context.orgId,
-          resolvedTeamId
-        );
-      } catch {
-        // Non-blocking
+    // Attempt to map task assignees to the same team.
+    // If it fails, we still create the task.
+    if (data.assigneeIds && data.assigneeIds.length > 0 && resolvedTeamId) {
+      for (const assigneeId of data.assigneeIds) {
+        try {
+          await repo.assignUserToTeam(
+            assigneeId,
+            context.orgId,
+            resolvedTeamId
+          );
+        } catch {
+          // Log and ignore to prevent task creation failure
+        }
       }
     }
-  }
 
   // Record Activity Log
   await recordActivityLogUseCase({

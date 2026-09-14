@@ -4,12 +4,15 @@
  */
 import sanitizeHtml from "sanitize-html";
 import { logger } from "@/infrastructure/logger/logger";
+import { pushToEmailDlq } from "./emailDlqRepository";
+import { incrementQuota } from "@/infrastructure/redis/redisClient";
 
 export interface SendEmailOptions {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  skipDlq?: boolean;
 }
 
 export async function sendEmail({
@@ -17,6 +20,7 @@ export async function sendEmail({
   subject,
   html,
   text,
+  skipDlq = false,
 }: SendEmailOptions): Promise<{
   success: boolean;
   id?: string;
@@ -63,8 +67,19 @@ export async function sendEmail({
         subject,
         error: json.message,
       });
+      if (!skipDlq) {
+        await pushToEmailDlq({
+          recipient_email: to,
+          subject,
+          html,
+          last_error: json.message || "Resend API error",
+        });
+      }
       return { success: false, error: json.message || "Resend API error" };
     }
+
+    const today = new Date().toISOString().split("T")[0];
+    await incrementQuota(`quota:resend:emails:${today}`);
 
     return { success: true, id: json.id };
   } catch (err: any) {
@@ -74,6 +89,14 @@ export async function sendEmail({
       subject,
       error: err.message,
     });
+    if (!skipDlq) {
+      await pushToEmailDlq({
+        recipient_email: to,
+        subject,
+        html,
+        last_error: err.message || "Failed to dispatch email",
+      });
+    }
     return { success: false, error: err.message || "Failed to dispatch email" };
   }
 }

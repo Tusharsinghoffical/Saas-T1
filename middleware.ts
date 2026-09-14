@@ -223,6 +223,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/api/v1/")) {
+    response.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate");
+  }
+
   return response;
 }
 

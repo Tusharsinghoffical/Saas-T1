@@ -77,6 +77,23 @@ export class SupabaseActivityRepository implements IActivityRepository {
         diff: input.diff || null,
       };
 
+      // Idempotency check: Look for the exact same action/entity/actor within the last 5 seconds
+      const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+      const { data: recentLogs } = await (client.from("activity_logs") as any)
+        .select("id")
+        .eq("org_id", payload.org_id)
+        .eq("action", payload.action)
+        .eq("entity", payload.entity)
+        .eq("actor_id", payload.actor_id)
+        .eq("entity_id", payload.entity_id)
+        .gte("created_at", fiveSecondsAgo)
+        .limit(1);
+
+      if (recentLogs && recentLogs.length > 0) {
+        logger.debug("[Idempotency] Duplicate activity log prevented", { orgId: input.orgId, action: input.action });
+        return true;
+      }
+
       const { error } = await (client.from("activity_logs") as any).insert(
         payload
       );

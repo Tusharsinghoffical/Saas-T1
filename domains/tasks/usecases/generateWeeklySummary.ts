@@ -8,11 +8,11 @@ import { recordActivityLogUseCase } from "@/domains/activity";
 import {
   orgRepository,
   IOrgRepository,
-} from "@/domains/organization/repository/orgRepository";
+} from "@/domains/organization";
 import {
   taskRepository,
   ITaskRepository,
-} from "@/domains/tasks/repository/taskRepository";
+} from "../repository/taskRepository";
 
 export async function generateWeeklySummaryUseCase(
   orgRepo: IOrgRepository = orgRepository,

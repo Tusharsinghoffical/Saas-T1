@@ -101,6 +101,10 @@ describe("Domain-Driven Structure: Task Business Rules & Invariant Tests", () =>
         topBlockers: [],
         adminEmails: [],
       }),
+      getProfilesForValidation: async () => [],
+      getProfileTeamId: async () => null,
+      ensureDefaultTeam: async () => "default-team-id",
+      assignUserToTeam: async () => {},
     };
 
     const employeeContext: RequestContext = {
@@ -180,6 +184,10 @@ describe("Domain-Driven Structure: Task Business Rules & Invariant Tests", () =>
         topBlockers: [],
         adminEmails: [],
       }),
+      getProfilesForValidation: async () => [],
+      getProfileTeamId: async () => null,
+      ensureDefaultTeam: async () => "default-team-id",
+      assignUserToTeam: async () => {},
     };
 
     const adminContext: RequestContext = {

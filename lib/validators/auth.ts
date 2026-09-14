@@ -58,22 +58,22 @@ export const magicLinkSchema = z
 export const inviteMemberSchema = z.object({
   email: z.string().email("Invalid email address"),
   role: z.enum(["admin", "manager", "employee"]),
-});
+}).strict();
 
 export const onboardingStep1Schema = z.object({
   orgName: z.string().min(2, "Organization name is required"),
   timezone: z.string().default("Asia/Kolkata"),
-});
+}).strict();
 
 export const onboardingStep2Schema = z.object({
   invites: z.array(inviteMemberSchema).default([]),
-});
+}).strict();
 
 export const onboardingStep3Schema = z.object({
   taskTitle: z.string().min(1, "Task title is required").max(200),
   priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
   dueDate: z.string().optional(),
-});
+}).strict();
 
 export const onboardingCompleteSchema = z.object({
   orgId: z.string().uuid().optional(),
@@ -83,7 +83,7 @@ export const onboardingCompleteSchema = z.object({
   taskTitle: z.string().min(1),
   priority: z.enum(["low", "medium", "high", "urgent"]),
   dueDate: z.string().optional(),
-});
+}).strict();
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

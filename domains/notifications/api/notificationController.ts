@@ -2,7 +2,7 @@ import { requireAuth, requireRole } from "@/shared/middleware/rbacGuard";
 import { listNotificationsUseCase } from "../usecases/listNotifications";
 import { markNotificationsAsReadUseCase } from "../usecases/markNotificationsAsRead";
 import { dispatchEmailNotificationUseCase } from "../usecases/dispatchEmailNotification";
-import { userRepository } from "@/domains/users/repository/userRepository";
+import { userRepository } from "@/domains/users";
 import { ValidationError, ForbiddenError } from "@/shared/errors/domainErrors";
 
 export class NotificationController {

@@ -76,6 +76,7 @@ export interface KanbanBoardProps {
   initialTasks?: KanbanTaskItem[];
   orgMembers?: OrgMember[];
   orgId?: string;
+  userRole?: "admin" | "manager" | "employee";
   onTaskUpdated?: (task: KanbanTaskItem) => void;
 }
 
@@ -87,6 +88,7 @@ export function KanbanBoard({
     { id: "mem-3", fullName: "Rohan Patel (Dev)", role: "employee" },
   ],
   orgId = "11111111-1111-1111-1111-111111111111",
+  userRole = "admin",
   onTaskUpdated,
 }: KanbanBoardProps) {
   // Global Zustand Task Store
@@ -666,7 +668,7 @@ export function KanbanBoard({
         task={selectedDetailTask}
         orgMembers={membersList}
         allTasks={tasks}
-        userRole="admin"
+        userRole={userRole}
         onTaskUpdated={handleTaskSaved}
         onTaskDeleted={handleTaskDeleted}
       />

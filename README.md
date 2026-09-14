@@ -25,7 +25,7 @@ _Assign with absolute clarity, track live execution in real time, and eliminate 
 [![Cloudflare](https://img.shields.io/badge/Cloudflare-Turnstile_%26_R2-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://cloudflare.com/)
 [![Groq AI](https://img.shields.io/badge/Groq_AI-Llama_3.3_70B-F55036?style=for-the-badge)](https://groq.com/)
 [![Redis](https://img.shields.io/badge/Upstash_Redis-Multi--Layer_Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
-[![Tests](https://img.shields.io/badge/Tests-75_Passed-22C55E?style=for-the-badge&logo=vitest&logoColor=white)](./tests)
+[![Tests](https://img.shields.io/badge/Tests-84_Passed-22C55E?style=for-the-badge&logo=vitest&logoColor=white)](./tests)
 [![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](./LICENSE)
 
 <br/>
@@ -48,7 +48,7 @@ _Assign with absolute clarity, track live execution in real time, and eliminate 
 │  Quick Navigation:                                                                     │
 │  [Overview](#-overview)  •  [v2.8 Highlights](#-whats-new-in-v28)  •  [Architecture](#-architecture--data-flow)  │
 │  [Features](#-core-capabilities)  •  [RBAC Portals](#-role-based-access-portals)  •  [Cloudflare & Supabase](#-cloudflare--supabase-reconfiguration-guide) │
-│  [Quick Start](#-quick-start)  •  [Security](#-enterprise-security--compliance)  •  [Verification](#-production-readiness-evidence)  │
+│  [Quick Start](#-quick-start)  •  [Security](#-enterprise-security--compliance)  •  [Rollback Procedure](./docs/DEPLOY-ROLLBACK.md)  │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -86,8 +86,8 @@ Traditional project management tools are bogged down by sluggish waterfall queri
 │  🔔 Redesigned High-Z Notification Hub │  z-[70] modal-safe panel, All/Unread tabs, audio│
 │  🚪 Showcase Logout Routing            │  Logout routes to public interactive sandbox (/)│
 │  ⏱️ Clean Human-Readable Time Diffs    │  Eliminated `NaNd ago` timestamp parsing bugs   │
-│  🛡️ Resilient RBAC & Team UUID Mapping │  Safe soft-deletion columns & dept slug mapping │
-│  🧪 75 Vitest Tests Passing            │  Expanded test suite passing with zero failures │
+│  🔒 Resilient RBAC & Team UUID Mapping │  Safe soft-deletion columns & dept slug mapping │
+│  ✅ 84 Vitest Tests Passing            │  Expanded test suite passing with zero failures │
 └────────────────────────────────────────┴─────────────────────────────────────────────────┘
 ```
 
@@ -344,7 +344,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### 5 · Execute Test Suite
 
 ```bash
-npm test              # Run Vitest test suites (75 passed)
+npm test              # Run Vitest test suites (84 passed)
 npx tsc --noEmit      # Validate complete TypeScript typing
 npm run lint          # Run ESLint across all files
 npm run build         # Verify production build compilation
@@ -382,15 +382,18 @@ As verified in the test suite and production build pipeline:
 
 ```text
 ✓ tests/integration/auth_rate_limiting.test.ts (10 tests)
-✓ tests/integration/services.test.ts (9 tests)
+✓ tests/integration/services.test.ts (11 tests)
 ✓ tests/rls/cross_role_routing.test.ts (20 tests)
 ✓ tests/domains/task_business_rules.test.ts (4 tests)
+✓ tests/domains/task_reallocation_and_deletion.test.ts (14 tests)
 ✓ tests/integration/logout_redirect.test.ts (3 tests)
 ✓ tests/domains/hierarchy_visibility.test.ts (7 tests)
+✓ tests/integration/manager_idor_api.test.ts (2 tests)
+✓ tests/integration/r2_cleanup_cron.test.ts (3 tests)
 ✓ tests/rls/multi_tenant_isolation.test.ts (12 tests | 2 skipped without Docker DB)
 
-Test Files: 8 passed (8)
-Tests:      75 passed | 2 skipped (77)
+Test Files: 10 passed (10)
+Tests:      84 passed | 2 skipped (86)
 TypeScript: 0 errors (npx tsc --noEmit)
 ESLint:     0 warnings, 0 errors (npm run lint)
 Build:      39 static pages, 49 total routes compiled successfully (npm run build)

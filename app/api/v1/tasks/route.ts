@@ -11,11 +11,20 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest) {
   try {
     const result = await taskController.listTasks(request.nextUrl.searchParams);
-    return NextResponse.json({
-      success: true,
-      data: result.tasks,
-      total: result.total,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: result.tasks,
+        total: result.total,
+      },
+      {
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     return handleAuthError(error);
   }

@@ -14,6 +14,15 @@ interface RouteParams {
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
+    const idempotencyKey = request.headers.get("Idempotency-Key");
+    if (idempotencyKey) {
+      const { acquireIdempotencyKey } = await import("@/infrastructure/redis/redisClient");
+      const isFirst = await acquireIdempotencyKey(`idemp:reassign:${idempotencyKey}`, 3600);
+      if (!isFirst) {
+        return NextResponse.json({ success: true, message: "Idempotent request already processed" }, { status: 200 });
+      }
+    }
+
     const { id } = await params;
     const body = await request.json();
     const result = await taskController.reassignTask(id, body);

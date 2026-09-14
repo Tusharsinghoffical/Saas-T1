@@ -4,9 +4,9 @@ import {
   dashboardRepository,
 } from "../repository/dashboardRepository";
 import {
-  IUserRepository,
   userRepository,
-} from "@/domains/users/repository/userRepository";
+  IUserRepository,
+} from "@/domains/users";
 
 export async function getEmployeeDashboardUseCase(
   context: RequestContext,

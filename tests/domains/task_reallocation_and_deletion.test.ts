@@ -21,6 +21,21 @@ vi.mock("@/domains/activity", () => ({
   recordActivityLogUseCase: vi.fn().mockResolvedValue({ id: "act-123" }),
 }));
 
+vi.mock("@/infrastructure/supabase/supabaseServer", () => ({
+  createAdminClient: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { manager_id: "manager-uuid-2" },
+            error: null,
+          }),
+        }),
+      }),
+    }),
+  }),
+}));
+
 describe("Enterprise Task Reallocation & Safe Soft-Deletion Suite", () => {
   const adminContext: RequestContext = {
     userId: "admin-uuid-1",
@@ -67,6 +82,7 @@ describe("Enterprise Task Reallocation & Safe Soft-Deletion Suite", () => {
     let currentTask: Task;
 
     beforeEach(() => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "http://dummy-supabase-url";
       storedReassignments = [];
       currentTask = {
         id: "task-100",
@@ -121,6 +137,10 @@ describe("Enterprise Task Reallocation & Safe Soft-Deletion Suite", () => {
         getDependencies: vi.fn(),
         getActiveTaskCountByUser: vi.fn(),
         getOrgWeeklyStats: vi.fn(),
+        getProfilesForValidation: vi.fn().mockResolvedValue([]),
+        getProfileTeamId: vi.fn().mockResolvedValue(null),
+        ensureDefaultTeam: vi.fn().mockResolvedValue("default-team-id"),
+        assignUserToTeam: vi.fn().mockResolvedValue(undefined),
       };
     });
 
@@ -161,6 +181,31 @@ describe("Enterprise Task Reallocation & Safe Soft-Deletion Suite", () => {
       expect(result.reassignment.fromTeamId).toBe("dept-engineering");
       expect(result.reassignment.toTeamId).toBe("dept-design");
       expect(result.reassignment.reassignedBy).toBe("manager-uuid-2");
+    });
+
+    it("blocks Manager from reassigning a task outside their team (throws ForbiddenError)", async () => {
+      const supabaseServer = await import("@/infrastructure/supabase/supabaseServer");
+      (supabaseServer.createAdminClient as any).mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { manager_id: "some-other-manager-uuid" },
+                error: null,
+              }),
+            }),
+          }),
+        }),
+      });
+
+      await expect(
+        reassignTaskUseCase(
+          managerContext,
+          "task-100",
+          { assigneeId: "emp-design-1" },
+          mockRepo
+        )
+      ).rejects.toThrow(ForbiddenError);
     });
 
     it("strictly blocks employees from reassigning tasks (throws ForbiddenError)", async () => {
@@ -211,6 +256,10 @@ describe("Enterprise Task Reallocation & Safe Soft-Deletion Suite", () => {
         getDependencies: vi.fn(),
         getActiveTaskCountByUser: vi.fn(),
         getOrgWeeklyStats: vi.fn(),
+        getProfilesForValidation: vi.fn().mockResolvedValue([]),
+        getProfileTeamId: vi.fn().mockResolvedValue(null),
+        ensureDefaultTeam: vi.fn().mockResolvedValue("default-team-id"),
+        assignUserToTeam: vi.fn().mockResolvedValue(undefined),
       };
 
       const history = await getReassignmentHistoryUseCase(
@@ -240,10 +289,14 @@ describe("Enterprise Task Reallocation & Safe Soft-Deletion Suite", () => {
     let deletedTaskId: string | null = null;
 
     beforeEach(() => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = "http://dummy-supabase-url";
       deletedTaskId = null;
       mockRepo = {
         listTasks: vi.fn(),
-        getTaskById: vi.fn(),
+        getTaskById: vi.fn().mockImplementation(async (taskId) => {
+          if (taskId === "already-deleted") return { id: taskId, teamId: "dept-engineering", deletedAt: new Date().toISOString() };
+          return { id: taskId, teamId: "dept-engineering" };
+        }),
         createTask: vi.fn(),
         updateTask: vi.fn(),
         deleteTask: vi.fn().mockImplementation(async (taskId, orgId, actorId) => {
@@ -259,6 +312,10 @@ describe("Enterprise Task Reallocation & Safe Soft-Deletion Suite", () => {
         getDependencies: vi.fn(),
         getActiveTaskCountByUser: vi.fn(),
         getOrgWeeklyStats: vi.fn(),
+        getProfilesForValidation: vi.fn().mockResolvedValue([]),
+        getProfileTeamId: vi.fn().mockResolvedValue(null),
+        ensureDefaultTeam: vi.fn().mockResolvedValue("default-team-id"),
+        assignUserToTeam: vi.fn().mockResolvedValue(undefined),
       };
     });
 
@@ -287,6 +344,27 @@ describe("Enterprise Task Reallocation & Safe Soft-Deletion Suite", () => {
 
       expect(result.success).toBe(true);
       expect(deletedTaskId).toBe("task-manager-delete");
+    });
+
+    it("blocks Manager from deleting a task outside their team (throws ForbiddenError)", async () => {
+      const supabaseServer = await import("@/infrastructure/supabase/supabaseServer");
+      (supabaseServer.createAdminClient as any).mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { manager_id: "some-other-manager-uuid" },
+                error: null,
+              }),
+            }),
+          }),
+        }),
+      });
+
+      await expect(
+        deleteTaskUseCase(managerContext, "task-outside-team", mockRepo)
+      ).rejects.toThrow(ForbiddenError);
+      expect(deletedTaskId).toBeNull();
     });
 
     it("strictly forbids regular employees from deleting tasks", async () => {

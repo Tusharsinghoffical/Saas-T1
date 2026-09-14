@@ -16,7 +16,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const task = await taskController.getTask(id);
-    return NextResponse.json({ success: true, data: task });
+    return NextResponse.json(
+      { success: true, data: task },
+      {
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     return handleAuthError(error);
   }
@@ -28,6 +37,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
+    const idempotencyKey = request.headers.get("Idempotency-Key");
+    if (idempotencyKey) {
+      const { acquireIdempotencyKey } = await import("@/infrastructure/redis/redisClient");
+      const isFirst = await acquireIdempotencyKey(`idemp:update:${idempotencyKey}`, 3600);
+      if (!isFirst) {
+        return NextResponse.json({ success: true, message: "Idempotent request already processed" }, { status: 200 });
+      }
+    }
+
     const { id } = await params;
     const body = await request.json();
     const task = await taskController.updateTask(id, body);

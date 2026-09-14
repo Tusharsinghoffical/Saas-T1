@@ -118,6 +118,7 @@ export interface Database {
           created_by: string | null;
           created_at: string;
           updated_at: string;
+          deleted_at?: string | null;
         };
         Insert: {
           id?: string;
@@ -131,6 +132,7 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -144,6 +146,7 @@ export interface Database {
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
+          deleted_at?: string | null;
         };
       };
       task_assignees: {
@@ -313,6 +316,44 @@ export interface Database {
           cancel_at_period_end?: boolean | null;
           current_period_start?: string | null;
           current_period_end?: string | null;
+          updated_at?: string;
+        };
+      };
+      email_dlq: {
+        Row: {
+          id: string;
+          recipient_email: string;
+          subject: string;
+          html: string;
+          status: string;
+          retry_count: number;
+          last_error: string | null;
+          org_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipient_email: string;
+          subject: string;
+          html: string;
+          status?: string;
+          retry_count?: number;
+          last_error?: string | null;
+          org_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipient_email?: string;
+          subject?: string;
+          html?: string;
+          status?: string;
+          retry_count?: number;
+          last_error?: string | null;
+          org_id?: string | null;
+          created_at?: string;
           updated_at?: string;
         };
       };

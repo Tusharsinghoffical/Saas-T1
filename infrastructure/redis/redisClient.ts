@@ -254,6 +254,9 @@ export async function checkRateLimit(
 
   if (isValid) {
     try {
+      const today = new Date().toISOString().split("T")[0];
+      const quotaKey = `quota:upstash:commands:${today}`;
+      
       const pipelineRes = await fetch(`${url}/pipeline`, {
         method: "POST",
         headers: {
@@ -264,6 +267,8 @@ export async function checkRateLimit(
           ["INCR", key],
           ["EXPIRE", key, windowSeconds, "NX"],
           ["TTL", key],
+          ["INCR", quotaKey],
+          ["EXPIRE", quotaKey, 86400, "NX"]
         ]),
         cache: "no-store",
         signal: AbortSignal.timeout(600),
@@ -334,4 +339,52 @@ export async function checkRateLimit(
     remaining,
     resetInSeconds,
   };
+}
+export async function incrementQuota(key: string): Promise<void> {
+  const { url, token, isValid } = getRedisConfig();
+  if (isValid) {
+    try {
+      await fetch(`${url}/pipeline`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+          ["INCR", key],
+          ["EXPIRE", key, 86400, "NX"]
+        ]),
+        cache: "no-store",
+        signal: AbortSignal.timeout(600),
+      });
+    } catch (e) {
+      // Best effort
+    }
+  }
+}
+
+export async function acquireIdempotencyKey(key: string, ttlSeconds: number = 86400): Promise<boolean> {
+  const { url, token, isValid } = getRedisConfig();
+  if (!isValid) return true; // Fallback to allowing request if no redis
+
+  try {
+    const res = await fetch(`${url}/pipeline`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify([
+        ["SET", key, "1", "NX", "EX", ttlSeconds]
+      ]),
+      cache: "no-store",
+      signal: AbortSignal.timeout(600),
+    });
+
+    if (!res.ok) return true;
+    const json = await res.json();
+    if (Array.isArray(json) && json.length > 0) {
+      return json[0].result === "OK";
+    }
+    return true;
+  } catch (e) {
+    return true;
+  }
 }

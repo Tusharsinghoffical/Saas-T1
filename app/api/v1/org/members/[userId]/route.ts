@@ -15,7 +15,16 @@ export async function GET(
   try {
     const { userId } = await params;
     const profile = await userController.getProfile(userId);
-    return NextResponse.json({ success: true, data: profile });
+    return NextResponse.json(
+      { success: true, data: profile },
+      {
+        headers: {
+          "Cache-Control": "private, no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error) {
     return handleAuthError(error);
   }

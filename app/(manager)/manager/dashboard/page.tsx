@@ -563,7 +563,11 @@ export default function ManagerDashboardPage() {
         (isLoading && tasks.length === 0 ? (
           <KanbanBoardSkeleton />
         ) : (
-          <KanbanBoard orgMembers={orgMembers} orgId={orgId} />
+          <KanbanBoard
+            orgMembers={orgMembers}
+            orgId={orgId}
+            userRole="manager"
+          />
         ))}
 
       {viewMode === "analytics" &&

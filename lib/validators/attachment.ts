@@ -15,7 +15,7 @@ export const presignedUrlRequestSchema = z.object({
     .max(100 * 1024 * 1024)
     .optional()
     .default(0),
-});
+}).strict();
 
 export const createAttachmentSchema = z.object({
   fileName: z.string().min(1, "Link/File title is required").max(255),
@@ -30,7 +30,7 @@ export const createAttachmentSchema = z.object({
     .optional()
     .default(0),
   fileType: z.string().optional().default("link"),
-});
+}).strict();
 
 export type PresignedUrlRequestInput = z.infer<
   typeof presignedUrlRequestSchema

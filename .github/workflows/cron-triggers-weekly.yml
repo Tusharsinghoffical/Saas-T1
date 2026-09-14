@@ -1,0 +1,14 @@
+name: Scheduled Cron Triggers (Weekly)
+on:
+  schedule:
+    - cron: '0 8 * * 1'   # weekly Monday 8am UTC — weekly-summary
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    env:
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Weekly Summary
+        run: |
+          curl -X POST https://tasq-one.onrender.com/api/v1/ai/weekly-summary -H "Authorization: Bearer $CRON_SECRET"
+

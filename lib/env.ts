@@ -56,6 +56,7 @@ const clientEnvSchema = z.object({
     .string()
     .optional()
     .default("https://app.posthog.com"),
+  NEXT_PUBLIC_SENTRY_DSN: z.string().url("Must be a valid URL").optional(),
 });
 
 // Schema for server-side environment variables (Edge & Node.js runtimes)
@@ -106,6 +107,16 @@ const serverEnvSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRICE_ID_PRO: z.string().optional(),
   STRIPE_PRICE_ID_ENTERPRISE: z.string().optional(),
+  SENTRY_DSN: z
+    .string()
+    .url("Must be a valid URL")
+    .optional()
+    .refine(
+      (val) => process.env.NODE_ENV !== "production" || (typeof val === "string" && val.length > 0),
+      {
+        message: "SENTRY_DSN is required in production for error tracking",
+      }
+    ),
 });
 
 // Combined schema
@@ -145,6 +156,7 @@ export function validateEnv(): Env {
         process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
       NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
       NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
     });
 
     if (!clientResult.success) {
@@ -182,6 +194,8 @@ export function validateEnv(): Env {
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_PRICE_ID_PRO: process.env.STRIPE_PRICE_ID_PRO,
     STRIPE_PRICE_ID_ENTERPRISE: process.env.STRIPE_PRICE_ID_ENTERPRISE,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    SENTRY_DSN: process.env.SENTRY_DSN,
   });
 
   if (!serverResult.success) {

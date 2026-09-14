@@ -43,6 +43,16 @@ export interface ITaskRepository {
   getDependencies(
     taskId: string
   ): Promise<{ id: string; title: string; status: any }[]>;
+  getProfilesForValidation(
+    userIds: string[]
+  ): Promise<{ id: string; fullName: string | null; deletedAt: string | null }[]>;
+  getProfileTeamId(userId: string): Promise<string | null>;
+  ensureDefaultTeam(orgId: string): Promise<string>;
+  assignUserToTeam(
+    userId: string,
+    orgId: string,
+    teamId: string
+  ): Promise<void>;
   getActiveTaskCountByUser(orgId: string): Promise<Record<string, number>>;
   getOrgWeeklyStats(orgId: string): Promise<{
     completedCount: number;
@@ -520,17 +530,29 @@ export class SupabaseTaskRepository implements ITaskRepository {
       await (adminClient as any).from("task_assignees").insert(assigneeRows);
 
       for (const assignedUserId of data.assigneeIds) {
-        await (adminClient as any).from("notifications").insert({
-          user_id: assignedUserId,
-          type: "task.assigned",
-          payload: {
-            task_id: taskId,
-            task_title: data.title,
-            priority: data.priority || "medium",
-            actor_name: "Manager / Admin",
-            message: `You were assigned to task: ${data.title}`,
-          },
-        });
+        try {
+          const fiveSecAgo = new Date(Date.now() - 5000).toISOString();
+          const { data: recentNotifs } = await (adminClient as any).from("notifications")
+            .select("id")
+            .eq("user_id", assignedUserId)
+            .eq("type", "task.assigned")
+            .gte("created_at", fiveSecAgo)
+            .limit(1);
+
+          if (!recentNotifs || recentNotifs.length === 0) {
+            await (adminClient as any).from("notifications").insert({
+              user_id: assignedUserId,
+              type: "task.assigned",
+              payload: {
+                task_id: taskId,
+                task_title: data.title,
+                priority: data.priority || "medium",
+                actor_name: "Manager / Admin",
+                message: `You were assigned to task: ${data.title}`,
+              },
+            });
+          }
+        } catch {}
       }
     }
 
@@ -895,18 +917,29 @@ export class SupabaseTaskRepository implements ITaskRepository {
 
         // Notify new assignee
         try {
-          await (adminClient as any).from("notifications").insert({
-            user_id: targetAssigneeId,
-            type: "task.assigned",
-            payload: {
-              task_id: taskId,
-              task_title: updatedTask.title,
-              priority: updatedTask.priority || "medium",
-              actor_name: "Manager / Admin",
-              message: `Task "${updatedTask.title}" has been reassigned to you.`,
-              reason: data.reason || null,
-            },
-          });
+          // Idempotency check: Look for the exact same notification within the last 5 seconds
+          const fiveSecAgo = new Date(Date.now() - 5000).toISOString();
+          const { data: recentNotifs } = await (adminClient as any).from("notifications")
+            .select("id")
+            .eq("user_id", targetAssigneeId)
+            .eq("type", "task.assigned")
+            .gte("created_at", fiveSecAgo)
+            .limit(1);
+
+          if (!recentNotifs || recentNotifs.length === 0) {
+            await (adminClient as any).from("notifications").insert({
+              user_id: targetAssigneeId,
+              type: "task.assigned",
+              payload: {
+                task_id: taskId,
+                task_title: updatedTask.title,
+                priority: updatedTask.priority || "medium",
+                actor_name: "Manager / Admin",
+                message: `Task "${updatedTask.title}" has been reassigned to you.`,
+                reason: data.reason || null,
+              },
+            });
+          }
         } catch {}
       }
     }
@@ -1080,23 +1113,68 @@ export class SupabaseTaskRepository implements ITaskRepository {
     taskId: string
   ): Promise<{ id: string; title: string; status: any }[]> {
     if (!this.hasSupabase()) return [];
-
-    const supabase = this.getClient();
-    const { data: deps } = await (supabase as any)
+    const client = createClient();
+    const { data } = await (client as any)
       .from("task_dependencies")
-      .select(
-        `
-        depends_on_task_id,
-        tasks:depends_on_task_id (id, title, status)
-      `
-      )
+      .select("dependency_task_id, tasks!task_dependencies_dependency_task_id_fkey(title, status)")
       .eq("task_id", taskId);
 
-    return (deps || []).map((d: any) => ({
-      id: d.tasks?.id || d.depends_on_task_id,
-      title: d.tasks?.title || "Prerequisite Task",
+    if (!data) return [];
+    return data.map((d: any) => ({
+      id: d.dependency_task_id,
+      title: d.tasks?.title || "Unknown Task",
       status: d.tasks?.status || "pending",
     }));
+  }
+
+  async getProfilesForValidation(
+    userIds: string[]
+  ): Promise<{ id: string; fullName: string | null; deletedAt: string | null }[]> {
+    if (!this.hasSupabase() || userIds.length === 0) return [];
+    const client = createClient();
+    const { data, error } = await (client as any)
+      .from("profiles")
+      .select("id, full_name, deleted_at")
+      .in("id", userIds);
+    if (error || !data) return [];
+    return data.map((p: any) => ({
+      id: p.id,
+      fullName: p.full_name,
+      deletedAt: p.deleted_at,
+    }));
+  }
+
+  async getProfileTeamId(userId: string): Promise<string | null> {
+    if (!this.hasSupabase()) return null;
+    const client = createClient();
+    const { data } = await (client as any).from("profiles").select("team_id").eq("id", userId).single();
+    return data?.team_id || null;
+  }
+
+  async ensureDefaultTeam(orgId: string): Promise<string> {
+    if (!this.hasSupabase()) return "team-default-1";
+    const adminClient = createAdminClient();
+    const { data: existingTeams } = await (adminClient as any)
+      .from("teams")
+      .select("id")
+      .eq("org_id", orgId)
+      .limit(1);
+    if (existingTeams && existingTeams.length > 0) return existingTeams[0].id;
+    const { data: newTeam } = await (adminClient as any)
+      .from("teams")
+      .insert({ org_id: orgId, name: "General", description: "Default organization team" })
+      .select("id")
+      .single();
+    return newTeam?.id || "team-default-1";
+  }
+
+  async assignUserToTeam(userId: string, orgId: string, teamId: string): Promise<void> {
+    if (!this.hasSupabase()) return;
+    const adminClient = createAdminClient();
+    await (adminClient as any).from("team_members").upsert(
+      { user_id: userId, team_id: teamId },
+      { onConflict: "team_id,user_id" }
+    );
   }
 
   async getActiveTaskCountByUser(

@@ -5,11 +5,11 @@ import { workloadSuggestionPrompt } from "@/infrastructure/ai/promptTemplates";
 import {
   userRepository,
   IUserRepository,
-} from "@/domains/users/repository/userRepository";
+} from "@/domains/users";
 import {
   taskRepository,
   ITaskRepository,
-} from "@/domains/tasks/repository/taskRepository";
+} from "../repository/taskRepository";
 import { RateLimitError } from "@/shared/errors/domainErrors";
 
 const AI_RATE_LIMIT_PER_HOUR = 30;
