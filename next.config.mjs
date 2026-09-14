@@ -8,6 +8,14 @@ const nextConfig = {
   output: "standalone",
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns"],
+    allowedDevOrigins: [
+      "localhost",
+      "localhost:3000",
+      "192.168.1.9",
+      "192.168.1.9:3000",
+      "127.0.0.1",
+      "127.0.0.1:3000",
+    ],
   },
   images: {
     remotePatterns: [
@@ -31,11 +39,12 @@ const nextConfig = {
 
     const cspHeader = `
       default-src 'self';
-      script-src 'self' ${isProd ? "" : "'unsafe-eval'"} 'unsafe-inline' https://app.posthog.com https://us-assets.i.posthog.com https://eu-assets.i.posthog.com;
+      script-src 'self' ${isProd ? "" : "'unsafe-eval'"} 'unsafe-inline' https://challenges.cloudflare.com https://app.posthog.com https://us-assets.i.posthog.com https://eu-assets.i.posthog.com;
       style-src 'self' 'unsafe-inline';
       img-src 'self' blob: data: https://*.supabase.co https://*.r2.cloudflarestorage.com;
       font-src 'self' data:;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://app.posthog.com https://us.i.posthog.com https://eu.i.posthog.com https://api.resend.com https://api.groq.com https://*.r2.cloudflarestorage.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com https://app.posthog.com https://us.i.posthog.com https://eu.i.posthog.com https://api.resend.com https://api.groq.com https://*.r2.cloudflarestorage.com;
+      frame-src 'self' https://challenges.cloudflare.com;
       frame-ancestors 'none';
       form-action 'self';
       base-uri 'self';
