@@ -400,6 +400,33 @@ exception
   when others then null;
 end $$;
 
+-- 4.1.1 Auto-cleanup Auth User when Profile/Org is hard-deleted from Table Editor
+create or replace function public.delete_auth_user_on_profile_delete()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  delete from auth.users where id = old.id;
+  return old;
+exception
+  when others then
+    return old;
+end;
+$$;
+
+do $$
+begin
+  drop trigger if exists on_profile_deleted_auth_cleanup on public.profiles;
+  create trigger on_profile_deleted_auth_cleanup
+  after delete on public.profiles
+  for each row
+  execute function public.delete_auth_user_on_profile_delete();
+exception
+  when others then null;
+end $$;
+
 -- 4.2 Dedicated Atomic Signup RPC
 create or replace function public.signup_organization_admin(
   p_org_name text,

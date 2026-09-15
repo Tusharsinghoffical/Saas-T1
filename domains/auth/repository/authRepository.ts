@@ -83,9 +83,78 @@ export class SupabaseAuthRepository implements IAuthRepository {
               errMsg.includes("already exists") ||
               errMsg.includes("duplicate")
             ) {
-              throw new Error(
-                "An account with this email address already exists. Please log in instead."
-              );
+              // Check if this auth user is orphaned (i.e. organization or profile was deleted in Supabase)
+              try {
+                const { data: listData } =
+                  await adminClient.auth.admin.listUsers({
+                    perPage: 1000,
+                  });
+                const cleanEmail = credentials.email.trim().toLowerCase();
+                const existingAuthUser = listData?.users?.find(
+                  (u: any) => u.email?.trim().toLowerCase() === cleanEmail
+                );
+
+                if (existingAuthUser) {
+                  // Check if this user still has an active profile & organization
+                  const { data: profile } = await (
+                    adminClient.from("profiles") as any
+                  )
+                    .select("id, org_id, deleted_at")
+                    .eq("id", existingAuthUser.id)
+                    .maybeSingle();
+
+                  let hasActiveOrg = false;
+                  if (profile?.org_id) {
+                    const { data: org } = await (
+                      adminClient.from("organizations") as any
+                    )
+                      .select("id")
+                      .eq("id", profile.org_id)
+                      .maybeSingle();
+                    if (org?.id) {
+                      hasActiveOrg = true;
+                    }
+                  }
+
+                  // If no active profile or active organization exists, it's an orphaned auth record
+                  if (!profile || !hasActiveOrg) {
+                    // Purge the orphaned auth user
+                    await adminClient.auth.admin.deleteUser(
+                      existingAuthUser.id
+                    );
+
+                    // Re-create the user fresh so new company registration succeeds
+                    const { data: reCreated, error: reCreateErr } =
+                      await adminClient.auth.admin.createUser({
+                        email: credentials.email,
+                        password: credentials.password || "",
+                        email_confirm: true,
+                        app_metadata: {
+                          role: "admin",
+                        },
+                        user_metadata: {
+                          full_name: credentials.fullName,
+                          role: "admin",
+                        },
+                      });
+
+                    if (!reCreateErr && reCreated?.user?.id) {
+                      userId = reCreated.user.id;
+                    }
+                  }
+                }
+              } catch (cleanupErr) {
+                console.warn(
+                  "[signupAdmin] Orphaned auth user auto-cleanup warning:",
+                  cleanupErr
+                );
+              }
+
+              if (!userId) {
+                throw new Error(
+                  "An account with this email address already exists. Please log in instead."
+                );
+              }
             }
             // If admin createUser fails with other error, fall through to client signup
           } else if (adminAuthData?.user?.id) {
