@@ -67,16 +67,77 @@ export default function ManagerDashboardPage() {
     teamId: string | null;
     teamName: string;
     avatarUrl: string | null;
-  }>({
-    id: "",
-    managerCode: "MGR-0001",
-    fullName: "Lead Manager",
-    email: "manager@workspace.com",
-    role: "manager",
-    teamId: null,
-    teamName: "Sprint Lead Squad",
-    avatarUrl: null,
+  }>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("tasq_cached_profile");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === "object") {
+            return {
+              id: parsed.id || "",
+              managerCode:
+                parsed.employeeCode ||
+                `MGR-${(parsed.id || "0000").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase()}`,
+              fullName: parsed.fullName || "Lead Manager",
+              email: parsed.email || "manager@workspace.com",
+              role: parsed.role || "manager",
+              teamId: parsed.teamId || null,
+              teamName: parsed.teamName || parsed.department || "Sprint Lead Squad",
+              avatarUrl: parsed.avatarUrl || null,
+            };
+          }
+        }
+      } catch {}
+    }
+    return {
+      id: "",
+      managerCode: "MGR-0001",
+      fullName: "Lead Manager",
+      email: "manager@workspace.com",
+      role: "manager",
+      teamId: null,
+      teamName: "Sprint Lead Squad",
+      avatarUrl: null,
+    };
   });
+
+  // Real-time synchronization of manager profile across dashboard
+  useEffect(() => {
+    const handleProfileUpdated = (e: any) => {
+      const updated = e.detail || e.data?.profile;
+      if (updated) {
+        setManagerProfile((prev) => ({
+          ...prev,
+          fullName: updated.fullName || prev.fullName,
+          teamName: updated.department || updated.teamName || prev.teamName,
+          avatarUrl:
+            updated.avatarUrl !== undefined
+              ? updated.avatarUrl
+              : prev.avatarUrl,
+        }));
+      }
+    };
+
+    window.addEventListener("tasq:profile_updated", handleProfileUpdated);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        bc = new BroadcastChannel("tasq-profile-channel");
+        bc.onmessage = (event) => {
+          if (event.data?.profile) {
+            handleProfileUpdated({ detail: event.data.profile });
+          }
+        };
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener("tasq:profile_updated", handleProfileUpdated);
+      if (bc) bc.close();
+    };
+  }, []);
 
   // Client-hydrated greeting based on user's local timezone
   const [greeting, setGreeting] = useState<{

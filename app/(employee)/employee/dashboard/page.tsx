@@ -394,19 +394,89 @@ export default function EmployeeDashboardPage() {
   );
 
   // Profile
-  const [employeeProfile, setEmployeeProfile] = useState({
-    id: "",
-    employeeCode: "EMP-0001",
-    fullName: "Employee",
-    email: "employee@workspace.com",
-    role: "employee",
-    position: null as string | null,
-    phoneNumber: null as string | null,
-    teamId: null as string | null,
-    teamName: "General Squad",
-    avatarUrl: null as string | null,
-    joinedAt: "",
+  const [employeeProfile, setEmployeeProfile] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("tasq_cached_profile");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === "object") {
+            return {
+              id: parsed.id || "",
+              employeeCode:
+                parsed.employeeCode ||
+                `EMP-${(parsed.id || "0000").replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase()}`,
+              fullName: parsed.fullName || "Employee",
+              email: parsed.email || "employee@workspace.com",
+              role: parsed.role || "employee",
+              position: parsed.position || null,
+              phoneNumber: parsed.phoneNumber || null,
+              teamId: parsed.teamId || null,
+              teamName: parsed.teamName || parsed.department || "General Squad",
+              avatarUrl: parsed.avatarUrl || null,
+              joinedAt: parsed.createdAt || "",
+            };
+          }
+        }
+      } catch {}
+    }
+    return {
+      id: "",
+      employeeCode: "EMP-0001",
+      fullName: "Employee",
+      email: "employee@workspace.com",
+      role: "employee",
+      position: null as string | null,
+      phoneNumber: null as string | null,
+      teamId: null as string | null,
+      teamName: "General Squad",
+      avatarUrl: null as string | null,
+      joinedAt: "",
+    };
   });
+
+  // Real-time synchronization of profile across dashboard
+  useEffect(() => {
+    const handleProfileUpdated = (e: any) => {
+      const updated = e.detail || e.data?.profile;
+      if (updated) {
+        setEmployeeProfile((prev) => ({
+          ...prev,
+          fullName: updated.fullName || prev.fullName,
+          position:
+            updated.position !== undefined ? updated.position : prev.position,
+          phoneNumber:
+            updated.phoneNumber !== undefined
+              ? updated.phoneNumber
+              : prev.phoneNumber,
+          teamName: updated.department || updated.teamName || prev.teamName,
+          avatarUrl:
+            updated.avatarUrl !== undefined
+              ? updated.avatarUrl
+              : prev.avatarUrl,
+        }));
+      }
+    };
+
+    window.addEventListener("tasq:profile_updated", handleProfileUpdated);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        bc = new BroadcastChannel("tasq-profile-channel");
+        bc.onmessage = (event) => {
+          if (event.data?.profile) {
+            handleProfileUpdated({ detail: event.data.profile });
+          }
+        };
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener("tasq:profile_updated", handleProfileUpdated);
+      if (bc) bc.close();
+    };
+  }, []);
 
   // Buckets
   const [buckets, setBuckets] = useState<{
@@ -458,6 +528,12 @@ export default function EmployeeDashboardPage() {
       if (json.success && json.data) {
         if (json.data.profile) {
           setEmployeeProfile(json.data.profile);
+          try {
+            localStorage.setItem(
+              "tasq_cached_profile",
+              JSON.stringify(json.data.profile)
+            );
+          } catch {}
         }
         setBuckets({
           dueToday: json.data.dueToday || [],

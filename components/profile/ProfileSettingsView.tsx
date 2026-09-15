@@ -80,6 +80,22 @@ export function ProfileSettingsView({ role }: { role: "admin" | "manager" | "emp
   };
 
   const fetchProfile = useCallback(async () => {
+    // Fast optimistic hydration from local cache
+    try {
+      const cachedStr = localStorage.getItem("tasq_cached_profile");
+      if (cachedStr) {
+        const cached = JSON.parse(cachedStr);
+        if (cached && typeof cached === "object") {
+          setProfile(cached);
+          if (cached.fullName) setFullName(cached.fullName);
+          if (cached.position) setPosition(cached.position);
+          if (cached.phoneNumber) setPhoneNumber(cached.phoneNumber);
+          if (cached.department) setDepartment(cached.department);
+          if (cached.bio) setBio(cached.bio);
+        }
+      }
+    } catch {}
+
     setIsLoading(true);
     try {
       const res = await fetch("/api/v1/user/profile");
@@ -92,6 +108,9 @@ export function ProfileSettingsView({ role }: { role: "admin" | "manager" | "emp
         setPhoneNumber(d.phoneNumber || "");
         setDepartment(d.department || "");
         setBio(d.bio || "");
+        try {
+          localStorage.setItem("tasq_cached_profile", JSON.stringify(d));
+        } catch {}
       }
     } catch {
       showToast("Could not load user profile.", "error");
@@ -133,6 +152,11 @@ export function ProfileSettingsView({ role }: { role: "admin" | "manager" | "emp
       if (json.success && json.data) {
         setProfile(json.data);
         showToast("Profile details updated successfully!");
+
+        // Persist to local storage so instant client navigation immediately picks it up
+        try {
+          localStorage.setItem("tasq_cached_profile", JSON.stringify(json.data));
+        } catch {}
 
         // Broadcast real-time profile update to all open tabs and components
         if (typeof window !== "undefined") {

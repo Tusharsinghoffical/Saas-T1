@@ -21,6 +21,7 @@ export async function getEmployeeDashboardUseCase(
     role: string;
     position?: string | null;
     phoneNumber?: string | null;
+    department?: string | null;
     teamId: string | null;
     teamName: string;
     avatarUrl: string | null;
@@ -48,18 +49,18 @@ export async function getEmployeeDashboardUseCase(
   const sevenDaysFromNow = now.getTime() + 7 * 86400000;
   const sevenDaysAgo = now.getTime() - 7 * 86400000;
 
-  // 1. Fetch User Profile & Team Info
-  let profileData = null;
+  // 1. Fetch User Profile & Team Info (Direct targeted lookup first)
+  let profileData: any = null;
   try {
-    const members = await userRepo.listOrgMembers(context.orgId);
-    profileData = members.find((m) => m.id === context.userId);
+    profileData = await userRepo.getProfileById(context.userId);
   } catch {
     // Non-blocking fallback
   }
 
   if (!profileData) {
     try {
-      profileData = await userRepo.getProfileById(context.userId);
+      const members = await userRepo.listOrgMembers(context.orgId);
+      profileData = members.find((m) => m.id === context.userId);
     } catch {
       // Non-blocking fallback
     }
@@ -71,7 +72,7 @@ export async function getEmployeeDashboardUseCase(
     .toUpperCase()}`;
   const fullName = profileData?.fullName || "Employee";
   const email = profileData?.email || context.email || "employee@workspace.com";
-  const teamName = profileData?.teamName || "General";
+  const teamName = profileData?.teamName || profileData?.department || "General";
   const teamId = profileData?.teamId || null;
   const joinedAt = profileData?.createdAt || new Date().toISOString();
   const avatarUrl = profileData?.avatarUrl || null;
@@ -164,6 +165,7 @@ export async function getEmployeeDashboardUseCase(
       role: context.role || "employee",
       position: profileData?.position || null,
       phoneNumber: profileData?.phoneNumber || null,
+      department: profileData?.department || null,
       teamId,
       teamName,
       avatarUrl,

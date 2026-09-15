@@ -69,7 +69,11 @@ export class SupabaseUserRepository implements IUserRepository {
   }
 
   private getAdminClient() {
-    return createAdminClient();
+    try {
+      return createAdminClient();
+    } catch {
+      return null;
+    }
   }
 
   async getProfileById(userId: string): Promise<UserProfile | null> {
@@ -142,16 +146,48 @@ export class SupabaseUserRepository implements IUserRepository {
       return null;
     }
 
+    const notif =
+      typeof profile.notification_preferences === "object" && profile.notification_preferences !== null
+        ? profile.notification_preferences
+        : {};
+
+    // Team membership lookup
+    let teamId: string | null = null;
+    let teamName: string | null = null;
+    try {
+      const { data: tm } = await (supabase.from("team_members") as any)
+        .select(`team_id, teams:team_id (id, name)`)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (tm) {
+        teamId = tm.team_id || null;
+        teamName = tm.teams?.name || null;
+      }
+    } catch {}
+
+    // Auth metadata fallback
+    let userMeta: Record<string, any> = {};
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      if (authData?.user && authData.user.id === userId && authData.user.user_metadata) {
+        userMeta = authData.user.user_metadata;
+      }
+    } catch {}
+
     return {
       id: profile.id,
       orgId: profile.org_id,
-      fullName: profile.full_name || "Team Member",
+      fullName: (profile.full_name && profile.full_name !== "Team Member")
+        ? profile.full_name
+        : userMeta.full_name || notif.fullName || profile.full_name || "Team Member",
       role: profile.role || "employee",
-      avatarUrl: profile.avatar_url || null,
-      position: profile.position || null,
-      phoneNumber: profile.phone_number || null,
-      bio: profile.bio || null,
-      department: profile.department || null,
+      avatarUrl: profile.avatar_url || notif.avatarUrl || userMeta.avatar_url || null,
+      position: profile.position || notif.position || userMeta.position || null,
+      phoneNumber: profile.phone_number || notif.phoneNumber || notif.phone_number || userMeta.phone_number || null,
+      bio: profile.bio || notif.bio || userMeta.bio || null,
+      department: profile.department || notif.department || userMeta.department || null,
+      teamId,
+      teamName,
       notificationPreferences: profile.notification_preferences,
       createdAt: profile.created_at || new Date().toISOString(),
       deletedAt: profile.deleted_at || null,
@@ -360,23 +396,29 @@ export class SupabaseUserRepository implements IUserRepository {
       // Non-blocking team mapping
     }
 
-    return finalProfiles.map((p: any) => ({
-      id: p.id,
-      orgId: p.org_id,
-      fullName: p.full_name || "Team Member",
-      email: authUserMap[p.id] || undefined,
-      role: p.role || "employee",
-      position: p.position || null,
-      phoneNumber: p.phone_number || null,
-      bio: p.bio || null,
-      department: p.department || null,
-      teamId: teamMemberMap[p.id]?.teamId || null,
-      teamName: teamMemberMap[p.id]?.teamName || null,
-      avatarUrl: p.avatar_url,
-      notificationPreferences: p.notification_preferences,
-      createdAt: p.created_at,
-      deletedAt: p.deleted_at,
-    }));
+    return finalProfiles.map((p: any) => {
+      const notif =
+        typeof p.notification_preferences === "object" && p.notification_preferences !== null
+          ? p.notification_preferences
+          : {};
+      return {
+        id: p.id,
+        orgId: p.org_id,
+        fullName: p.full_name || notif.fullName || "Team Member",
+        email: authUserMap[p.id] || undefined,
+        role: p.role || "employee",
+        position: p.position || notif.position || null,
+        phoneNumber: p.phone_number || notif.phoneNumber || notif.phone_number || null,
+        bio: p.bio || notif.bio || null,
+        department: p.department || notif.department || null,
+        teamId: teamMemberMap[p.id]?.teamId || null,
+        teamName: teamMemberMap[p.id]?.teamName || null,
+        avatarUrl: p.avatar_url || notif.avatarUrl || null,
+        notificationPreferences: p.notification_preferences,
+        createdAt: p.created_at,
+        deletedAt: p.deleted_at,
+      };
+    });
   }
 
   async updateProfile(
@@ -391,16 +433,6 @@ export class SupabaseUserRepository implements IUserRepository {
       avatarUrl?: string | null;
     }
   ): Promise<UserProfile> {
-    const dbUpdates: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-    };
-    if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName.trim();
-    if (updates.position !== undefined) dbUpdates.position = updates.position?.trim() || null;
-    if (updates.phoneNumber !== undefined) dbUpdates.phone_number = updates.phoneNumber?.trim() || null;
-    if (updates.bio !== undefined) dbUpdates.bio = updates.bio?.trim() || null;
-    if (updates.department !== undefined) dbUpdates.department = updates.department?.trim() || null;
-    if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl || null;
-
     if (!this.hasSupabase()) {
       return {
         id: userId,
@@ -416,93 +448,142 @@ export class SupabaseUserRepository implements IUserRepository {
       };
     }
 
-    const adminClient = this.getAdminClient();
-    const client = adminClient || this.getClient();
-
+    let adminClient: any = null;
     try {
-      const { data: updated, error } = await (client.from("profiles") as any)
-        .update(dbUpdates)
-        .eq("id", userId)
-        .select("id, org_id, full_name, role, avatar_url, position, phone_number, bio, department, notification_preferences, created_at, deleted_at")
-        .single();
-
-      if (!error && updated) {
-        // Synchronize auth user metadata in background so JWT and token claims stay updated
-        if (adminClient?.auth?.admin) {
-          try {
-            const metaUpdates: Record<string, any> = {};
-            if (updates.fullName !== undefined) metaUpdates.full_name = updates.fullName.trim();
-            if (updates.avatarUrl !== undefined) metaUpdates.avatar_url = updates.avatarUrl;
-            if (updates.position !== undefined) metaUpdates.position = updates.position;
-            if (updates.department !== undefined) metaUpdates.department = updates.department;
-
-            if (Object.keys(metaUpdates).length > 0) {
-              await adminClient.auth.admin.updateUserById(userId, {
-                user_metadata: metaUpdates,
-              });
-            }
-          } catch {
-            // Non-blocking metadata sync
-          }
-        }
-
-        // Invalidate server-side authContextCache so subsequent requests read fresh profile immediately
-        try {
-          const { invalidateAuthCache } = await import("@/shared/middleware/rbacGuard");
-          invalidateAuthCache(userId);
-        } catch {
-          // Non-blocking
-        }
-
-        return {
-          id: updated.id,
-          orgId: updated.org_id,
-          fullName: updated.full_name,
-          role: updated.role,
-          avatarUrl: updated.avatar_url,
-          position: updated.position || null,
-          phoneNumber: updated.phone_number || null,
-          bio: updated.bio || null,
-          department: updated.department || null,
-          notificationPreferences: updated.notification_preferences,
-          createdAt: updated.created_at,
-          deletedAt: updated.deleted_at,
-        };
-      }
+      adminClient = this.getAdminClient();
     } catch {
-      // Graceful fallback below
+      adminClient = null;
+    }
+    const userClient = this.getClient();
+    const client = adminClient || userClient;
+
+    // 1. Dual-write backup payload inside notification_preferences JSONB (guaranteed to exist on profiles table)
+    const jsonbPreferences: Record<string, any> = {
+      email: true,
+      in_app: true,
+      ...(updates.fullName !== undefined ? { fullName: updates.fullName.trim() } : {}),
+      ...(updates.position !== undefined ? { position: updates.position?.trim() || null } : {}),
+      ...(updates.department !== undefined ? { department: updates.department?.trim() || null } : {}),
+      ...(updates.phoneNumber !== undefined ? { phoneNumber: updates.phoneNumber?.trim() || null } : {}),
+      ...(updates.bio !== undefined ? { bio: updates.bio?.trim() || null } : {}),
+      ...(updates.avatarUrl !== undefined ? { avatarUrl: updates.avatarUrl || null } : {}),
+    };
+
+    // 2. Synchronize Supabase Auth user_metadata so JWT & auth session retain personal identity
+    const metaUpdates: Record<string, any> = {};
+    if (updates.fullName !== undefined) metaUpdates.full_name = updates.fullName.trim();
+    if (updates.avatarUrl !== undefined) metaUpdates.avatar_url = updates.avatarUrl;
+    if (updates.position !== undefined) metaUpdates.position = updates.position?.trim() || null;
+    if (updates.department !== undefined) metaUpdates.department = updates.department?.trim() || null;
+    if (updates.phoneNumber !== undefined) metaUpdates.phone_number = updates.phoneNumber?.trim() || null;
+    if (updates.bio !== undefined) metaUpdates.bio = updates.bio?.trim() || null;
+
+    if (Object.keys(metaUpdates).length > 0) {
+      if (adminClient?.auth?.admin) {
+        try {
+          await adminClient.auth.admin.updateUserById(userId, {
+            user_metadata: metaUpdates,
+          });
+        } catch {}
+      }
+      try {
+        await userClient.auth.updateUser({
+          data: metaUpdates,
+        });
+      } catch {}
     }
 
-    // Fallback if specific columns are not migrated yet in existing database
-    const coreUpdates: Record<string, any> = {
+    // 3. Database persistence: Tier 1 (All native columns + JSONB backup)
+    const dbUpdates: Record<string, any> = {
       updated_at: new Date().toISOString(),
+      notification_preferences: jsonbPreferences,
     };
-    if (updates.fullName !== undefined) coreUpdates.full_name = updates.fullName.trim();
-    if (updates.avatarUrl !== undefined) coreUpdates.avatar_url = updates.avatarUrl;
+    if (updates.fullName !== undefined) dbUpdates.full_name = updates.fullName.trim();
+    if (updates.position !== undefined) dbUpdates.position = updates.position?.trim() || null;
+    if (updates.phoneNumber !== undefined) dbUpdates.phone_number = updates.phoneNumber?.trim() || null;
+    if (updates.bio !== undefined) dbUpdates.bio = updates.bio?.trim() || null;
+    if (updates.department !== undefined) dbUpdates.department = updates.department?.trim() || null;
+    if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl || null;
 
-    const { data: fbUpdated } = await (client.from("profiles") as any)
-      .update(coreUpdates)
-      .eq("id", userId)
-      .select()
-      .single();
+    let updated: any = null;
 
+    try {
+      const { data, error } = await (client.from("profiles") as any)
+        .update(dbUpdates)
+        .eq("id", userId)
+        .select()
+        .maybeSingle();
+
+      if (!error && data) {
+        updated = data;
+      }
+    } catch {}
+
+    // Tier 2: Fallback if individual columns (position/department/etc) are not migrated yet in PostgreSQL
+    if (!updated) {
+      try {
+        const coreUpdates: Record<string, any> = {
+          updated_at: new Date().toISOString(),
+          notification_preferences: jsonbPreferences,
+        };
+        if (updates.fullName !== undefined) coreUpdates.full_name = updates.fullName.trim();
+        if (updates.avatarUrl !== undefined) coreUpdates.avatar_url = updates.avatarUrl;
+
+        const { data, error } = await (client.from("profiles") as any)
+          .update(coreUpdates)
+          .eq("id", userId)
+          .select()
+          .maybeSingle();
+
+        if (!error && data) {
+          updated = data;
+        }
+      } catch {}
+    }
+
+    // Tier 3: Retry with userClient if adminClient had permissions/key issues
+    if (!updated && client !== userClient) {
+      try {
+        const coreUpdates: Record<string, any> = {
+          updated_at: new Date().toISOString(),
+          notification_preferences: jsonbPreferences,
+        };
+        if (updates.fullName !== undefined) coreUpdates.full_name = updates.fullName.trim();
+        if (updates.avatarUrl !== undefined) coreUpdates.avatar_url = updates.avatarUrl;
+
+        const { data } = await (userClient.from("profiles") as any)
+          .update(coreUpdates)
+          .eq("id", userId)
+          .select()
+          .maybeSingle();
+
+        if (data) {
+          updated = data;
+        }
+      } catch {}
+    }
+
+    // Invalidate auth cache so subsequent requests read fresh data immediately
     try {
       const { invalidateAuthCache } = await import("@/shared/middleware/rbacGuard");
       invalidateAuthCache(userId);
-    } catch {
-      // Non-blocking
-    }
+    } catch {}
+
+    const notif = updated?.notification_preferences || jsonbPreferences;
 
     return {
       id: userId,
-      orgId,
-      fullName: updates.fullName || fbUpdated?.full_name || "User",
-      role: fbUpdated?.role || "employee",
-      avatarUrl: updates.avatarUrl || fbUpdated?.avatar_url || null,
-      position: updates.position || null,
-      phoneNumber: updates.phoneNumber || null,
-      bio: updates.bio || null,
-      department: updates.department || null,
+      orgId: updated?.org_id || orgId,
+      fullName: updated?.full_name || updates.fullName || notif.fullName || "Team Member",
+      role: updated?.role || "employee",
+      avatarUrl: updated?.avatar_url || updates.avatarUrl || notif.avatarUrl || null,
+      position: updated?.position || updates.position || notif.position || null,
+      phoneNumber: updated?.phone_number || updates.phoneNumber || notif.phoneNumber || null,
+      bio: updated?.bio || updates.bio || notif.bio || null,
+      department: updated?.department || updates.department || notif.department || null,
+      notificationPreferences: notif,
+      createdAt: updated?.created_at || new Date().toISOString(),
+      deletedAt: updated?.deleted_at || null,
     };
   }
 
