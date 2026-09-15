@@ -23,6 +23,8 @@ import {
   Sparkles,
   Radio,
   Upload,
+  Pencil,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,11 +46,24 @@ interface TeamMember {
   role: "admin" | "manager" | "employee";
   position?: string | null;
   phoneNumber?: string | null;
+  department?: string | null;
   teamId?: string | null;
   teamName?: string | null;
   avatarUrl?: string | null;
   createdAt?: string;
 }
+
+const POSITION_SUGGESTIONS = [
+  "Engineering Lead",
+  "Senior Full Stack Developer",
+  "UI/UX Designer",
+  "Backend Engineer",
+  "Product Manager",
+  "Sprint Lead",
+  "DevOps Engineer",
+  "QA Specialist",
+  "Operations Lead",
+];
 
 export default function AdminTeamPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -64,6 +79,7 @@ export default function AdminTeamPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [position, setPosition] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<"admin" | "manager" | "employee">(
     "employee"
@@ -73,6 +89,18 @@ export default function AdminTeamPage() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Edit Member Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [editFullName, setEditFullName] = useState("");
+  const [editPosition, setEditPosition] = useState("");
+  const [editTeamName, setEditTeamName] = useState("General");
+  const [editRole, setEditRole] = useState<"admin" | "manager" | "employee">("employee");
+  const [editDepartment, setEditDepartment] = useState("");
+  const [editPhoneNumber, setEditPhoneNumber] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Success Credential State
   const [createdCredentials, setCreatedCredentials] = useState<{
@@ -253,6 +281,7 @@ export default function AdminTeamPage() {
           email: email.trim().toLowerCase(),
           password: creationMode === "direct" ? password : undefined,
           role,
+          position: position.trim() || undefined,
           teamName: selectedTeam,
         }),
       });
@@ -292,11 +321,110 @@ export default function AdminTeamPage() {
       setFullName("");
       setEmail("");
       setPassword("");
+      setPosition("");
       fetchMembers();
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to create member account.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Open Edit Modal for a Member
+  const handleOpenEditModal = (member: TeamMember) => {
+    setEditingMember(member);
+    setEditFullName(member.fullName || "");
+    setEditPosition(member.position || "");
+    setEditTeamName(member.teamName || "General");
+    setEditRole(member.role);
+    setEditDepartment(member.department || "");
+    setEditPhoneNumber(member.phoneNumber || "");
+    setEditError(null);
+    setIsEditModalOpen(true);
+  };
+
+  // Save Edit Member updates
+  const handleSaveEditMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember) return;
+
+    if (!editFullName.trim()) {
+      setEditError("Full name is required.");
+      return;
+    }
+
+    setIsSavingEdit(true);
+    setEditError(null);
+
+    try {
+      const res = await fetch(`/api/v1/org/members/${editingMember.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: editFullName.trim(),
+          position: editPosition.trim() || null,
+          teamName: editTeamName,
+          role: editRole,
+          department: editDepartment.trim() || null,
+          phoneNumber: editPhoneNumber.trim() || null,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to update member profile.");
+      }
+
+      // Optimistically update local member state immediately
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.id === editingMember.id
+            ? {
+                ...m,
+                fullName: editFullName.trim(),
+                position: editPosition.trim() || null,
+                teamName: editTeamName,
+                role: editRole,
+                phoneNumber: editPhoneNumber.trim() || null,
+                department: editDepartment.trim() || null,
+              }
+            : m
+        )
+      );
+
+      // Broadcast update across channels so other open tabs/dashboards update live
+      if (typeof window !== "undefined") {
+        const payload = {
+          id: editingMember.id,
+          fullName: editFullName.trim(),
+          position: editPosition.trim() || null,
+          role: editRole,
+          teamName: editTeamName,
+          department: editDepartment.trim() || null,
+        };
+        window.dispatchEvent(
+          new CustomEvent("tasq:profile_updated", { detail: payload })
+        );
+
+        try {
+          if ("BroadcastChannel" in window) {
+            const bc = new BroadcastChannel("tasq-profile-channel");
+            bc.postMessage({ type: "PROFILE_UPDATED", profile: payload });
+            bc.close();
+
+            const actBc = new BroadcastChannel("tasq-activity-channel");
+            actBc.postMessage({ type: "ACTIVITY_UPDATED" });
+            actBc.close();
+          }
+        } catch {}
+      }
+
+      setIsEditModalOpen(false);
+      showToast(`${editFullName.trim()}'s profile & position updated!`);
+    } catch (err: any) {
+      setEditError(err.message || "Failed to save member updates.");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -663,17 +791,25 @@ export default function AdminTeamPage() {
                       {member.email || "Workspace User"}
                     </td>
 
-                    {/* Position / Job Title */}
+                    {/* Position / Job Title — clickable to edit */}
                     <td className="whitespace-nowrap px-5 py-3.5">
-                      {member.position ? (
-                        <span className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary dark:border-primary/30 dark:bg-primary/10 dark:text-primary-300">
-                          {member.position}
-                        </span>
-                      ) : (
-                        <span className="text-xs italic text-slate-400">
-                          Not specified
-                        </span>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(member)}
+                        className="group flex items-center gap-1.5 text-left transition hover:opacity-80"
+                        title="Click to edit position & member details"
+                      >
+                        {member.position ? (
+                          <span className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary group-hover:border-primary/40 dark:border-primary/30 dark:bg-primary/10 dark:text-primary-300">
+                            <span>{member.position}</span>
+                            <Pencil className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-md border border-dashed border-slate-300 px-2 py-1 text-xs italic text-slate-400 group-hover:border-primary group-hover:text-primary dark:border-slate-700">
+                            <span>+ Set Position</span>
+                          </span>
+                        )}
+                      </button>
                     </td>
 
                     {/* Team Assignment — editable dropdown */}
@@ -735,6 +871,14 @@ export default function AdminTeamPage() {
 
                     {/* Actions */}
                     <td className="whitespace-nowrap px-5 py-3.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(member)}
+                        title="Edit member details & position"
+                        className="mr-1 rounded-lg p-1.5 text-slate-400 transition hover:bg-primary/10 hover:text-primary"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => setDeletingMember(member)}
@@ -892,6 +1036,31 @@ export default function AdminTeamPage() {
                 required
                 className="text-xs"
               />
+            </div>
+
+            {/* Position / Job Title */}
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Position / Job Title
+              </label>
+              <Input
+                placeholder="e.g. Senior Software Engineer"
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+                className="text-xs"
+              />
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {POSITION_SUGGESTIONS.slice(0, 5).map((sug) => (
+                  <button
+                    key={sug}
+                    type="button"
+                    onClick={() => setPosition(sug)}
+                    className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:bg-slate-800 dark:text-slate-300"
+                  >
+                    + {sug}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Email Address */}
@@ -1086,6 +1255,154 @@ export default function AdminTeamPage() {
           showToast("Team members processed successfully!");
         }}
       />
+
+      {/* Modal: Edit Member Profile & Role */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingMember(null);
+        }}
+        title={`Edit Member: ${editingMember?.fullName || "Team Member"}`}
+        description="Update personal details, position title, squad assignment, and role permissions. Changes sync in real time across all dashboards."
+      >
+        <form onSubmit={handleSaveEditMember} className="space-y-4">
+          {editError && (
+            <div className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-600 dark:text-rose-400">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{editError}</span>
+            </div>
+          )}
+
+          {/* Full Name */}
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Full Name *
+            </label>
+            <Input
+              value={editFullName}
+              onChange={(e) => setEditFullName(e.target.value)}
+              required
+              className="text-xs"
+            />
+          </div>
+
+          {/* Position / Title with Suggestion Chips */}
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Position / Job Title
+            </label>
+            <Input
+              placeholder="e.g. Engineering Lead, UI/UX Designer, Full Stack Developer"
+              value={editPosition}
+              onChange={(e) => setEditPosition(e.target.value)}
+              className="text-xs"
+            />
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {POSITION_SUGGESTIONS.map((sug) => (
+                <button
+                  key={sug}
+                  type="button"
+                  onClick={() => setEditPosition(sug)}
+                  className={`rounded px-1.5 py-0.5 text-[10px] transition ${
+                    editPosition === sug
+                      ? "bg-primary text-white font-bold"
+                      : "bg-slate-100 text-slate-600 hover:bg-primary/10 hover:text-primary dark:bg-slate-800 dark:text-slate-300"
+                  }`}
+                >
+                  + {sug}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Team / Squad Assignment & Role */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Assigned Team / Squad
+              </label>
+              <select
+                value={editTeamName}
+                onChange={(e) => setEditTeamName(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                <option value="General">General</option>
+                <option value="Engineering">Engineering</option>
+                <option value="Product">Product &amp; Design</option>
+                <option value="Marketing">Growth &amp; Marketing</option>
+                <option value="Leadership">Leadership</option>
+                <option value="Sales">Sales</option>
+                <option value="Operations">Operations</option>
+                <option value="QA">QA</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Access Role
+              </label>
+              <select
+                value={editRole}
+                onChange={(e) => setEditRole(e.target.value as any)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              >
+                <option value="employee">Employee</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Department & Phone */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Department
+              </label>
+              <Input
+                placeholder="e.g. Technology"
+                value={editDepartment}
+                onChange={(e) => setEditDepartment(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Phone Number
+              </label>
+              <Input
+                placeholder="e.g. +91 9876543210"
+                value={editPhoneNumber}
+                onChange={(e) => setEditPhoneNumber(e.target.value)}
+                className="text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingMember(null);
+              }}
+              className="text-xs"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSavingEdit}
+              className="bg-primary text-xs font-semibold text-white hover:bg-primary-700"
+            >
+              {isSavingEdit ? "Saving Changes..." : "Save Member Details"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

@@ -102,42 +102,7 @@ export default function ManagerDashboardPage() {
     };
   });
 
-  // Real-time synchronization of manager profile across dashboard
-  useEffect(() => {
-    const handleProfileUpdated = (e: any) => {
-      const updated = e.detail || e.data?.profile;
-      if (updated) {
-        setManagerProfile((prev) => ({
-          ...prev,
-          fullName: updated.fullName || prev.fullName,
-          teamName: updated.department || updated.teamName || prev.teamName,
-          avatarUrl:
-            updated.avatarUrl !== undefined
-              ? updated.avatarUrl
-              : prev.avatarUrl,
-        }));
-      }
-    };
 
-    window.addEventListener("tasq:profile_updated", handleProfileUpdated);
-
-    let bc: BroadcastChannel | null = null;
-    try {
-      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
-        bc = new BroadcastChannel("tasq-profile-channel");
-        bc.onmessage = (event) => {
-          if (event.data?.profile) {
-            handleProfileUpdated({ detail: event.data.profile });
-          }
-        };
-      }
-    } catch {}
-
-    return () => {
-      window.removeEventListener("tasq:profile_updated", handleProfileUpdated);
-      if (bc) bc.close();
-    };
-  }, []);
 
   // Client-hydrated greeting based on user's local timezone
   const [greeting, setGreeting] = useState<{
@@ -252,6 +217,50 @@ export default function ManagerDashboardPage() {
   // Initial data load on mount
   useEffect(() => {
     fetchAllData(false);
+  }, [fetchAllData]);
+
+  // Real-time synchronization of manager profile & team squad roster across workspace
+  useEffect(() => {
+    const handleProfileUpdated = (e: any) => {
+      const updated = e.detail || e.data?.profile;
+      if (updated) {
+        setManagerProfile((prev) => ({
+          ...prev,
+          fullName: updated.fullName || prev.fullName,
+          teamName: updated.department || updated.teamName || prev.teamName,
+          avatarUrl:
+            updated.avatarUrl !== undefined
+              ? updated.avatarUrl
+              : prev.avatarUrl,
+        }));
+      }
+      // Re-fetch members and tasks so squad assignees roster immediately reflects the update
+      fetchAllData(true);
+    };
+
+    window.addEventListener("tasq:profile_updated", handleProfileUpdated);
+
+    let bc: BroadcastChannel | null = null;
+    let actBc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        bc = new BroadcastChannel("tasq-profile-channel");
+        bc.onmessage = (event) => {
+          handleProfileUpdated({ detail: event.data?.profile });
+        };
+
+        actBc = new BroadcastChannel("tasq-activity-channel");
+        actBc.onmessage = () => {
+          fetchAllData(true);
+        };
+      }
+    } catch {}
+
+    return () => {
+      window.removeEventListener("tasq:profile_updated", handleProfileUpdated);
+      if (bc) bc.close();
+      if (actBc) actBc.close();
+    };
   }, [fetchAllData]);
 
   const { isRefreshing, triggerManual } = useAutoRefresh(() =>

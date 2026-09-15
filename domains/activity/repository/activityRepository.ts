@@ -77,19 +77,19 @@ export class SupabaseActivityRepository implements IActivityRepository {
         diff: input.diff || null,
       };
 
-      // Idempotency check: Look for the exact same action/entity/actor within the last 5 seconds
-      const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+      // Idempotency check: Look for the exact same action/entity/actor within the last 1 second with matching diff
+      const oneSecondAgo = new Date(Date.now() - 1000).toISOString();
       const { data: recentLogs } = await (client.from("activity_logs") as any)
-        .select("id")
+        .select("id, diff")
         .eq("org_id", payload.org_id)
         .eq("action", payload.action)
         .eq("entity", payload.entity)
         .eq("actor_id", payload.actor_id)
         .eq("entity_id", payload.entity_id)
-        .gte("created_at", fiveSecondsAgo)
+        .gte("created_at", oneSecondAgo)
         .limit(1);
 
-      if (recentLogs && recentLogs.length > 0) {
+      if (recentLogs && recentLogs.length > 0 && JSON.stringify(recentLogs[0]?.diff) === JSON.stringify(payload.diff)) {
         logger.debug("[Idempotency] Duplicate activity log prevented", { orgId: input.orgId, action: input.action });
         return true;
       }
@@ -133,8 +133,8 @@ export class SupabaseActivityRepository implements IActivityRepository {
   }
 
   /**
-   * Helper: If activity_logs has 0 rows for the org, generate authentic audit records
-   * from existing tasks, profiles, and comments so the activity trail is rich and accurate.
+   * Helper: If activity_logs has 0 or only initial placeholder rows for the org,
+   * generate authentic audit records from existing tasks, profiles, and comments.
    */
   private async backfillFromWorkspace(
     client: any,
@@ -143,10 +143,17 @@ export class SupabaseActivityRepository implements IActivityRepository {
     const generated: ActivityLog[] = [];
     const dbInserts: any[] = [];
 
+    let dbClient: any;
     try {
-      // 1. Fetch profiles for this org
-      const { data: profiles } = await (client.from("profiles") as any)
-        .select("id, full_name, email, role, avatar_url, created_at")
+      dbClient = createAdminClient();
+    } catch {
+      dbClient = client;
+    }
+
+    try {
+      // 1. Fetch profiles for this org with position
+      const { data: profiles } = await (dbClient.from("profiles") as any)
+        .select("id, full_name, email, role, position, avatar_url, created_at")
         .eq("org_id", orgId)
         .order("created_at", { ascending: true });
 
@@ -181,6 +188,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
             fullName: p.full_name,
             role: p.role,
             email: p.email,
+            position: p.position || null,
             status: "active",
           },
           createdAt: p.created_at || new Date().toISOString(),
@@ -494,8 +502,14 @@ export class SupabaseActivityRepository implements IActivityRepository {
 
       let logsList = rawLogs || [];
 
-      // If activity_logs is empty, automatically backfill from workspace tasks, profiles, comments & attachments!
-      if (logsList.length === 0 && !filters.entity && !filters.action) {
+      // If activity_logs has 0 or only the single initialization record, automatically backfill from workspace tasks, profiles, comments & attachments!
+      const isOnlyInit =
+        logsList.length === 0 ||
+        (logsList.length === 1 &&
+          (logsList[0]?.diff?.event === "Workspace audit stream initialized" ||
+            logsList[0]?.action === "org.updated"));
+
+      if (isOnlyInit && !filters.entity && !filters.action) {
         const backfilled = await this.backfillFromWorkspace(client, orgId);
         if (backfilled.length > 0) {
           const fromIdx = (filters.page - 1) * filters.limit;

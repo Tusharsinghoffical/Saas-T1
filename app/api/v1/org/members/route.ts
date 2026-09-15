@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
       password: body.password,
       role: body.role || "employee",
       teamId: body.teamId || body.team_id,
+      position: body.position || null,
+      department: body.department || null,
     });
 
     return NextResponse.json({ success: true, ...result }, { status: 201 });

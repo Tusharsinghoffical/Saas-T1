@@ -10,6 +10,8 @@ export interface CreateEmployeeInput {
   password?: string;
   role: "admin" | "manager" | "employee";
   teamId?: string | null;
+  position?: string | null;
+  department?: string | null;
 }
 
 export async function createEmployeeUserUseCase(
@@ -52,7 +54,9 @@ export async function createEmployeeUserUseCase(
       cleanName,
       input.role,
       context.userId,
-      input.teamId
+      input.teamId,
+      input.position,
+      input.department
     );
 
     // Audit log

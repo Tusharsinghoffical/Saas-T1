@@ -25,6 +25,8 @@ interface ParsedMember {
   email: string;
   role: "admin" | "manager" | "employee";
   password?: string;
+  position?: string;
+  department?: string;
 }
 
 interface BulkAddMembersModalProps {
@@ -53,6 +55,7 @@ export function BulkAddMembersModal({
       email: string;
       fullName: string;
       role: string;
+      position?: string;
       password?: string;
       status: "created" | "failed";
       error?: string;
@@ -79,11 +82,12 @@ export function BulkAddMembersModal({
       };
     }
 
-    // Case B: Name, Email
+    // Case B: Name, Email, [Role], [Position], [Password]
     if (parts.length >= 2) {
       let name = parts[0];
       let email = parts[1];
       let role: "admin" | "manager" | "employee" = fallbackRole;
+      let position: string | undefined = undefined;
       let password: string | undefined = undefined;
 
       // Check if parts[0] is email instead of name
@@ -96,11 +100,25 @@ export function BulkAddMembersModal({
         const r = parts[2].toLowerCase();
         if (r === "manager" || r === "mgr") role = "manager";
         else if (r === "admin" || r === "adm") role = "admin";
-        else role = "employee";
+        else if (r === "employee" || r === "emp") role = "employee";
+        else {
+          // If parts[2] is not a role keyword, treat it as position
+          position = parts[2];
+        }
       }
 
-      if (parts[3] && parts[3].length >= 6) {
-        password = parts[3];
+      if (parts[3]) {
+        if (parts[4]) {
+          position = parts[3];
+          password = parts[4];
+        } else {
+          // If only parts[3] is given, detect whether it's a position or password
+          if (/[a-zA-Z\s]{3,}/.test(parts[3]) && !parts[3].includes("@") && !parts[3].includes("!")) {
+            position = parts[3];
+          } else if (parts[3].length >= 6) {
+            password = parts[3];
+          }
+        }
       }
 
       if (EMAIL_REGEX.test(email)) {
@@ -108,6 +126,7 @@ export function BulkAddMembersModal({
           fullName: name || email.split("@")[0],
           email: email.toLowerCase(),
           role,
+          position: position || undefined,
           password,
         };
       }
@@ -124,7 +143,7 @@ export function BulkAddMembersModal({
 
     for (const line of lines) {
       // Ignore header row
-      if (line.toLowerCase().includes("email") && line.toLowerCase().includes("role")) {
+      if (line.toLowerCase().includes("email") && (line.toLowerCase().includes("role") || line.toLowerCase().includes("name"))) {
         continue;
       }
       const item = parseLineToMember(line, defaultRole);
@@ -168,11 +187,11 @@ export function BulkAddMembersModal({
 
   const handleLoadDemoAccounts = () => {
     const demo = [
-      "Aarav Sharma, aarav.sharma@company.com, manager",
-      "Priya Patel, priya.patel@company.com, employee",
-      "Rohan Verma, rohan.verma@company.com, employee",
-      "Ananya Roy, ananya.roy@company.com, manager",
-      "Vikram Malhotra, vikram.malhotra@company.com, employee",
+      "Aarav Sharma, aarav.sharma@company.com, manager, Engineering Lead",
+      "Priya Patel, priya.patel@company.com, employee, UI/UX Designer",
+      "Rohan Verma, rohan.verma@company.com, employee, Full Stack Developer",
+      "Ananya Roy, ananya.roy@company.com, manager, Sprint Lead",
+      "Vikram Malhotra, vikram.malhotra@company.com, employee, Backend Engineer",
     ].join("\n");
     parseRawText(demo);
   };
@@ -500,7 +519,12 @@ export function BulkAddMembersModal({
                         <span className="font-semibold text-slate-900 dark:text-white truncate">
                           {item.fullName}
                         </span>
-                        <span className="text-slate-400 truncate">({item.email})</span>
+                        {item.position && (
+                          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary truncate max-w-[120px]">
+                            {item.position}
+                          </span>
+                        )}
+                        <span className="text-slate-400 truncate text-[11px]">({item.email})</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <select

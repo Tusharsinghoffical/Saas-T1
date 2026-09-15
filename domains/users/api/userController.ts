@@ -73,6 +73,11 @@ export class UserController {
       role?: "admin" | "manager" | "employee";
       teamId?: string;
       teamName?: string;
+      fullName?: string;
+      position?: string | null;
+      department?: string | null;
+      phoneNumber?: string | null;
+      bio?: string | null;
     }
   ) {
     const auth = await requireRole(["admin", "manager"]);
@@ -84,10 +89,23 @@ export class UserController {
     }
 
     // 1. Role update
-    if (updates.role) {
+    if (updates.role && updates.role !== targetUser.role) {
       await updateUserRoleUseCase(auth, { userId, role: updates.role });
     }
 
+    // 2. Profile metadata updates (fullName, position, department, phoneNumber, bio)
+    const profileUpdates: Record<string, any> = {};
+    if (updates.fullName !== undefined) profileUpdates.fullName = updates.fullName.trim();
+    if (updates.position !== undefined) profileUpdates.position = updates.position ? updates.position.trim() : null;
+    if (updates.department !== undefined) profileUpdates.department = updates.department ? updates.department.trim() : null;
+    if (updates.phoneNumber !== undefined) profileUpdates.phoneNumber = updates.phoneNumber ? updates.phoneNumber.trim() : null;
+    if (updates.bio !== undefined) profileUpdates.bio = updates.bio ? updates.bio.trim() : null;
+
+    if (Object.keys(profileUpdates).length > 0) {
+      await userRepository.updateProfile(userId, auth.orgId, profileUpdates);
+    }
+
+    // 3. Team Assignment
     let resolvedTeamId = updates.teamId;
 
     if (!resolvedTeamId && updates.teamName) {
@@ -123,7 +141,41 @@ export class UserController {
       await userRepository.assignUserToTeam(userId, auth.orgId, resolvedTeamId);
     }
 
-    return { success: true };
+    // 4. Invalidate Redis caches so member lists immediately reflect fresh data everywhere
+    try {
+      const { redisDel } = await import("@/infrastructure/redis/redisClient");
+      await redisDel(`members:${auth.orgId}`);
+      await redisDel(`profile:${userId}`);
+    } catch {}
+
+    // 5. Record activity audit trail for compliance
+    try {
+      const { activityRepository } = await import("@/domains/activity/repository/activityRepository");
+      await activityRepository.recordLog({
+        orgId: auth.orgId,
+        actorId: auth.userId,
+        action: "member.updated",
+        entity: "profiles",
+        entityId: userId,
+        diff: {
+          memberName: updates.fullName || targetUser.fullName,
+          updatedFields: Object.keys({
+            ...profileUpdates,
+            ...(updates.role ? { role: updates.role } : {}),
+            ...(updates.teamName ? { teamName: updates.teamName } : {}),
+          }),
+          position: updates.position !== undefined ? updates.position : targetUser.position,
+          role: updates.role || targetUser.role,
+          teamName: updates.teamName || targetUser.teamName,
+        },
+      });
+    } catch {
+      // Non-blocking audit
+    }
+
+    // Fetch refreshed profile to return complete representation
+    const freshProfile = await userRepository.getProfileById(userId);
+    return { success: true, data: freshProfile };
   }
 
   async inviteMember(input: InviteUserInput) {
@@ -188,6 +240,13 @@ export class UserController {
     const { userRepository } = await import("../repository/userRepository");
     const updated = await userRepository.updateProfile(auth.userId, auth.orgId, updates);
 
+    // Invalidate Redis caches so organization member rosters immediately reflect the new profile
+    try {
+      const { redisDel } = await import("@/infrastructure/redis/redisClient");
+      await redisDel(`members:${auth.orgId}`);
+      await redisDel(`profile:${auth.userId}`);
+    } catch {}
+
     // Record activity audit trail
     try {
       const { activityRepository } = await import("@/domains/activity/repository/activityRepository");
@@ -200,6 +259,8 @@ export class UserController {
         diff: {
           updatedFields: Object.keys(updates),
           position: updates.position,
+          fullName: updates.fullName,
+          department: updates.department,
         },
       });
     } catch {

@@ -13,6 +13,8 @@ const singleMemberSchema = z.object({
   role: z.enum(["admin", "manager", "employee"]).default("employee"),
   password: z.string().min(6).optional(),
   teamName: z.string().trim().optional(),
+  position: z.string().trim().optional(),
+  department: z.string().trim().optional(),
 });
 
 const bulkAddSchema = z.object({
@@ -51,6 +53,7 @@ export async function POST(request: NextRequest) {
       email: string;
       fullName: string;
       role: string;
+      position?: string;
       password?: string;
       status: "created" | "failed";
       error?: string;
@@ -68,7 +71,10 @@ export async function POST(request: NextRequest) {
           targetPassword,
           member.fullName,
           member.role,
-          auth.userId
+          auth.userId,
+          null,
+          member.position || null,
+          member.department || null
         );
 
         createdCount++;
@@ -76,6 +82,7 @@ export async function POST(request: NextRequest) {
           email: member.email,
           fullName: member.fullName,
           role: member.role,
+          position: member.position,
           password: targetPassword,
           status: "created",
         });

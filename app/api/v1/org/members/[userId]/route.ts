@@ -47,6 +47,11 @@ export async function PATCH(
       role: body.role,
       teamId: body.teamId || body.team_id,
       teamName: body.teamName || body.team_name,
+      fullName: body.fullName || body.full_name,
+      position: body.position,
+      department: body.department,
+      phoneNumber: body.phoneNumber || body.phone_number,
+      bio: body.bio,
     });
     return NextResponse.json(result);
   } catch (error) {

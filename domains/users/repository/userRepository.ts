@@ -23,7 +23,9 @@ export interface IUserRepository {
     fullName: string,
     role: "admin" | "manager" | "employee",
     creatorId: string,
-    teamId?: string | null
+    teamId?: string | null,
+    position?: string | null,
+    department?: string | null
   ): Promise<{ user: any; profile: UserProfile }>;
   updateUserRole(
     userId: string,
@@ -563,10 +565,15 @@ export class SupabaseUserRepository implements IUserRepository {
       } catch {}
     }
 
-    // Invalidate auth cache so subsequent requests read fresh data immediately
+    // Invalidate auth and redis caches so subsequent requests read fresh data immediately
     try {
       const { invalidateAuthCache } = await import("@/shared/middleware/rbacGuard");
       invalidateAuthCache(userId);
+    } catch {}
+    try {
+      const { redisDel } = await import("@/infrastructure/redis/redisClient");
+      await redisDel(`members:${orgId}`);
+      await redisDel(`profile:${userId}`);
     } catch {}
 
     const notif = updated?.notification_preferences || jsonbPreferences;
@@ -594,7 +601,9 @@ export class SupabaseUserRepository implements IUserRepository {
     fullName: string,
     role: "admin" | "manager" | "employee",
     creatorId: string,
-    teamId?: string | null
+    teamId?: string | null,
+    position?: string | null,
+    department?: string | null
   ): Promise<{ user: any; profile: UserProfile }> {
     if (!this.hasSupabase()) {
       if (process.env.NODE_ENV === "production") {
@@ -611,6 +620,8 @@ export class SupabaseUserRepository implements IUserRepository {
           fullName,
           email,
           role,
+          position: position || null,
+          department: department || "General",
           teamId: teamId || "team-default-1",
           teamName: "General",
           avatarUrl: null,
@@ -788,7 +799,16 @@ export class SupabaseUserRepository implements IUserRepository {
     const userId = authUser.id;
     const dbClient = adminClient || createClient();
 
-    // 4. Upsert profile in profiles table
+    // 4. Dual-write backup payload inside notification_preferences JSONB
+    const jsonbPreferences: Record<string, any> = {
+      email: true,
+      in_app: true,
+      fullName,
+      position: position || null,
+      department: department || null,
+    };
+
+    // Upsert profile in profiles table with position & department
     const { error: profileError } = await (
       dbClient.from("profiles") as any
     ).upsert({
@@ -796,15 +816,54 @@ export class SupabaseUserRepository implements IUserRepository {
       org_id: orgId,
       full_name: fullName,
       role,
+      position: position || null,
+      department: department || null,
+      notification_preferences: jsonbPreferences,
       deleted_at: null,
     });
 
     if (profileError) {
       console.warn("Profile upsert warning:", profileError.message);
+      try {
+        await (dbClient.from("profiles") as any).upsert({
+          id: userId,
+          org_id: orgId,
+          full_name: fullName,
+          role,
+          notification_preferences: jsonbPreferences,
+          deleted_at: null,
+        });
+      } catch {}
     }
 
     // 5. Invariant: Guarantee team assignment in team_members
     const assignedTeamId = await this.assignUserToTeam(userId, orgId, teamId);
+
+    // Invalidate caches so lists immediately reflect the new member
+    try {
+      const { redisDel } = await import("@/infrastructure/redis/redisClient");
+      await redisDel(`members:${orgId}`);
+      await redisDel(`profile:${userId}`);
+    } catch {}
+
+    // Record activity audit trail
+    try {
+      const { activityRepository } = await import("@/domains/activity/repository/activityRepository");
+      await activityRepository.recordLog({
+        orgId,
+        actorId: creatorId,
+        action: "member.created",
+        entity: "profiles",
+        entityId: userId,
+        diff: {
+          fullName,
+          email: normalizedEmail,
+          role,
+          position: position || null,
+          department: department || null,
+        },
+      });
+    } catch {}
 
     return {
       user: authUser,
@@ -814,6 +873,8 @@ export class SupabaseUserRepository implements IUserRepository {
         fullName,
         email: normalizedEmail,
         role,
+        position: position || null,
+        department: department || null,
         teamId: assignedTeamId,
         avatarUrl: null,
         createdAt: authUser.created_at || new Date().toISOString(),
