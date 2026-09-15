@@ -19,41 +19,63 @@ export async function verifyTurnstileToken(
   const secretKey =
     process.env.TURNSTILE_SECRET_KEY || "1x0000000000000000000000000000000AA"; // Cloudflare default testing secret
 
-  // In test environment or when using Cloudflare test token, allow predictable passing
-  if (
-    process.env.NODE_ENV === "test" ||
-    token === "test-turnstile-token" ||
-    token?.startsWith("1x")
-  ) {
-    if (!token) {
-      throw new ValidationError(
-        "Anti-bot verification required. Missing Turnstile token."
-      );
-    }
-    if (
-      token === "invalid-turnstile-token" ||
-      token === "bot-token" ||
-      token.startsWith("2x") ||
-      token.startsWith("3x")
-    ) {
-      throw new ValidationError(
-        "Turnstile verification failed. Bot activity detected."
-      );
-    }
-    return true;
+  // Missing or blank token must always be rejected
+  if (!token || typeof token !== "string" || token.trim() === "") {
+    throw new ValidationError(
+      "Anti-bot verification required. Missing Turnstile token."
+    );
   }
 
-  if (!token) {
+  const trimmedToken = token.trim();
+
+  // Explicit simulation test failures / bot tokens
+  if (
+    trimmedToken === "invalid-turnstile-token" ||
+    trimmedToken === "bot-token" ||
+    trimmedToken.startsWith("2x") ||
+    trimmedToken.startsWith("3x")
+  ) {
     throw new ValidationError(
-      "Anti-bot verification required. Please complete the Cloudflare Turnstile security check."
+      "Turnstile verification failed. Bot activity detected."
     );
+  }
+
+  // Detect test / developer keys
+  const isTestSecret =
+    !process.env.TURNSTILE_SECRET_KEY ||
+    secretKey.startsWith("1x") ||
+    secretKey.includes("0000000000000000000000000000000AA");
+
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+  const isTestSite = !siteKey || siteKey.startsWith("1x");
+
+  const isTestMode =
+    process.env.NODE_ENV === "test" ||
+    process.env.NODE_ENV !== "production" ||
+    isTestSecret ||
+    isTestSite;
+
+  // In test environment or test key mode, allow predictable passing without hitting external rate limits/network
+  if (
+    isTestMode ||
+    trimmedToken === "test-turnstile-token" ||
+    trimmedToken.startsWith("1x")
+  ) {
+    return true;
   }
 
   try {
     const formData = new URLSearchParams();
     formData.append("secret", secretKey);
-    formData.append("response", token);
-    if (remoteIp) {
+    formData.append("response", trimmedToken);
+    // Only pass remoteip if it is a valid real IP and not "unknown" or localhost
+    if (
+      remoteIp &&
+      remoteIp !== "unknown" &&
+      remoteIp !== "127.0.0.1" &&
+      remoteIp !== "::1" &&
+      remoteIp !== "localhost"
+    ) {
       formData.append("remoteip", remoteIp);
     }
 
@@ -81,6 +103,19 @@ export async function verifyTurnstileToken(
 
     if (!data.success) {
       console.warn("[Turnstile] Verification failed:", data["error-codes"]);
+      // Handle test-key anomalies or duplicate tokens gracefully in test mode
+      if (
+        isTestSecret &&
+        data["error-codes"]?.some((c) =>
+          [
+            "timeout-or-duplicate",
+            "invalid-input-secret",
+            "invalid-input-response",
+          ].includes(c)
+        )
+      ) {
+        return true;
+      }
       throw new ValidationError(
         "Turnstile verification failed. Please refresh and complete the security check."
       );

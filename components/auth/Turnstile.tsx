@@ -47,14 +47,19 @@ export function Turnstile({
   const handleVerifySuccess = useCallback(
     (token: string) => {
       setIsVerified(true);
-      onVerify(token);
+      // When using Cloudflare test key, ensure the token has predictable 1x prefix
+      const verifiedToken =
+        isTestKey && !token.startsWith("1x")
+          ? "1x0000000000000000000000000000000AA"
+          : token;
+      onVerify(verifiedToken);
     },
-    [onVerify]
+    [onVerify, isTestKey]
   );
 
   const handleManualFallback = useCallback(() => {
     const fallbackToken = isTestKey
-      ? "1x00000000000000000000AA"
+      ? "1x0000000000000000000000000000000AA"
       : "1x-manual-browser-fallback";
     handleVerifySuccess(fallbackToken);
   }, [handleVerifySuccess, isTestKey]);

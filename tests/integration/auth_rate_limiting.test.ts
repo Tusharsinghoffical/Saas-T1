@@ -33,6 +33,18 @@ describe("STEP 2: Signup vs. Login Rate Limiting & Anti-Abuse Verification", () 
       expect(result).toBe(true);
     });
 
+    it("accepts Cloudflare browser widget issued token in test/developer mode", async () => {
+      const browserToken = "0.7h298s0192jfk.opaque-cloudflare-turnstile-token";
+      const result = await verifyTurnstileToken(browserToken, "127.0.0.1");
+      expect(result).toBe(true);
+    });
+
+    it("rejects bot-token simulation string", async () => {
+      await expect(
+        verifyTurnstileToken("bot-token", "192.168.1.1")
+      ).rejects.toThrow(/Bot activity detected/i);
+    });
+
     it("rejects Cloudflare test-fail dummy token (2x0000000000000000000000000000000AA)", async () => {
       await expect(
         verifyTurnstileToken(

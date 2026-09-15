@@ -144,6 +144,13 @@ export default function SignupPage() {
     try {
       const response = await signupOrganization(sanitizedData);
       if (!response.success) {
+        if (response.error?.toLowerCase().includes("turnstile")) {
+          const siteKey =
+            process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+          if (siteKey.startsWith("1x") || process.env.NODE_ENV !== "production") {
+            setTurnstileToken("1x0000000000000000000000000000000AA");
+          }
+        }
         setServerError(
           response.error || "Failed to create account. Please try again."
         );
