@@ -107,16 +107,7 @@ const serverEnvSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_PRICE_ID_PRO: z.string().optional(),
   STRIPE_PRICE_ID_ENTERPRISE: z.string().optional(),
-  SENTRY_DSN: z
-    .string()
-    .url("Must be a valid URL")
-    .optional()
-    .refine(
-      (val) => process.env.NODE_ENV !== "production" || (typeof val === "string" && val.length > 0),
-      {
-        message: "SENTRY_DSN is required in production for error tracking",
-      }
-    ),
+  SENTRY_DSN: z.string().url("Must be a valid URL").optional(),
 });
 
 // Combined schema
